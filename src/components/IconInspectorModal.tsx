@@ -20,23 +20,29 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   colorMode,
   onClose,
 }) => {
-  if (!icon) return null;
-
   const [rawSvg, setRawSvg] = useState<string>('');
   const [previewSize, setPreviewSize] = useState<number>(64);
   const [activeCodeTab, setActiveCodeTab] = useState<'svg' | 'jsx' | 'vue' | 'html'>('svg');
   const [bgMode, setBgMode] = useState<'white' | 'dark' | 'grid'>('white');
   const [isCopied, setIsCopied] = useState(false);
 
+  const iconFileName = icon?.fileName;
+
   useEffect(() => {
+    if (!iconFileName) {
+      setRawSvg('');
+      return;
+    }
     let active = true;
-    fetchRawSvg(icon.fileName).then(content => {
+    fetchRawSvg(iconFileName).then(content => {
       if (active) setRawSvg(content);
     });
     return () => {
       active = false;
     };
-  }, [icon.fileName]);
+  }, [iconFileName]);
+
+  if (!icon) return null;
 
   const formattedSvg = getFormattedSvg(rawSvg, icon.hex, colorMode, previewSize);
   const rawSvgCode = rawSvg || '<!-- Loading authentic canonical SVG... -->';

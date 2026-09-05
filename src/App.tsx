@@ -368,11 +368,13 @@ export default function App() {
       />
 
       {/* Full SVG Inspector Modal */}
-      <IconInspectorModal
-        icon={inspectedIcon}
-        colorMode={colorMode}
-        onClose={() => setInspectedIcon(null)}
-      />
+      {inspectedIcon && (
+        <IconInspectorModal
+          icon={inspectedIcon}
+          colorMode={colorMode}
+          onClose={() => setInspectedIcon(null)}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white py-6 text-center text-xs text-slate-400">
