@@ -1,0 +1,7 @@
+{
+  "name": "Brand & Tech SVG Downloader",
+  "description": "批量下载主流各大科技公司与开发工具的官方精准 SVG 图标脚本与管理工具",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
