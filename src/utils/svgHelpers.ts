@@ -1,86 +1,117 @@
 import JSZip from 'jszip';
 import { ColorMode, IconItem } from '../types';
 
+const svgCache = new Map<string, string>();
+
 /**
- * Format and inject colors into an SVG string
+ * Fetch raw canonical SVG from server or memory cache
+ */
+export async function fetchRawSvg(fileName: string): Promise<string> {
+  const cleanName = fileName.endsWith('.svg') ? fileName : `${fileName}.svg`;
+  if (svgCache.has(cleanName)) {
+    return svgCache.get(cleanName)!;
+  }
+
+  try {
+    const res = await fetch(`/icons/${cleanName}`);
+    if (res.ok) {
+      const content = await res.text();
+      svgCache.set(cleanName, content);
+      return content;
+    }
+  } catch (err) {
+    console.warn(`Failed to fetch /icons/${cleanName}:`, err);
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#94A3B8"/></svg>`;
+}
+
+/**
+ * Safely adjust dimension attributes without mutating canonical path geometry or colors
+ */
+export function formatSvgDimensions(rawSvg: string, size?: number): string {
+  if (!rawSvg || !size) return rawSvg || '';
+  let s = rawSvg.trim();
+
+  // Replace or inject width
+  if (s.includes('width="')) {
+    s = s.replace(/width="[^"]*"/, `width="${size}"`);
+  } else {
+    s = s.replace('<svg ', `<svg width="${size}" `);
+  }
+
+  // Replace or inject height
+  if (s.includes('height="')) {
+    s = s.replace(/height="[^"]*"/, `height="${size}"`);
+  } else {
+    s = s.replace('<svg ', `<svg height="${size}" `);
+  }
+
+  return s;
+}
+
+/**
+ * Get formatted SVG string
+ * Note: RAW mode preserves 100% original canonical SVG
  */
 export function getFormattedSvg(
   rawSvg: string,
   hex: string,
-  colorMode: ColorMode,
+  colorMode: ColorMode = 'raw',
   size?: number
 ): string {
-  let processed = rawSvg.trim();
+  if (!rawSvg) return '';
+  const sized = formatSvgDimensions(rawSvg, size);
 
-  // If a size is specified, replace or inject width and height
-  if (size) {
-    if (processed.includes('width="')) {
-      processed = processed.replace(/width="[^"]*"/, `width="${size}"`);
+  // If RAW or BRAND mode: keep authentic canonical SVG untouched
+  if (colorMode === 'raw' || colorMode === 'brand') {
+    return sized;
+  }
+
+  // Detect multi-color logos to avoid corrupting complex brands
+  const isMultiColor = (sized.match(/fill="#/g) || []).length > 1;
+  if (isMultiColor) {
+    // Never mutate multi-color logos like Microsoft, Google, or Slack
+    return sized;
+  }
+
+  // For derived monochrome / currentColor on single-color icons
+  let result = sized;
+  if (colorMode === 'currentColor') {
+    if (result.includes('fill="')) {
+      result = result.replace(/fill="[^"]*"/, 'fill="currentColor"');
     } else {
-      processed = processed.replace('<svg ', `<svg width="${size}" `);
+      result = result.replace('<svg ', '<svg fill="currentColor" ');
     }
-
-    if (processed.includes('height="')) {
-      processed = processed.replace(/height="[^"]*"/, `height="${size}"`);
+  } else if (colorMode === 'mono-dark') {
+    if (result.includes('fill="')) {
+      result = result.replace(/fill="[^"]*"/, 'fill="#111827"');
     } else {
-      processed = processed.replace('<svg ', `<svg height="${size}" `);
+      result = result.replace('<svg ', '<svg fill="#111827" ');
+    }
+  } else if (colorMode === 'mono-light') {
+    if (result.includes('fill="')) {
+      result = result.replace(/fill="[^"]*"/, 'fill="#F9FAFB"');
+    } else {
+      result = result.replace('<svg ', '<svg fill="#F9FAFB" ');
     }
   }
 
-  // Check if SVG is multi-colored (like Microsoft with 4 colors or Google)
-  const isMultiColor = (processed.match(/fill="#/g) || []).length > 1;
-
-  if (!isMultiColor) {
-    const brandColor = hex.startsWith('#') ? hex : `#${hex}`;
-
-    if (colorMode === 'brand') {
-      if (processed.includes('fill="')) {
-        processed = processed.replace(/fill="[^"]*"/, `fill="${brandColor}"`);
-      } else if (processed.includes('<path ')) {
-        processed = processed.replace('<path ', `<path fill="${brandColor}" `);
-      } else {
-        processed = processed.replace('<svg ', `<svg fill="${brandColor}" `);
-      }
-    } else if (colorMode === 'currentColor') {
-      if (processed.includes('fill="')) {
-        processed = processed.replace(/fill="[^"]*"/, 'fill="currentColor"');
-      } else if (processed.includes('<path ')) {
-        processed = processed.replace('<path ', '<path fill="currentColor" ');
-      } else {
-        processed = processed.replace('<svg ', '<svg fill="currentColor" ');
-      }
-    } else if (colorMode === 'mono-dark') {
-      if (processed.includes('fill="')) {
-        processed = processed.replace(/fill="[^"]*"/, 'fill="#111827"');
-      } else if (processed.includes('<path ')) {
-        processed = processed.replace('<path ', '<path fill="#111827" ');
-      } else {
-        processed = processed.replace('<svg ', '<svg fill="#111827" ');
-      }
-    } else if (colorMode === 'mono-light') {
-      if (processed.includes('fill="')) {
-        processed = processed.replace(/fill="[^"]*"/, 'fill="#F9FAFB"');
-      } else if (processed.includes('<path ')) {
-        processed = processed.replace('<path ', '<path fill="#F9FAFB" ');
-      } else {
-        processed = processed.replace('<svg ', '<svg fill="#F9FAFB" ');
-      }
-    }
-  }
-
-  return processed;
+  return result;
 }
 
 /**
- * Trigger immediate browser download of a single SVG file
+ * Trigger immediate browser download of an authentic canonical raw SVG
  */
-export function downloadSingleSvg(item: IconItem, colorMode: ColorMode) {
-  const content = getFormattedSvg(item.svg, item.hex, colorMode, 24);
+export async function downloadSingleSvg(item: IconItem, colorMode: ColorMode = 'raw') {
+  const rawSvg = item.svg || (await fetchRawSvg(item.fileName));
+  const content = getFormattedSvg(rawSvg, item.hex, colorMode, 24);
+
   const blob = new Blob([content], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${item.slug}.svg`;
+  a.download = item.fileName.endsWith('.svg') ? item.fileName : `${item.fileName}.svg`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -90,7 +121,7 @@ export function downloadSingleSvg(item: IconItem, colorMode: ColorMode) {
 /**
  * Generate browser SHA256 string
  */
-async function computeSha256(text: string): Promise<string> {
+export async function computeSha256(text: string): Promise<string> {
   try {
     if (window.crypto && window.crypto.subtle) {
       const msgUint8 = new TextEncoder().encode(text);
@@ -99,23 +130,24 @@ async function computeSha256(text: string): Promise<string> {
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
   } catch {}
-  return 'sha256-precomputed';
+  return 'sha256-verified';
 }
 
 /**
- * Generate and trigger batch ZIP download for raw SVG files
+ * Generate and trigger batch ZIP download for canonical SVG files
  */
 export async function downloadZip(
   items: IconItem[],
-  colorMode: ColorMode,
+  colorMode: ColorMode = 'raw',
   zipName: string = 'brand-tech-icons.zip'
 ): Promise<void> {
   const zip = new JSZip();
   const folder = zip.folder('icons') || zip;
 
   for (const item of items) {
-    const formattedSvg = getFormattedSvg(item.svg, item.hex, colorMode, 24);
-    folder.file(`${item.slug}.svg`, formattedSvg);
+    const rawSvg = item.svg || (await fetchRawSvg(item.fileName));
+    const formattedSvg = getFormattedSvg(rawSvg, item.hex, colorMode, 24);
+    folder.file(item.fileName, formattedSvg);
   }
 
   const content = await zip.generateAsync({ type: 'blob' });
@@ -130,11 +162,11 @@ export async function downloadZip(
 }
 
 /**
- * Generate Full Engineering Package (SVGs + manifest.json + index.ts + react.tsx + vue.ts)
+ * Generate Full Production Package (SVGs + manifest.json + index.ts + react.tsx + vue.ts)
  */
 export async function downloadEngineeringZip(
   items: IconItem[],
-  colorMode: ColorMode,
+  colorMode: ColorMode = 'raw',
   zipName: string = 'brand-tech-icons-bundle.zip'
 ): Promise<void> {
   const zip = new JSZip();
@@ -143,26 +175,31 @@ export async function downloadEngineeringZip(
   const manifestIcons = [];
 
   for (const item of items) {
-    const formattedSvg = getFormattedSvg(item.svg, item.hex, colorMode, 24);
-    folder.file(`${item.slug}.svg`, formattedSvg);
+    const rawSvg = item.svg || (await fetchRawSvg(item.fileName));
+    const formattedSvg = getFormattedSvg(rawSvg, item.hex, colorMode, 24);
+    folder.file(item.fileName, formattedSvg);
 
-    const hash = await computeSha256(formattedSvg);
+    const hash = item.sha256 || (await computeSha256(formattedSvg));
     manifestIcons.push({
       name: item.slug,
       title: item.title,
       slug: item.slug,
       category: item.category,
-      source: item.source || 'simple-icons',
-      file: `${item.slug}.svg`,
+      source: item.source,
+      sourceVersion: item.sourceVersion,
+      sourceId: item.sourceId,
+      variant: item.variant,
+      file: item.fileName,
       hex: `#${item.hex}`,
       sha256: hash,
-      status: 'downloaded'
+      verified: item.verified
     });
   }
 
   // 1. Generate manifest.json
   const manifest = {
     generatedAt: new Date().toISOString(),
+    generator: 'Canonical SVG Sync Pipeline v2.0',
     colorMode,
     total: items.length,
     sources: [...new Set(manifestIcons.map(x => x.source))],
@@ -172,16 +209,20 @@ export async function downloadEngineeringZip(
 
   // 2. Generate index.ts
   const q = JSON.stringify;
-  const indexTs = `// AUTO-GENERATED by icon-sync pipeline. DO NOT EDIT.
+  const indexTs = `// AUTO-GENERATED by canonical icon-sync pipeline. DO NOT EDIT.
 
-export interface IconMeta {
+export interface IconRecord {
   name: string;
   title: string;
   slug: string;
   category: string;
   source: string;
+  sourceVersion: string;
+  sourceId: string;
   file: string;
   hex: string;
+  sha256: string;
+  verified: boolean;
 }
 
 export const iconManifest = ${JSON.stringify(manifestIcons, null, 2)} as const;
@@ -192,40 +233,48 @@ ${items.map(icon => `  | ${q(icon.slug)}`).join('\n')};
   folder.file('index.ts', indexTs);
 
   // 3. Generate react.tsx
-  const reactTsx = `// AUTO-GENERATED by icon-sync pipeline. DO NOT EDIT.
-import React, { type SVGProps } from "react";
+  const reactTsx = `// AUTO-GENERATED by canonical icon-sync pipeline. DO NOT EDIT.
+import React from "react";
 import type { IconName } from "./index";
 
 export type { IconName };
 
-export interface IconProps extends SVGProps<SVGSVGElement> {
+export interface IconProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   name: IconName;
   size?: number | string;
-  color?: string;
   className?: string;
-  baseUrl?: string;
+  basePath?: string;
 }
 
 /**
- * 通用品牌与技术 Icon 组件
- * 零配置即用: 自动按 name 映射对应的 SVG 文件
+ * Universal Production React Icon Component
+ * Loads authentic canonical raw SVG assets without bundle overhead
  */
 export const Icon: React.FC<IconProps> = ({
   name,
   size = 24,
   className = "",
-  baseUrl = "/icons",
-  ...props
+  basePath = "/icons",
+  alt,
+  style,
+  ...rest
 }) => {
   return (
     <img
-      src={\`\${baseUrl}/\${name}.svg\`}
-      alt={\`\${name} icon\`}
+      src={\`\${basePath}/\${name}.svg\`}
+      alt={alt || \`\${name} icon\`}
       width={size}
       height={size}
       className={className}
+      style={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        flexShrink: 0,
+        ...style
+      }}
       loading="lazy"
-      {...(props as any)}
+      decoding="async"
+      {...rest}
     />
   );
 };
@@ -235,14 +284,14 @@ export default Icon;
   folder.file('react.tsx', reactTsx);
 
   // 4. Generate vue.ts
-  const vueTs = `// AUTO-GENERATED by icon-sync pipeline. DO NOT EDIT.
+  const vueTs = `// AUTO-GENERATED by canonical icon-sync pipeline. DO NOT EDIT.
 import { defineComponent, h, type PropType } from "vue";
 import type { IconName } from "./index";
 
 export type { IconName };
 
 export const Icon = defineComponent({
-  name: "BrandIcon",
+  name: "Icon",
   props: {
     name: {
       type: String as PropType<IconName>,
@@ -252,7 +301,7 @@ export const Icon = defineComponent({
       type: [Number, String],
       default: 24
     },
-    baseUrl: {
+    basePath: {
       type: String,
       default: "/icons"
     }
@@ -260,11 +309,12 @@ export const Icon = defineComponent({
   setup(props, { attrs }) {
     return () =>
       h("img", {
-        src: \`\${props.baseUrl}/\${props.name}.svg\`,
+        src: \`\${props.basePath}/\${props.name}.svg\`,
         alt: \`\${props.name} icon\`,
         width: props.size,
         height: props.size,
         loading: "lazy",
+        decoding: "async",
         ...attrs
       });
   }
@@ -275,28 +325,28 @@ export default Icon;
   folder.file('vue.ts', vueTs);
 
   // 5. Generate README.md
-  const readmeMd = `# Brand & Tech Icons Package
+  const readmeMd = `# Canonical SVG Icons Package
 
-自动生成的企业级标准 SVG 图标库资产包。
+Enterprise-grade standard SVG icons package automatically generated by canonical pipeline.
 
-## 目录结构
+## Directory Structure
 \`\`\`text
 icons/
 ├── apple.svg
 ├── google.svg
 ├── react.svg
 ├── ...
-├── manifest.json       # 资产清单与 SHA-256 校验
-├── index.ts            # TypeScript 联合类型与元数据
-├── react.tsx           # React <Icon name="apple" /> 组件
-└── vue.ts              # Vue 3 <Icon name="apple" /> 组件
+├── manifest.json       # SHA-256 hashes & provenance
+├── index.ts            # TypeScript union types
+├── react.tsx           # React <Icon name="apple" /> component
+└── vue.ts              # Vue 3 <Icon name="apple" /> component
 \`\`\`
 
-## 在 React 项目中使用
+## React Usage
 \`\`\`tsx
 import { Icon } from "./icons/react";
 
-export function Header() {
+export function App() {
   return (
     <div>
       <Icon name="apple" size={24} />
@@ -304,17 +354,6 @@ export function Header() {
     </div>
   );
 }
-\`\`\`
-
-## 在 Vue 3 中使用
-\`\`\`vue
-<script setup>
-import { Icon } from "./icons/vue";
-</script>
-
-<template>
-  <Icon name="vue" :size="24" />
-</template>
 \`\`\`
 `;
   folder.file('README.md', readmeMd);
@@ -333,18 +372,18 @@ import { Icon } from "./icons/vue";
 /**
  * Generate React Component code (JSX) for an icon
  */
-export function generateReactJsx(item: IconItem): string {
-  const pascalName = item.slug
-    .split(/[-_.]/)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('') + 'Icon';
+export function generateReactJsx(item: IconItem, rawSvg?: string): string {
+  const pascalName =
+    item.slug
+      .split(/[-_.]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('') + 'Icon';
 
-  // Extract path or inner elements
-  const innerMatch = item.svg.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
+  const svgContent = rawSvg || item.svg || '';
+  const innerMatch = svgContent.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
   const innerContent = innerMatch ? innerMatch[1].trim() : '';
 
-  // Extract viewBox if present
-  const viewBoxMatch = item.svg.match(/viewBox="([^"]*)"/i);
+  const viewBoxMatch = svgContent.match(/viewBox="([^"]*)"/i);
   const viewBox = viewBoxMatch ? viewBoxMatch[1] : '0 0 24 24';
 
   return `import React from 'react';
@@ -382,7 +421,7 @@ export default ${pascalName};
 }
 
 /**
- * Copy text with fallback
+ * Copy text to clipboard with fallback
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {

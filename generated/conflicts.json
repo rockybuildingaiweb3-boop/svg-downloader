@@ -1,0 +1,985 @@
+{
+  "generatedAt": "2026-09-05T08:13:58.238Z",
+  "totalConflictsDetected": 52,
+  "note": "All source collisions are deterministically resolved by priority (Simple Icons > Devicon > Official > Wikimedia) without numerical -2.svg suffixes.",
+  "conflicts": [
+    {
+      "id": "apple",
+      "inputQuery": "apple",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "apple",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: apple.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "google",
+      "inputQuery": "google",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "google",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: google.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "oracle",
+      "inputQuery": "oracle",
+      "resolvedSource": "devicon",
+      "competingSources": [
+        {
+          "source": "wikimedia",
+          "sourceId": "oracle",
+          "version": "official",
+          "variants": [
+            "default"
+          ]
+        }
+      ],
+      "resolution": "Selected devicon based on priority. Deterministic output: oracle.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "react",
+      "inputQuery": "react",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "react",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: react.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "angular",
+      "inputQuery": "angular",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "angular",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: angular.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "svelte",
+      "inputQuery": "svelte",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "svelte",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: svelte.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "nuxt",
+      "inputQuery": "nuxt",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "nuxt",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain-wordmark",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: nuxt.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "tailwindcss",
+      "inputQuery": "tailwindcss",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "tailwindcss",
+          "version": "2.17.0",
+          "variants": [
+            "original-wordmark",
+            "original",
+            "plain-wordmark",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: tailwindcss.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "vite",
+      "inputQuery": "vite",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "vite",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: vite.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "webpack",
+      "inputQuery": "webpack",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "webpack",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: webpack.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "astro",
+      "inputQuery": "astro",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "astro",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: astro.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "remix",
+      "inputQuery": "remix",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "remix",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "line",
+            "line-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: remix.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "html5",
+      "inputQuery": "html5",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "html5",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: html5.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "bootstrap",
+      "inputQuery": "bootstrap",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "bootstrap",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: bootstrap.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "sass",
+      "inputQuery": "sass",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "sass",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: sass.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "javascript",
+      "inputQuery": "javascript",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "javascript",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: javascript.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "typescript",
+      "inputQuery": "typescript",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "typescript",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: typescript.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "python",
+      "inputQuery": "python",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "python",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: python.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "rust",
+      "inputQuery": "rust",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "rust",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "line",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: rust.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "go",
+      "inputQuery": "go",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "go",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "line",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: go.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "swift",
+      "inputQuery": "swift",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "swift",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: swift.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "kotlin",
+      "inputQuery": "kotlin",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "kotlin",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: kotlin.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "cplusplus",
+      "inputQuery": "cplusplus",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "cplusplus",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain",
+            "line",
+            "plain-wordmark",
+            "line-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: cplusplus.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "php",
+      "inputQuery": "php",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "php",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: php.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "ruby",
+      "inputQuery": "ruby",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "ruby",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: ruby.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "dart",
+      "inputQuery": "dart",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "dart",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: dart.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "flutter",
+      "inputQuery": "flutter",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "flutter",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: flutter.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "docker",
+      "inputQuery": "docker",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "docker",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: docker.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "kubernetes",
+      "inputQuery": "kubernetes",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "kubernetes",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark",
+            "line",
+            "line-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: kubernetes.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "linux",
+      "inputQuery": "linux",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "linux",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: linux.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "ubuntu",
+      "inputQuery": "ubuntu",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "ubuntu",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: ubuntu.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "git",
+      "inputQuery": "git",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "git",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: git.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "github",
+      "inputQuery": "github",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "github",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: github.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "gitlab",
+      "inputQuery": "gitlab",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "gitlab",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: gitlab.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "googlecloud",
+      "inputQuery": "googlecloud",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "googlecloud",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: googlecloud.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "cloudflare",
+      "inputQuery": "cloudflare",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "cloudflare",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: cloudflare.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "vercel",
+      "inputQuery": "vercel",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "vercel",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "line",
+            "line-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: vercel.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "supabase",
+      "inputQuery": "supabase",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "supabase",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: supabase.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "firebase",
+      "inputQuery": "firebase",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "firebase",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark",
+            "line",
+            "line-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: firebase.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "mongodb",
+      "inputQuery": "mongodb",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "mongodb",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: mongodb.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "postgresql",
+      "inputQuery": "postgresql",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "postgresql",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: postgresql.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "mysql",
+      "inputQuery": "mysql",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "mysql",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain-wordmark",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: mysql.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "redis",
+      "inputQuery": "redis",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "redis",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: redis.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "sqlite",
+      "inputQuery": "sqlite",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "sqlite",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: sqlite.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "nginx",
+      "inputQuery": "nginx",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "nginx",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: nginx.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "apache",
+      "inputQuery": "apache",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "apache",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark",
+            "line",
+            "line-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: apache.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "figma",
+      "inputQuery": "figma",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "figma",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: figma.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "notion",
+      "inputQuery": "notion",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "notion",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain",
+            "line"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: notion.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "jira",
+      "inputQuery": "jira",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "jira",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: jira.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "trello",
+      "inputQuery": "trello",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "trello",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark",
+            "line",
+            "line-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: trello.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "postman",
+      "inputQuery": "postman",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "postman",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "original-wordmark",
+            "plain",
+            "plain-wordmark"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: postman.svg without numerical -2.svg suffixes."
+    },
+    {
+      "id": "x",
+      "inputQuery": "x",
+      "resolvedSource": "simple-icons",
+      "competingSources": [
+        {
+          "source": "devicon",
+          "sourceId": "twitter",
+          "version": "2.17.0",
+          "variants": [
+            "original",
+            "plain"
+          ]
+        }
+      ],
+      "resolution": "Selected simple-icons based on priority. Deterministic output: x.svg without numerical -2.svg suffixes."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
-import rawIcons from './curatedIcons.json';
 import { IconCategory, IconItem } from '../types';
+import { CURATED_ICONS, CANONICAL_CATALOG } from './catalog';
 
-export const CURATED_ICONS: IconItem[] = rawIcons as IconItem[];
+export { CURATED_ICONS, CANONICAL_CATALOG };
 
 export const CATEGORIES: { id: IconCategory; label: string; count?: number }[] = [
   { id: 'all', label: '全部图标' },

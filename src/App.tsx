@@ -35,7 +35,11 @@ export default function App() {
       // Source filter
       if (selectedSource !== 'all') {
         const iconSrc = icon.source || 'simple-icons';
-        if (iconSrc !== selectedSource) {
+        if (selectedSource === 'official') {
+          if (iconSrc !== 'official' && iconSrc !== 'wikimedia') {
+            return false;
+          }
+        } else if (iconSrc !== selectedSource) {
           return false;
         }
       }
@@ -171,7 +175,7 @@ export default function App() {
                     { id: 'all', label: '全部数据源' },
                     { id: 'simple-icons', label: 'Simple 品牌' },
                     { id: 'devicon', label: 'Devicon 技术' },
-                    { id: 'official-archive', label: '官方特例' }
+                    { id: 'official', label: '官方特例' }
                   ].map(src => (
                     <button
                       key={src.id}

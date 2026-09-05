@@ -1,0 +1,23 @@
+{
+  "node": "nodedotjs",
+  "nodejs": "nodedotjs",
+  "next": "nextdotjs",
+  "nextjs": "nextdotjs",
+  "vue": "vuedotjs",
+  "vuejs": "vuedotjs",
+  "aws": "amazonwebservices",
+  "gcp": "googlecloud",
+  "azure": "microsoftazure",
+  "twitter": "x",
+  "cpp": "cplusplus",
+  "c++": "cplusplus",
+  "golang": "go",
+  "js": "javascript",
+  "ts": "typescript",
+  "py": "python",
+  "k8s": "kubernetes",
+  "vscode": "visualstudiocode",
+  "tailwind": "tailwindcss",
+  "nuxt": "nuxt",
+  "nuxtjs": "nuxt"
+}

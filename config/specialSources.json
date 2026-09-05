@@ -1,0 +1,68 @@
+{
+  "microsoft": {
+    "title": "Microsoft",
+    "source": "wikimedia",
+    "sourceId": "Microsoft_logo.svg",
+    "sourceVersion": "official",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
+    "brandColor": "#00A4EF",
+    "license": "Public Domain / Trademark of Microsoft Corp.",
+    "category": "bigtech",
+    "notes": "Official 4-color Microsoft square corporate emblem."
+  },
+  "amazon": {
+    "title": "Amazon",
+    "source": "wikimedia",
+    "sourceId": "Amazon_logo.svg",
+    "sourceVersion": "official",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
+    "brandColor": "#FF9900",
+    "license": "Public Domain / Trademark of Amazon.com, Inc.",
+    "category": "bigtech",
+    "notes": "Official Amazon brandmark with smile arrow curve."
+  },
+  "adobe": {
+    "title": "Adobe",
+    "source": "wikimedia",
+    "sourceId": "Adobe_Corporate_Logo.svg",
+    "sourceVersion": "official",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_and_wordmark.svg",
+    "brandColor": "#FF0000",
+    "license": "Public Domain / Trademark of Adobe Inc.",
+    "category": "bigtech",
+    "notes": "Official Adobe corporate red vector mark."
+  },
+  "oracle": {
+    "title": "Oracle",
+    "source": "wikimedia",
+    "sourceId": "Oracle_logo.svg",
+    "sourceVersion": "official",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/50/Oracle_logo.svg",
+    "brandColor": "#F80000",
+    "license": "Public Domain / Trademark of Oracle Corporation",
+    "category": "bigtech",
+    "notes": "Official Oracle red brandmark vector."
+  },
+  "ibm": {
+    "title": "IBM",
+    "source": "wikimedia",
+    "sourceId": "IBM_logo.svg",
+    "sourceVersion": "official",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
+    "brandColor": "#052FAD",
+    "license": "Public Domain / Trademark of IBM Corp.",
+    "category": "bigtech",
+    "notes": "Official IBM 8-bar corporate logotype."
+  },
+  "openai": {
+    "title": "OpenAI",
+    "source": "wikimedia",
+    "sourceId": "OpenAI_Logo.svg",
+    "sourceVersion": "official",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg",
+    "brandColor": "#10A37F",
+    "license": "Public Domain / Trademark of OpenAI, Inc.",
+    "category": "ai",
+    "notes": "Official OpenAI swirl geometric mark."
+  }
+}

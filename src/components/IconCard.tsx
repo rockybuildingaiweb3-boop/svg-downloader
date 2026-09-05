@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
-import { Download, Copy, Check, Code, Maximize2 } from 'lucide-react';
+import { Download, Copy, Check, Code, Maximize2, ShieldCheck, Layers } from 'lucide-react';
 import { ColorMode, IconItem } from '../types';
-import { getFormattedSvg, downloadSingleSvg, generateReactJsx, copyToClipboard } from '../utils/svgHelpers';
+import {
+  fetchRawSvg,
+  getFormattedSvg,
+  downloadSingleSvg,
+  generateReactJsx,
+  copyToClipboard
+} from '../utils/svgHelpers';
 
 interface IconCardProps {
   icon: IconItem;
@@ -20,11 +26,10 @@ export const IconCard: React.FC<IconCardProps> = ({
 }) => {
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | 'hex' | null>(null);
 
-  const formattedSvg = getFormattedSvg(icon.svg, icon.hex, colorMode, 32);
-
   const handleCopySvg = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const text = getFormattedSvg(icon.svg, icon.hex, colorMode, 24);
+    const raw = await fetchRawSvg(icon.fileName);
+    const text = getFormattedSvg(raw, icon.hex, colorMode, 24);
     const ok = await copyToClipboard(text);
     if (ok) {
       setCopiedType('svg');
@@ -34,7 +39,8 @@ export const IconCard: React.FC<IconCardProps> = ({
 
   const handleCopyJsx = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const jsx = generateReactJsx(icon);
+    const raw = await fetchRawSvg(icon.fileName);
+    const jsx = generateReactJsx(icon, raw);
     const ok = await copyToClipboard(jsx);
     if (ok) {
       setCopiedType('jsx');
@@ -54,6 +60,28 @@ export const IconCard: React.FC<IconCardProps> = ({
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     downloadSingleSvg(icon, colorMode);
+  };
+
+  const sourceBadge = () => {
+    if (icon.source === 'devicon') {
+      return (
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-0.5">
+          Devicon
+        </span>
+      );
+    }
+    if (icon.source === 'official' || icon.source === 'wikimedia') {
+      return (
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-0.5">
+          官方
+        </span>
+      );
+    }
+    return (
+      <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-0.5">
+        Simple Icons
+      </span>
+    );
   };
 
   return (
@@ -77,17 +105,16 @@ export const IconCard: React.FC<IconCardProps> = ({
               className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
           </label>
-          <span
-            className={`text-[9px] px-1 py-0.2 rounded font-medium ${
-              icon.source === 'devicon'
-                ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                : icon.source === 'official-archive'
-                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                : 'bg-slate-100 text-slate-600 border border-slate-200'
-            }`}
-          >
-            {icon.source === 'devicon' ? 'Devicon' : icon.source === 'official-archive' ? '官方' : 'Simple'}
-          </span>
+          {sourceBadge()}
+          {icon.alternativeSources && icon.alternativeSources.length > 0 && (
+            <span
+              title={`包含 ${icon.alternativeSources.length} 个备选源 (如 ${icon.alternativeSources[0].source})`}
+              className="text-[9px] px-1 py-0.2 rounded font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-0.5"
+            >
+              <Layers className="w-2.5 h-2.5" />
+              多源
+            </span>
+          )}
         </div>
 
         <button
@@ -105,19 +132,31 @@ export const IconCard: React.FC<IconCardProps> = ({
 
       {/* Center: Vector SVG Preview */}
       <div className="flex items-center justify-center py-4 my-1">
-        <div
-          className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center w-12 h-12"
-          dangerouslySetInnerHTML={{ __html: formattedSvg }}
-        />
+        <div className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center w-10 h-10">
+          <img
+            src={`/icons/${icon.fileName}`}
+            alt={icon.title}
+            width={32}
+            height={32}
+            className="w-8 h-8 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
 
       {/* Bottom Info: Title & Filename */}
       <div className="mt-2 text-center">
-        <h3 className="text-sm font-semibold text-slate-800 truncate" title={icon.title}>
-          {icon.title}
-        </h3>
-        <p className="text-[11px] font-mono text-slate-400 mt-0.5 truncate" title={`${icon.slug}.svg`}>
-          {icon.slug}.svg
+        <div className="flex items-center justify-center gap-1">
+          <h3 className="text-sm font-semibold text-slate-800 truncate" title={icon.title}>
+            {icon.title}
+          </h3>
+          {icon.verified && (
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" title="XML与SHA256校验通过" />
+          )}
+        </div>
+        <p className="text-[11px] font-mono text-slate-400 mt-0.5 truncate" title={icon.fileName}>
+          {icon.fileName}
         </p>
       </div>
 
@@ -156,7 +195,7 @@ export const IconCard: React.FC<IconCardProps> = ({
           id={`btn-download-svg-${icon.slug}`}
           onClick={handleDownload}
           className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors"
-          title={`下载 ${icon.slug}.svg`}
+          title={`下载 ${icon.fileName}`}
         >
           <Download className="w-3.5 h-3.5" />
         </button>
@@ -165,7 +204,7 @@ export const IconCard: React.FC<IconCardProps> = ({
           id={`btn-inspect-svg-${icon.slug}`}
           onClick={() => onInspect(icon)}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 text-xs transition-colors"
-          title="查看代码与缩放详情"
+          title="查看代码与规范详情"
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
