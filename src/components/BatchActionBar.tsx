@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Download, CheckSquare, X, Copy, Check, Package } from 'lucide-react';
-import { useState } from 'react';
-import { copyToClipboard } from '../utils/svgHelpers';
+import { copyRawSvg } from '../utils/svgHelpers';
 
 interface BatchActionBarProps {
   selectedCount: number;
@@ -28,7 +27,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
 
   const handleCopyNames = async () => {
     const list = selectedSlugs.map(s => `${s}.svg`).join('\n');
-    const ok = await copyToClipboard(list);
+    const ok = await copyRawSvg(list);
     if (ok) {
       setCopiedNames(true);
       setTimeout(() => setCopiedNames(false), 2000);
@@ -45,11 +44,11 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
         {/* Left: Counter & Select All toggle */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 rounded-full bg-blue-500 text-xs font-bold items-center justify-center">
+            <span className="flex h-6 w-6 rounded-full bg-indigo-600 text-xs font-bold items-center justify-center">
               {selectedCount}
             </span>
             <span className="text-xs font-medium text-slate-200">
-              已选 <strong className="text-white">{selectedCount}</strong> 个图标
+              已选 <strong className="text-white">{selectedCount}</strong> 个权威矢量
             </span>
           </div>
 
@@ -57,7 +56,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
 
           <button
             onClick={onSelectAllFiltered}
-            className="text-xs text-slate-300 hover:text-white flex items-center gap-1 transition-colors"
+            className="text-xs text-slate-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
           >
             <CheckSquare className="w-3.5 h-3.5" />
             <span>全选当前 ({totalFilteredCount})</span>
@@ -65,7 +64,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
 
           <button
             onClick={onClearSelection}
-            className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 transition-colors"
+            className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
             <span>清空</span>
@@ -77,7 +76,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
           <button
             onClick={handleCopyNames}
             title="复制所选图标文件名清单"
-            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1"
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
           >
             {copiedNames ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copiedNames ? '已复制' : '复制清单'}</span>
@@ -86,8 +85,8 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
           <button
             id="btn-batch-download-zip"
             onClick={onDownloadSelectedZip}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800 border border-slate-700 flex items-center gap-1.5 transition-colors"
-            title="仅打包所选的 SVG 矢量文件"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="仅打包所选的原始 SVG 矢量文件"
           >
             <Download className="w-3.5 h-3.5" />
             <span>仅下载 SVG (.zip)</span>
@@ -96,11 +95,11 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
           <button
             id="btn-batch-download-bundle"
             onClick={onDownloadSelectedBundle}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1.5 transition-colors shadow-sm active:scale-95"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 transition-colors shadow-xs active:scale-95 cursor-pointer"
             title="导出包含 React/Vue 注册表与 manifest.json 的规范工程包"
           >
             <Package className="w-3.5 h-3.5" />
-            <span>导出工程组件包</span>
+            <span>导出工程集成包</span>
           </button>
         </div>
 
@@ -108,3 +107,5 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
     </div>
   );
 };
+
+export default BatchActionBar;

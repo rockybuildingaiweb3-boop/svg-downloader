@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Synthetic Approximation Fixture: Deformed bezier smile arc with misplaced barb -->
+  <path fill="none" stroke="#E11D48" stroke-width="2" stroke-linecap="round" opacity="0.85" d="M3 16c4 3 14 3 18 0" />
+  <path fill="#E11D48" opacity="0.85" d="M19 14l3 2-3 2v-4z" />
+</svg>

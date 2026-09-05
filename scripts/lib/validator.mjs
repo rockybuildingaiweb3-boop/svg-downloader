@@ -31,7 +31,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: 'Empty SVG content or file is empty',
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -49,7 +52,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: 'Received HTML error page instead of authentic SVG',
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -60,7 +66,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: `Malformed XML syntax: ${xmlValidation.err?.msg || 'Parse error'} at line ${xmlValidation.err?.line || '?'}`,
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -73,7 +82,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: `XML parse exception: ${err.message}`,
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -82,7 +94,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: 'Parsed XML output is not an object',
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -95,7 +110,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: `Root tag is <${rootKeys[0] || 'none'}>, expected <svg>`,
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -105,7 +123,10 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: '<svg> root node is empty',
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: false,
+      renderable: false,
+      elementCount: 0
     };
   }
 
@@ -119,33 +140,29 @@ export function validateSvg(svgContent, contextName = '') {
       status: 'FAILED',
       message: 'SVG lacks both viewBox and width/height attributes',
       sha256: sha,
-      isMultiColor: false
+      isMultiColor: false,
+      xmlValid: true,
+      renderable: false,
+      elementCount: 0
     };
   }
 
-  // 6. Check for vector child elements (path, polygon, rect, circle, g, etc.)
+  // 6. Check for vector child elements and count them
+  let elementCount = 0;
   const graphicTags = ['path', 'polygon', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'g', 'use', 'image'];
-  const hasGraphics = graphicTags.some(tag => {
-    return svgNode[tag] !== undefined || svgNode[tag.toUpperCase()] !== undefined;
-  });
-
-  if (!hasGraphics && !svgNode['#text']) {
-    return {
-      status: 'FAILED',
-      message: 'SVG contains no graphic elements (path, polygon, rect, g, etc.)',
-      sha256: sha,
-      isMultiColor: false
-    };
-  }
-
-  // 7. Detect multi-color elements without crude regex
-  let isMultiColor = false;
   const distinctFills = new Set();
 
-  function scanColors(node) {
+  function scanNode(node) {
     if (!node || typeof node !== 'object') return;
     for (const [key, val] of Object.entries(node)) {
-      if (key === '@_fill' && typeof val === 'string') {
+      if (graphicTags.includes(key.toLowerCase())) {
+        if (Array.isArray(val)) {
+          elementCount += val.length;
+        } else {
+          elementCount += 1;
+        }
+      }
+      if ((key === '@_fill' || key === '@_stroke') && typeof val === 'string') {
         const c = val.trim().toLowerCase();
         if (c && c !== 'none' && c !== 'currentcolor' && c !== 'inherit') {
           distinctFills.add(c);
@@ -153,37 +170,40 @@ export function validateSvg(svgContent, contextName = '') {
       }
       if (typeof val === 'object') {
         if (Array.isArray(val)) {
-          for (const item of val) scanColors(item);
+          for (const item of val) scanNode(item);
         } else {
-          scanColors(val);
+          scanNode(val);
         }
       }
     }
   }
 
-  scanColors(svgNode);
-  if (distinctFills.size > 1) {
-    isMultiColor = true;
-  }
+  scanNode(svgNode);
 
-  // If valid, determine WARNING vs VALID
-  if (isMultiColor) {
+  if (elementCount === 0 && !svgNode['#text']) {
     return {
-      status: 'WARNING',
-      message: `Multi-color logo (${distinctFills.size} distinct colors: ${[...distinctFills].slice(0, 3).join(', ')})`,
+      status: 'FAILED',
+      message: 'SVG contains no graphic vector elements (path, polygon, rect, circle, etc.)',
       sha256: sha,
-      isMultiColor: true,
-      viewBox,
-      width: Number(width) || undefined,
-      height: Number(height) || undefined
+      isMultiColor: false,
+      xmlValid: true,
+      renderable: false,
+      elementCount: 0
     };
   }
 
+  const isMultiColor = distinctFills.size > 1;
+
   return {
     status: 'VALID',
-    message: 'Valid vector SVG',
+    message: isMultiColor
+      ? `Valid multi-color SVG (${distinctFills.size} colors, ${elementCount} elements)`
+      : `Valid monochrome SVG (${elementCount} elements)`,
     sha256: sha,
-    isMultiColor: false,
+    isMultiColor,
+    xmlValid: true,
+    renderable: true,
+    elementCount,
     viewBox,
     width: Number(width) || undefined,
     height: Number(height) || undefined

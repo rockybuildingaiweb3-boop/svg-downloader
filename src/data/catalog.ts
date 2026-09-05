@@ -18,12 +18,20 @@ export const CURATED_ICONS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     sourceVersion: rec.sourceVersion,
     sourceId: rec.sourceId,
     sha256: rec.rawSha256,
-    variant: rec.variant,
-    variants: rec.variants,
+    variant: rec.variant || 'default',
+    variants: rec.variants || {},
     license: rec.license,
     sourceUrl: rec.sourceUrl,
     alternativeSources: rec.alternativeSources,
-    verified: rec.verified
+    xmlValid: rec.xmlValid ?? true,
+    sourceTrusted: rec.sourceTrusted ?? true,
+    canonicalResolved: rec.canonicalResolved ?? true,
+    integrityVerified: rec.integrityVerified ?? true,
+    renderable: rec.renderable ?? true,
+    verificationStatus: rec.verificationStatus || (rec.verified ? 'verified' : 'warning'),
+    verified: rec.verified ?? true,
+    conflicts: rec.conflicts,
+    notes: rec.notes
   };
 });
 

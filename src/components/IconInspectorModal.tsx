@@ -1,23 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Copy, Check, ShieldCheck, Layers, ExternalLink } from 'lucide-react';
-import { ColorMode, IconItem } from '../types';
+import {
+  X,
+  Download,
+  Copy,
+  Check,
+  ShieldCheck,
+  Layers,
+  ExternalLink,
+  Code,
+  FileCode,
+  Box,
+  Hash,
+  Binary
+} from 'lucide-react';
+import { IconItem } from '../types';
 import {
   fetchRawSvg,
-  getFormattedSvg,
   downloadSingleSvg,
   generateReactJsx,
-  copyToClipboard
+  generateVueSfc,
+  copyRawSvg,
+  computeClientSha256
 } from '../utils/svgHelpers';
 
 interface IconInspectorModalProps {
   icon: IconItem | null;
-  colorMode: ColorMode;
   onClose: () => void;
+  onSelectVariant?: (icon: IconItem, variantKey: string) => void;
 }
 
 export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   icon,
-  colorMode,
   onClose,
 }) => {
   const [rawSvg, setRawSvg] = useState<string>('');
@@ -25,17 +38,23 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const [activeCodeTab, setActiveCodeTab] = useState<'svg' | 'jsx' | 'vue' | 'html'>('svg');
   const [bgMode, setBgMode] = useState<'white' | 'dark' | 'grid'>('white');
   const [isCopied, setIsCopied] = useState(false);
+  const [liveSha256, setLiveSha256] = useState<string>('');
 
   const iconFileName = icon?.fileName;
 
   useEffect(() => {
     if (!iconFileName) {
       setRawSvg('');
+      setLiveSha256('');
       return;
     }
     let active = true;
-    fetchRawSvg(iconFileName).then(content => {
-      if (active) setRawSvg(content);
+    fetchRawSvg(iconFileName).then(async content => {
+      if (active && content) {
+        setRawSvg(content);
+        const hash = await computeClientSha256(content);
+        if (active) setLiveSha256(hash);
+      }
     });
     return () => {
       active = false;
@@ -44,24 +63,18 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
 
   if (!icon) return null;
 
-  const formattedSvg = getFormattedSvg(rawSvg, icon.hex, colorMode, previewSize);
+  const cleanHex = icon.hex ? (icon.hex.startsWith('#') ? icon.hex : `#${icon.hex}`) : '#111827';
   const rawSvgCode = rawSvg || '<!-- Loading authentic canonical SVG... -->';
   const jsxCode = generateReactJsx(icon, rawSvg);
-  const vueCode = `<!-- Vue 3 单文件组件引用 -->
-<script setup lang="ts">
-import { Icon } from './icons/vue';
-</script>
+  const vueCode = generateVueSfc(icon, rawSvg);
 
-<template>
-  <Icon name="${icon.slug}" :size="24" />
-</template>`;
-
-  const htmlImgCode = `<!-- HTML 直接引用 -->
+  const htmlImgCode = `<!-- HTML Direct Embed -->
 <img 
   src="/icons/${icon.fileName}" 
-  alt="${icon.title} Icon" 
+  alt="${icon.title} Vector" 
   width="24" 
   height="24" 
+  loading="lazy"
 />`;
 
   const currentCode =
@@ -74,7 +87,7 @@ import { Icon } from './icons/vue';
       : htmlImgCode;
 
   const handleCopy = async () => {
-    const ok = await copyToClipboard(currentCode);
+    const ok = await copyRawSvg(currentCode);
     if (ok) {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
@@ -96,7 +109,7 @@ import { Icon } from './icons/vue';
           <div className="flex items-center gap-3">
             <span
               className="w-4 h-4 rounded-full border border-black/10 shadow-xs"
-              style={{ backgroundColor: `#${icon.hex}` }}
+              style={{ backgroundColor: cleanHex }}
             />
             <div>
               <div className="flex items-center gap-2">
@@ -106,10 +119,10 @@ import { Icon } from './icons/vue';
                 <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-700 border border-slate-200">
                   {icon.source} v{icon.sourceVersion}
                 </span>
-                {icon.verified && (
+                {icon.verificationStatus === 'verified' && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" />
-                    已校验
+                    官方校验通过
                   </span>
                 )}
               </div>
@@ -122,8 +135,8 @@ import { Icon } from './icons/vue';
           <div className="flex items-center gap-2">
             <button
               id="btn-modal-download-svg"
-              onClick={() => downloadSingleSvg(icon, colorMode)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
+              onClick={() => downloadSingleSvg(icon)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>下载 {icon.fileName}</span>
@@ -145,7 +158,7 @@ import { Icon } from './icons/vue';
           {/* Visual Preview Stage */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500">
-              <span className="font-medium text-slate-700">实时矢量渲染预览 (绝对保留官方几何与色彩)</span>
+              <span className="font-medium text-slate-700">原生矢量渲染预览 (100% 原始字节与几何)</span>
               
               {/* Controls: BG mode & Size */}
               <div className="flex items-center gap-3">
@@ -205,8 +218,9 @@ import { Icon } from './icons/vue';
               }`}
             >
               <div
-                dangerouslySetInnerHTML={{ __html: formattedSvg }}
-                className="transition-all duration-150 flex items-center justify-center"
+                style={{ width: `${previewSize}px`, height: `${previewSize}px` }}
+                className="transition-all duration-150 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
+                dangerouslySetInnerHTML={{ __html: rawSvg }}
               />
             </div>
           </div>
@@ -215,7 +229,7 @@ import { Icon } from './icons/vue';
           <div className="space-y-2">
             <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              权威源溯源与校验元数据
+              权威源溯源与密码学完整性元数据
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
@@ -224,54 +238,39 @@ import { Icon } from './icons/vue';
                 <span className="text-[10px] text-slate-500 block">v{icon.sourceVersion}</span>
               </div>
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">官方品牌色</span>
-                <span className="font-mono font-medium text-slate-800">#{icon.hex}</span>
+                <span className="text-slate-400 block text-[10px]">官方品牌元数据色</span>
+                <span className="font-mono font-medium text-slate-800">{cleanHex}</span>
               </div>
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">变体 (Variant)</span>
+                <span className="text-slate-400 block text-[10px]">当前变体 (Variant)</span>
                 <span className="font-mono font-medium text-slate-800">{icon.variant || 'default'}</span>
               </div>
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-slate-400 block text-[10px]">SHA-256 校验哈希</span>
-                <span className="font-mono text-[10px] text-slate-700 truncate block" title={icon.sha256}>
-                  {icon.sha256 ? `${icon.sha256.slice(0, 10)}...` : '计算中'}
+                <span className="text-slate-400 block text-[10px]">密码学 SHA-256</span>
+                <span className="font-mono text-[10px] text-slate-700 truncate block" title={icon.sha256 || liveSha256}>
+                  {(icon.sha256 || liveSha256) ? `${(icon.sha256 || liveSha256).slice(0, 12)}...` : '计算中'}
                 </span>
               </div>
             </div>
 
-            {/* License & Source URL */}
-            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs flex flex-wrap items-center justify-between gap-2">
-              <div className="text-slate-600 text-[11px]">
-                <strong className="text-slate-700">授权许可:</strong> {icon.license || 'Brand Trademark / CC0'}
-              </div>
-              {icon.sourceUrl && (
-                <a
-                  href={icon.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:underline inline-flex items-center gap-1 text-[11px]"
-                >
-                  <span>官方指南网址</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-
-            {/* Alternative Sources if present */}
+            {/* Alternative Sources if available */}
             {icon.alternativeSources && icon.alternativeSources.length > 0 && (
-              <div className="p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100 text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-emerald-800 mb-1 text-[11px]">
-                  <Layers className="w-3 h-3" />
-                  <span>已识别的互补备选源 (未生成重名文件):</span>
+              <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs">
+                <div className="font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>其他备选来源版本 (Alternative Catalog Candidates):</span>
                 </div>
-                <div className="space-y-1 text-[11px] text-emerald-700">
-                  {icon.alternativeSources.map((alt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="font-mono bg-emerald-100/80 px-1 py-0.2 rounded text-[10px]">{alt.source}</span>
-                      <span>ID: {alt.sourceId} (v{alt.sourceVersion})</span>
-                      {alt.variants && (
-                        <span className="text-emerald-600/90 text-[10px]">
-                          [{alt.variants.join(', ')}]
+                <div className="space-y-1.5">
+                  {icon.alternativeSources.map((alt, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-800">{alt.source}</span>
+                        <span className="text-2xs text-slate-400 font-mono">id: {alt.sourceId}</span>
+                        {alt.license && <span className="text-2xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{alt.license}</span>}
+                      </div>
+                      {alt.variants && alt.variants.length > 0 && (
+                        <span className="text-2xs text-slate-500 font-mono">
+                          变体: {alt.variants.join(', ')}
                         </span>
                       )}
                     </div>
@@ -281,62 +280,61 @@ import { Icon } from './icons/vue';
             )}
           </div>
 
-          {/* Code Viewer Section */}
+          {/* Code Tabs */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              {/* Code format tabs */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setActiveCodeTab('svg')}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'svg'
-                      ? 'bg-slate-100 text-slate-900'
+                      ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  权威 Raw SVG 源码
+                  原生 SVG
                 </button>
                 <button
                   onClick={() => setActiveCodeTab('jsx')}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'jsx'
-                      ? 'bg-slate-100 text-slate-900'
+                      ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  React 组件 (JSX)
+                  React JSX
                 </button>
                 <button
                   onClick={() => setActiveCodeTab('vue')}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'vue'
-                      ? 'bg-slate-100 text-slate-900'
+                      ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Vue 3 引用
+                  Vue 3 SFC
                 </button>
                 <button
                   onClick={() => setActiveCodeTab('html')}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'html'
-                      ? 'bg-slate-100 text-slate-900'
+                      ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  HTML 引用
+                  HTML Tag
                 </button>
               </div>
 
               <button
-                id="btn-copy-code-content"
+                id="btn-copy-inspector-code"
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
               >
                 {isCopied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>已复制</span>
+                    <span className="text-emerald-600">已复制</span>
                   </>
                 ) : (
                   <>
@@ -347,16 +345,16 @@ import { Icon } from './icons/vue';
               </button>
             </div>
 
-            {/* Code Block Container */}
-            <div className="relative rounded-xl bg-slate-950 p-4 font-mono text-xs text-slate-200 overflow-x-auto max-h-56 border border-slate-800 leading-relaxed select-all">
-              <pre>
-                <code>{currentCode}</code>
-              </pre>
-            </div>
+            <pre className="p-3 bg-slate-900 text-slate-200 rounded-xl text-xs font-mono overflow-x-auto max-h-48">
+              <code>{currentCode}</code>
+            </pre>
           </div>
 
         </div>
+
       </div>
     </div>
   );
 };
+
+export default IconInspectorModal;

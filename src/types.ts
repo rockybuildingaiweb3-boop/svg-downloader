@@ -1,5 +1,6 @@
 export type IconCategory =
   | 'all'
+  | 'mainstream'
   | 'bigtech'
   | 'ai'
   | 'frontend'
@@ -8,22 +9,28 @@ export type IconCategory =
   | 'tools'
   | 'social';
 
-export type IconSource = 'all' | 'simple-icons' | 'devicon' | 'official' | 'wikimedia';
+export type IconSource = 'all' | 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos';
 
-export type ColorMode = 'brand' | 'raw' | 'currentColor' | 'mono-dark' | 'mono-light';
+export type VerificationStatus = 'all' | 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
+
+export type SourcePolicy = 'brand' | 'technology' | 'monochrome' | 'official';
+
+export type PresentationMode = 'raw' | 'preview-dark' | 'preview-light' | 'derived-currentColor';
 
 export interface AlternativeSource {
-  source: string;
+  source: IconSource;
   sourceId: string;
   sourceVersion: string;
   variants?: string[];
+  license?: string;
+  sourceUrl?: string;
 }
 
 export interface IconRecord {
   id: string;
   title: string;
   canonicalName: string;
-  source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia';
+  source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos';
   sourceId: string;
   sourceVersion: string;
   variant: string;
@@ -34,9 +41,17 @@ export interface IconRecord {
   license?: string;
   sourceUrl?: string;
   brandColor?: string;
-  category?: string;
+  category: string;
+  xmlValid: boolean;
+  sourceTrusted: boolean;
+  canonicalResolved: boolean;
+  integrityVerified: boolean;
+  renderable: boolean;
+  verificationStatus: 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
   verified: boolean;
   alternativeSources?: AlternativeSource[];
+  conflicts?: string[];
+  notes?: string;
 }
 
 /**
@@ -50,24 +65,31 @@ export interface IconItem {
   category: string;
   hex: string;
   svg?: string;
-  source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia';
+  source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos';
   sourceVersion: string;
   sourceId: string;
   sha256: string;
   variant: string;
-  variants?: Record<string, string>;
+  variants: Record<string, string>;
   license?: string;
   sourceUrl?: string;
   alternativeSources?: AlternativeSource[];
+  xmlValid: boolean;
+  sourceTrusted: boolean;
+  canonicalResolved: boolean;
+  integrityVerified: boolean;
+  renderable: boolean;
+  verificationStatus: 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
   verified: boolean;
+  conflicts?: string[];
+  notes?: string;
 }
 
 export type ScriptType = 'sync' | 'nodejs' | 'python' | 'bash';
 
 export interface ScriptOptions {
   outDir: string;
-  colorMode: 'raw' | 'brand' | 'currentColor' | 'mono';
-  source: 'both' | 'simple' | 'devicon';
+  policy: SourcePolicy;
   scope: 'mainstream' | 'selected' | 'all';
   prefix: string;
   registry: boolean;

@@ -1,0 +1,79 @@
+{
+  "defaultPolicy": "brand",
+  "policies": {
+    "brand": {
+      "name": "Brand (High Fidelity)",
+      "description": "Prefers verified official vendor marks, followed by SVG Logos (multi-color), Simple Icons, and Devicon",
+      "priority": ["official", "wikimedia", "svg-logos", "simple-icons", "devicon"]
+    },
+    "technology": {
+      "name": "Technology (Dev & Frameworks)",
+      "description": "Prefers Devicon original developer marks, followed by SVG Logos, Official, and Simple Icons",
+      "priority": ["devicon", "svg-logos", "official", "wikimedia", "simple-icons"]
+    },
+    "monochrome": {
+      "name": "Monochrome (Single Color)",
+      "description": "Prefers Simple Icons single-path canonical glyphs for UI icon systems",
+      "priority": ["simple-icons", "devicon", "svg-logos", "official"]
+    },
+    "official": {
+      "name": "Strict Official Only",
+      "description": "Only verified official vendor assets and Wikimedia Commons archives",
+      "priority": ["official", "wikimedia"]
+    }
+  },
+  "identityOverrides": {
+    "amazon": {
+      "preferredSource": "wikimedia",
+      "preferredVariant": "official",
+      "note": "Amazon official smile mark in #111827 with brandColor #FF9900 metadata preserved"
+    },
+    "microsoft": {
+      "preferredSource": "wikimedia",
+      "preferredVariant": "official",
+      "note": "Microsoft official 4-color corporate mark"
+    },
+    "openai": {
+      "preferredSource": "wikimedia",
+      "preferredVariant": "official",
+      "note": "OpenAI official verified swirl vector"
+    },
+    "adobe": {
+      "preferredSource": "wikimedia",
+      "preferredVariant": "official"
+    },
+    "oracle": {
+      "preferredSource": "wikimedia",
+      "preferredVariant": "official"
+    },
+    "ibm": {
+      "preferredSource": "wikimedia",
+      "preferredVariant": "official"
+    },
+    "google": {
+      "preferredSource": "svg-logos",
+      "preferredVariant": "default",
+      "note": "Google official 4-color G mark from SVG Logos"
+    },
+    "react": {
+      "preferredSource": "devicon",
+      "preferredVariant": "original",
+      "note": "React 60-degree precision atom orbits with original and plain variants"
+    },
+    "docker": {
+      "preferredSource": "devicon",
+      "preferredVariant": "original",
+      "note": "Docker official container whale vector"
+    },
+    "cloudflare": {
+      "preferredSource": "svg-logos",
+      "preferredVariant": "default",
+      "note": "Cloudflare official orange cloud mark"
+    },
+    "github": {
+      "preferredSource": "devicon",
+      "preferredVariant": "original",
+      "note": "GitHub official Invertocat"
+    }
+  }
+}
