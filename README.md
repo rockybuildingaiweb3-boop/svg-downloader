@@ -1,251 +1,534 @@
 # SVG Downloader
 
-> Verified Multi-Source Brand & Technology SVG Asset Registry — 面向设计师、前端工程师与 AI Agent 的品牌/科技 SVG 检索、验证、溯源与工程化导出工具。
+> **Verified Multi-Source Brand & Technology SVG Asset Registry** for designers, frontend engineers, developers, and AI agents.
+>
+> Search, compare, verify, inspect, and download trustworthy SVG assets without relying on AI-generated logo geometry.
 
-## 项目定位
+---
 
-SVG Downloader 不只是 Logo 下载器，而是一个 **Canonical SVG Asset Registry**。核心数据模型：
+## Why this project exists
+
+AI coding tools are very good at generating UI, but they are not a trustworthy source for real brand/logo SVG geometry. A visually plausible SVG can still be the wrong mark, the wrong variant, the wrong color treatment, or an invented path.
+
+SVG Downloader takes the opposite approach:
 
 ```text
-Brand Identity → Asset Family → Canonical Asset → Source Evidence
-                                      ↓
-                             SHA-256 + Verification
+User query
+   ↓
+Identity resolution
+   ↓
+Multiple trusted source catalogs
+   ↓
+Asset / variant discovery
+   ↓
+Source policy selection
+   ↓
+XML / SVG validation
+   ↓
+SHA-256 integrity
+   ↓
+Canonical asset
+   ↓
+Preview / Copy / Download / Export
 ```
 
-同一 identity 可以拥有来自多个来源、角色、场景和图形变体的资产。Resolver 根据可配置 Source Policy 选择 canonical asset，同时保留其他来源作为 provenance/evidence。
+The project treats **asset correctness and provenance as first-class data**.
 
-## 核心功能
+## Core principles
 
-### 多源资产
+1. **Correctness > Completeness**  
+   An unresolved icon is better than a fabricated icon.
 
-支持通过 adapter 聚合：
+2. **Canonical raw SVGs are immutable**  
+   Canonical assets are not recolored or rewritten before storage.
 
-- **Simple Icons** — 品牌单色矢量
-- **Devicon** — 开发者、框架与技术图标及变体
-- **SVG Logos / Iconify** — 高保真、多色 SVG
-- **Official Vendor** — 官方厂商资产
-- **Wikimedia Commons** — 可追溯公共来源
+3. **Source provenance is preserved**  
+   Each asset records its source, source version, source ID, variant, license, URL, and SHA-256 where available.
 
-> Source platform 与 official authorship 严格区分；Wikimedia 来源不会自动等同于官方认证。
+4. **Identity ≠ file**  
+   One brand/technology identity can have multiple trusted assets, sources, roles, contexts, and variants.
 
-### Canonical Resolution
+5. **Source platform ≠ official authorship**  
+   Wikimedia, Iconify, Simple Icons, and Devicon are source systems; they should not automatically be presented as the brand owner.
+
+---
+
+## What it can do
+
+### 1. Multi-source icon discovery
+
+The registry is designed around source adapters rather than a manually maintained list.
+
+Current source ecosystem:
+
+- **Simple Icons** — large brand/logo catalog, especially useful for clean monochrome brand glyphs.
+- **Devicon** — developer tools, programming languages, frameworks, and multiple graphic variants.
+- **SVG Logos / Iconify** — additional logo assets, including many multi-color representations.
+- **Official Vendor** — controlled official/vendor assets where available.
+- **Wikimedia Commons** — controlled archival fallback with explicit provenance.
+
+Source adapters are isolated so additional providers can be introduced without rewriting the UI.
+
+### 2. Canonical asset resolution
+
+The resolver separates the concepts of:
+
+```text
+query
+identity
+asset family
+source record
+variant
+canonical asset
+```
+
+Resolution follows the general flow:
 
 ```text
 query
  → normalize
  → alias resolution
  → identity resolution
- → asset family discovery
+ → asset-family discovery
  → role/context/variant matching
  → source policy
- → canonical asset selection
+ → canonical selection
 ```
 
-内置策略：
+Source policies are configurable in:
 
-| Policy | 用途 | 优先级 |
-|---|---|---|
-| `brand` | 高保真品牌 | official → wikimedia → svg-logos → simple-icons → devicon |
-| `technology` | 开发/框架 | devicon → svg-logos → official → wikimedia → simple-icons |
-| `monochrome` | 单色 UI | simple-icons → devicon → svg-logos → official |
-| `official` | 严格官方 | official → wikimedia |
+```text
+config/source-policies.json
+```
 
-策略与 identity override 位于 `config/source-policies.json`。
+Current policy profiles include:
 
-### Asset Family
+| Policy | Intended use |
+|---|---|
+| `brand` | High-fidelity brand assets |
+| `technology` | Developer / framework / tooling assets |
+| `monochrome` | Single-color UI glyphs |
+| `official` | Strict official/vendor-oriented selection |
 
-资产按 identity 聚合，可包含：
+Identity-specific overrides are supported for cases where a generic source priority is not sufficient.
 
-`symbol` · `logo` · `wordmark` · `wordmark-horizontal` · `wordmark-stacked` · `app-icon` · `favicon` · `badge` · `mark`
+### 3. Asset families and variants
 
-并记录：source、source version、license、role、context、variant、SHA-256、verification status 等。
+A real brand does not always have one usable SVG.
 
-### 完整性与真实性
+The data model is designed to support assets such as:
 
-项目遵循 **Correctness > Completeness**：
+```text
+Instagram
+├── symbol
+├── logo
+├── wordmark
+├── app-icon
+└── favicon
+```
 
-- canonical SVG 保持原始内容，不重绘 path
-- 不生成 AI 伪造 Logo
-- 不用 regex 对 canonical vector 做 recolor / 改写
-- 下载前计算并验证 SHA-256
-- XML / SVG 可渲染性检查
-- 找不到可信来源时标记 `unresolved`
-- **禁止 fake SVG / placeholder SVG fallback**
+And graphic variants such as:
 
-Verification status：`verified` / `warning` / `conflict` / `unresolved` / `invalid`。
+```text
+original
+plain
+line
+original-wordmark
+plain-wordmark
+```
 
-Trust state：`trusted` / `verified` / `community` / `unverified`。
+Only variants actually present in trusted source data should be exposed. Missing variants are not invented.
 
-### Web UI
+Usage context can be modeled separately from graphic variant, for example:
 
-支持：
+```text
+web
+mobile
+desktop
+app-store
+social
+favicon
+avatar
+general
+```
 
-- 搜索 title / slug / identity / source / role
-- Category、Source、Verification、Role、Context、Variant、Trust State 筛选
-- 高级筛选
-- 分页渲染
-- 单项选择 / 当前筛选全选
-- Asset Inspector
-- 在 Asset Family 中切换当前主资产
-- 单项、批量 SVG ZIP 下载
-- Engineering Bundle 导出
-- Brand Pack / Asset Family 导出
-- React / Vue 工程代码生成
+### 4. SVG validation and integrity
 
-### Export
+Before an asset becomes a canonical output, the pipeline can validate:
 
-**Pure SVG ZIP**：仅导出原始 canonical SVG。
+- XML syntax
+- SVG root structure
+- viewBox / dimensions
+- presence of vector graphics
+- obvious HTML/error responses
+- multi-color characteristics
+- SHA-256 integrity
 
-**Engineering Bundle**：包含 registry、manifest 与 React/Vue 工程输出。
+Verification is deliberately more granular than simply saying "the XML parses".
 
-单个 Brand Pack 示例：
+The system distinguishes concepts such as:
+
+```text
+xmlValid
+svgRenderable
+sourceTrusted
+canonicalResolved
+integrityVerified
+variantVerified
+verificationStatus
+trustState
+```
+
+### 5. Safe raw assets
+
+Canonical SVGs are kept raw.
+
+The system explicitly avoids:
+
+- AI-generated brand paths
+- hand-redrawn logos
+- fake placeholder SVGs
+- `-2.svg` collision tricks
+- regex-based canonical recoloring
+- silently replacing failed downloads with a fake icon
+
+Metadata such as a brand color is not treated as permission to rewrite SVG fills.
+
+### 6. Web interface
+
+The current app provides a browsing and inspection UI with:
+
+- icon search
+- category filters
+- source filters
+- verification/trust information
+- selection and batch operations
+- asset inspector
+- source / variant information
+- SVG preview
+- SVG code copy
+- download actions
+- ZIP / engineering bundle export
+- comparison / fidelity lab
+- script / CLI guidance
+
+The UI is designed to consume the canonical registry instead of maintaining a second independent SVG database.
+
+### 7. User-friendly download workflow
+
+The project supports the concept of:
+
+```text
+Download Raw SVG
+Copy Raw SVG
+Copy Asset URL
+Download Selection
+Download Asset Family
+Download Brand Pack
+Download Engineering Bundle
+```
+
+A brand-oriented bundle can be structured as:
 
 ```text
 brand-name/
-├── symbol/
-├── logo/
-├── wordmark/
-├── app-icon/
+├── assets/
 ├── manifest.json
 ├── sources.json
 └── README.md
 ```
 
-导出 Asset Family 时基于 SHA-256 做内容去重，并在 metadata 中记录 `duplicateOf`。
+Raw export should preserve the canonical SVG content. Derived representations must be treated separately.
 
-## Registry 输出
+### 8. Registry output
 
-同步后生成：
+The synchronization pipeline generates structured artifacts such as:
 
 ```text
 generated/
-├── catalog.json       # 完整 identity / asset catalog
-├── manifest.json      # 版本、数量与注册表
-├── conflicts.json     # 多源冲突与 policy 结果
-├── sources.json       # provenance
-├── audit-report.json  # doctor 审计报告
-├── index.ts           # TypeScript registry / types
-├── react.tsx          # React component
-├── vue.ts             # Vue 3 component
+├── icons / assets
+├── catalog.json
+├── manifest.json
+├── conflicts.json
+├── sources.json
+├── audit-report.json
+├── index.ts
+├── react.tsx
+├── vue.ts
 └── README.md
 ```
 
-`public/` 会同步 canonical SVG、`catalog.json`、`manifest.json`、`conflicts.json` 与 `sources.json`。
+The runtime application can consume the generated metadata and public SVG assets.
 
-## 技术架构
+---
 
-```text
-React UI
-  ↓
-Canonical Resolver
-  ↓
-Adapters: Official / Wikimedia / SVG Logos / Simple Icons / Devicon
-  ↓
-XML Validation + SHA-256
-  ↓
-RegistryGenerator
-  ↓
-public/icons + catalog + manifest + provenance + React/Vue output
-```
+## Quick start
 
-## 技术栈
-
-React 19 · TypeScript 5.8 · Vite 6 · Tailwind CSS 4 · Lucide React · Motion · JSZip · Fast XML Parser · Node.js ESM · Express · Simple Icons · Devicon · Iconify JSON Logos。
-
-## 快速开始
+### Install
 
 ```bash
 npm install
+```
+
+### Start the web app
+
+```bash
 npm run dev
 ```
 
-开发服务器默认使用 `3000` 端口并监听 `0.0.0.0`。
+The Vite development server is configured to use port `3000` and listen on `0.0.0.0`.
 
-生产构建：
+### Build
 
 ```bash
 npm run build
 ```
 
-Build 会先验证 generated/public catalog 是否同步，再执行 Vite build。
+The build pipeline includes a catalog freshness check before the Vite production build.
+
+---
 
 ## CLI
 
-核心同步入口：`scripts/icon-sync.mjs`。
+The canonical synchronization entry point is:
+
+```text
+scripts/icon-sync.mjs
+```
+
+### Sync
 
 ```bash
-# 完整 catalog
 npm run sync
+```
 
-# 主流集合
+### Sync the mainstream collection
+
+```bash
 npm run sync -- --scope mainstream
+```
 
-# 所有发现 identity
+### Sync all discovered identities
+
+```bash
 npm run sync -- --all
+```
 
-# 指定 identity
+### Sync specific identities
+
+```bash
 npm run sync -- github react docker
+```
+
+or:
+
+```bash
 npm run sync -- github,react,docker
+```
 
-# Source Policy
-npm run sync -- --policy brand
-npm run sync -- --policy technology
-npm run sync -- --policy monochrome
-npm run sync -- --policy official
+### Search
 
-# Dry Run
-npm run sync -- --dry-run
-
-# 搜索
+```bash
 npm run sync -- search github
+```
 
-# 验证 SVG
+### Verify generated SVGs
+
+```bash
 npm run verify
+```
 
-# 审计
-npm run audit
+### Health / compliance check
 
-# 健康检查
+```bash
 npm run doctor
+```
 
-# TypeScript 检查
+### Audit
+
+```bash
+npm run audit
+```
+
+### TypeScript check
+
+```bash
 npm run lint
 ```
 
-`doctor` 会检查 source coverage、alias collision、catalog completeness、XML validity、renderability、SHA-256 mismatch、duplicate content、missing viewBox、stale files 与 catalog freshness。
+### Dry run
 
-## 配置
+The synchronization pipeline supports a dry-run concept for reporting changes without committing them to the managed asset set. Use the current CLI help output as the authoritative syntax when invoking this mode.
 
-```text
-config/aliases.json
-config/collections.json
-config/source-policies.json
-```
+---
 
-例如：
+## Configuration
+
+### Aliases
+
+`config/aliases.json` maps user-facing terms to canonical identities.
+
+Examples include:
 
 ```json
 {
-  "react": {
-    "preferredSource": "devicon",
-    "preferredVariant": "original"
+  "node": "nodedotjs",
+  "nodejs": "nodedotjs",
+  "nextjs": "nextdotjs",
+  "vuejs": "vuedotjs",
+  "aws": "amazonwebservices",
+  "gcp": "googlecloud",
+  "cpp": "cplusplus",
+  "k8s": "kubernetes"
+}
+```
+
+Aliases resolve identity; they must not create duplicate physical assets.
+
+### Collections
+
+`config/collections.json` defines curated collections such as `mainstream` and category groupings.
+
+Collections are **views**, not the definition of what icons exist.
+
+### Source policies
+
+`config/source-policies.json` defines source selection priorities and identity overrides.
+
+Example concept:
+
+```json
+{
+  "identityOverrides": {
+    "react": {
+      "preferredSource": "devicon",
+      "preferredVariant": "original"
+    }
   }
 }
 ```
 
-Resolver 会 normalize query → alias → 跨 adapter identity lookup，再根据 role/context/variant 和 policy 选择 canonical asset。
+Do not hard-code brand-specific source rules inside the resolver when the behavior belongs in configuration.
 
-## 工程集成
+---
 
-同步后会生成：
+## Repository architecture
 
 ```text
-generated/index.ts
-generated/react.tsx
-generated/vue.ts
+React UI
+   ↓
+Canonical / Asset Resolver
+   ↓
+Source Adapters
+   ├── Official
+   ├── Wikimedia
+   ├── SVG Logos / Iconify
+   ├── Simple Icons
+   └── Devicon
+   ↓
+Validation + Integrity
+   ↓
+Canonical Catalog
+   ↓
+Registry / Manifest / Provenance
+   ↓
+Raw SVG assets + UI runtime metadata
 ```
 
-React registry component 的使用形式：
+Important areas:
+
+```text
+src/App.tsx
+src/components/
+src/utils/
+src/types.ts
+
+scripts/icon-sync.mjs
+scripts/icon-doctor.mjs
+scripts/lib/
+scripts/lib/adapters/
+
+config/aliases.json
+config/collections.json
+config/source-policies.json
+
+generated/
+public/icons/
+public/catalog.json
+public/manifest.json
+```
+
+---
+
+## Generated vs source-of-truth files
+
+Treat generated outputs as products of the pipeline, not as primary authoring locations.
+
+Typical generated outputs include:
+
+```text
+generated/**
+public/icons/**
+public/catalog.json
+public/manifest.json
+public/conflicts.json
+public/sources.json
+```
+
+When behavior is wrong, fix the source-of-truth code/config first and regenerate.
+
+Do not manually patch generated SVGs or generated registries and expect the change to survive the next synchronization.
+
+---
+
+## Accuracy model
+
+A successful asset should be thought of as:
+
+```text
+Trusted source
++ correct identity
++ correct asset role
++ correct variant
++ correct provenance
++ valid SVG
++ matching SHA-256
+= usable canonical asset
+```
+
+A syntactically valid SVG is not automatically the correct logo.
+
+Likewise:
+
+```text
+brandColor metadata ≠ SVG fill
+source platform ≠ official authorship
+AI approximation ≠ canonical asset
+```
+
+---
+
+## Comparison / Fidelity Lab
+
+The comparison area exists to demonstrate why canonical source assets are preferable to synthetic logo recreation.
+
+It should compare:
+
+- canonical vs synthetic approximation
+- source A vs source B
+- variant A vs variant B
+
+The canonical side must always reference the real registry asset rather than a manually duplicated SVG path.
+
+Synthetic examples must be clearly labeled as illustrative.
+
+---
+
+## Using the generated React / Vue registry
+
+Generated registries are intended to make the asset catalog consumable from application code.
+
+Example React usage:
 
 ```tsx
 import Icon from './generated/react';
@@ -253,42 +536,53 @@ import Icon from './generated/react';
 <Icon name="github" size={24} />
 ```
 
-`IconName` 由当前 registry 自动生成。
+The exact generated API is controlled by the current registry generator. Prefer generated types and metadata over manually recreating icon maps in application code.
 
-## 数据模型与规则
+---
 
-### Raw Canonical ≠ Derived
+## Third-party assets and trademarks
 
-Canonical SVG 是不可变原始资产；React JSX、Vue SFC、monochrome 等均属于 derived representation，不能覆盖 canonical source。
+This repository combines multiple third-party icon ecosystems.
 
-### Source Evidence ≠ Canonical Asset
+A source library's license does not automatically grant trademark rights for a brand represented by an icon.
 
-多个 source 可以共存。Resolver 只负责确定当前 policy 下的 canonical asset，不删除其他来源证据。
+Before redistributing brand assets commercially, review the asset's:
 
-### Deterministic Resolution
+- source provider
+- source URL
+- source version
+- license metadata
+- brand / trademark guidelines
 
-相同输入、配置和 source versions 应产生一致结果。
+The generated provenance metadata exists partly to make this review possible.
 
-### Manifest-driven Cleanup
+---
 
-同步会清理 catalog 未引用的 stale SVG，并识别历史 `-2.svg` 等 collision 文件。
+## Development rules
 
-### Unresolved 不可下载
+For AI agents and coding agents, read [`agent.md`](./agent.md) before changing the repository.
 
-`unresolved` identity / asset 不应进入正常下载流程；系统应显式报错，而不是生成替代品。
+The agent guide defines:
 
-## 来源与许可证
+- architectural boundaries
+- source-of-truth rules
+- canonical asset rules
+- resolver behavior
+- generated file policy
+- verification semantics
+- safe debugging workflow
+- required validation steps
 
-第三方 SVG 的 license 属于各自资产，不等同于本仓库代码许可证。请以每个 asset 的 `sourceProvider`、`sourceUrl`、`sourceVersion`、`license` 和实际来源政策为准。生产环境重新分发 Logo / 商标前，请自行确认品牌商标政策与授权条件。
+---
 
-## Agent
+## Project status
 
-AI Agent、代码 Agent 或自动化工具应先阅读 [`agent.md`](./agent.md)。该文件定义仓库架构、数据模型、修改边界、同步流程、验证规则、generated 文件策略以及提交前检查清单。
+The repository is actively evolving toward a broader multi-source asset registry. Source coverage, asset-family metadata, context classification, and comparison tooling are designed to grow independently of the UI.
 
-## 项目原则
+For the authoritative current implementation, always inspect the current source code, package manifest, configuration, and generated metadata rather than relying on an old icon count in documentation.
 
-> **可解析、可验证、可溯源、可重复生成、可直接用于工程。**
+---
 
 ## License
 
-代码仓库许可证与第三方资产许可证分开处理；以仓库 license 文件和各 asset metadata 为准。
+The repository's own code license and the licenses / usage requirements of third-party assets are separate concerns. Consult the repository license and each asset's provenance metadata before redistribution.
