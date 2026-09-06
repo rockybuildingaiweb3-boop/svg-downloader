@@ -93,6 +93,42 @@
     "linkedin"
   ],
   "categories": {
+    "mainstream": [
+      "apple", "google", "microsoft", "meta", "amazon", "netflix", "openai", "react", "typescript", "python", "docker", "github", "amazonwebservices", "postgresql", "figma", "x", "youtube", "discord"
+    ],
+    "brands": [
+      "apple", "google", "microsoft", "meta", "amazon", "netflix", "ibm", "intel", "amd", "nvidia", "tesla", "adobe", "salesforce", "sony", "samsung", "oracle", "airbnb", "uber", "spotify", "stripe", "paypal"
+    ],
+    "technologies": [
+      "react", "vuedotjs", "angular", "svelte", "nextdotjs", "nuxt", "tailwindcss", "vite", "webpack", "astro", "remix", "html5", "css3", "bootstrap", "sass", "javascript", "typescript", "python", "nodedotjs", "rust", "go", "swift", "kotlin", "java", "csharp", "cplusplus", "php", "ruby", "dart", "flutter"
+    ],
+    "apps": [
+      "notion", "slack", "discord", "telegram", "figma", "canva", "spotify", "zoom", "dropbox", "obsidian", "whatsapp", "signal"
+    ],
+    "social": [
+      "x", "youtube", "discord", "slack", "telegram", "tiktok", "instagram", "spotify", "wechat", "bilibili", "linkedin", "reddit", "twitch", "pinterest"
+    ],
+    "cloud": [
+      "docker", "kubernetes", "linux", "ubuntu", "git", "github", "gitlab", "amazonwebservices", "googlecloud", "microsoftazure", "cloudflare", "vercel", "heroku", "digitalocean", "terraform", "netlify"
+    ],
+    "databases": [
+      "mongodb", "postgresql", "mysql", "redis", "sqlite", "supabase", "firebase", "cassandra", "neo4j", "elasticsearch", "mariadb"
+    ],
+    "design": [
+      "figma", "canva", "sketch", "adobe", "blender", "framer", "dribbble", "behance", "inkscape"
+    ],
+    "developer-tools": [
+      "visualstudiocode", "git", "github", "gitlab", "postman", "linear", "jira", "trello", "docker", "npm", "pnpm", "yarn", "vim", "neovim"
+    ],
+    "gaming": [
+      "steam", "playstation", "xbox", "nintendo", "epicgames", "unity", "unrealengine", "twitch", "riotgames"
+    ],
+    "web3": [
+      "bitcoin", "ethereum", "solana", "metamask", "binance", "polygon", "chainlink", "uniswap"
+    ],
+    "custom": [
+      "apple", "google", "react", "typescript", "github", "figma", "docker"
+    ],
     "bigtech": [
       "apple", "google", "microsoft", "meta", "amazon", "netflix", "ibm", "intel", "amd", "nvidia", "tesla", "adobe", "salesforce", "sony", "samsung", "oracle"
     ],
@@ -105,14 +141,8 @@
     "languages": [
       "javascript", "typescript", "python", "nodedotjs", "rust", "go", "swift", "kotlin", "java", "csharp", "cplusplus", "php", "ruby", "dart", "flutter"
     ],
-    "cloud": [
-      "docker", "kubernetes", "linux", "ubuntu", "git", "github", "gitlab", "amazonwebservices", "googlecloud", "microsoftazure", "cloudflare", "vercel", "supabase", "firebase", "mongodb", "postgresql", "mysql", "redis", "sqlite", "nginx", "apache"
-    ],
     "tools": [
       "figma", "notion", "visualstudiocode", "linear", "jira", "trello", "postman", "canva"
-    ],
-    "social": [
-      "x", "youtube", "discord", "slack", "telegram", "tiktok", "instagram", "spotify", "wechat", "bilibili", "linkedin"
     ]
   }
 }

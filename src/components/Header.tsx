@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'icons' | 'script' | 'comparison';
-  setActiveTab: (tab: 'icons' | 'script' | 'comparison') => void;
+  activeTab: 'icons' | 'conflicts' | 'script' | 'comparison';
+  setActiveTab: (tab: 'icons' | 'conflicts' | 'script' | 'comparison') => void;
   totalIcons: number;
   selectedCount: number;
   onDownloadMainstreamZip: () => void;
@@ -47,11 +47,11 @@ export const Header: React.FC<HeaderProps> = ({
                 </h1>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                  权威源同步架构
+                  多源资产注册表
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Simple Icons · Devicon · SVG Logos · 官方档案 | 100% 原始字节保真与 SHA-256 密码学溯源
+                Simple Icons · Devicon · Iconify · 官方特例 | 品牌资产家族 · 100% 原始字节保真与 SHA-256 密码学溯源
               </p>
             </div>
           </div>
@@ -61,33 +61,46 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="tab-icons"
               onClick={() => setActiveTab('icons')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'icons'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>权威矢量目录 ({totalIcons})</span>
+              <span>资产注册表 ({totalIcons})</span>
             </button>
 
             <button
-              id="tab-comparison"
-              onClick={() => setActiveTab('comparison')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                activeTab === 'comparison'
+              id="tab-conflicts"
+              onClick={() => setActiveTab('conflicts')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'conflicts'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <GitCompare className="w-3.5 h-3.5 text-indigo-600" />
+              <span>冲突与仲裁决策</span>
+            </button>
+
+            <button
+              id="tab-comparison"
+              onClick={() => setActiveTab('comparison')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'comparison'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
               <span>实测对比工具</span>
             </button>
 
             <button
               id="tab-script"
               onClick={() => setActiveTab('script')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'script'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'

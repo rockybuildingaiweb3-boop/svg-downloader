@@ -1,6 +1,6 @@
 {
   "name": "Brand & Tech SVG Downloader",
-  "description": "批量下载主流各大科技公司与开发工具的官方精准 SVG 图标脚本与管理工具",
+  "description": "权威多源品牌与科技矢量资产注册表 (Verified Multi-Source Icon Asset Registry) - 品牌资产家族规范与密码学 SHA-256 溯源",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

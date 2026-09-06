@@ -139,6 +139,75 @@ export class SvgLogosAdapter {
     return entry.rawSvg;
   }
 
+  /**
+   * Enumerate assets for a given identity from Iconify Logos
+   * @param {string} identityId
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  getAssets(identityId) {
+    const assets = [];
+    const cleanId = identityId.toLowerCase().trim();
+
+    // 1. Check icon variant e.g. "google-icon", "docker-icon", "instagram-icon"
+    const iconName = `${cleanId}-icon`;
+    const iconMatch = this.icons.get(iconName);
+    if (iconMatch) {
+      assets.push({
+        assetId: `${identityId}-iconify-logos-symbol`,
+        identityId,
+        sourceProvider: 'iconify',
+        sourceCollection: 'logos',
+        sourceId: iconMatch.sourceId,
+        sourceVersion: this.version,
+        role: 'symbol',
+        context: ['web', 'mobile', 'social'],
+        contextOrigin: 'inferred',
+        graphicVariant: 'color',
+        file: `${identityId}-iconify-symbol.svg`,
+        rawSha256: '',
+        license: iconMatch.license,
+        sourceUrl: iconMatch.sourceUrl,
+        colorType: 'multi-color',
+        xmlValid: true,
+        renderable: true,
+        integrityVerified: true,
+        isCanonical: false,
+        _svgFetcher: () => this.getRawSvg(iconMatch.name)
+      });
+    }
+
+    // 2. Check full logo/wordmark e.g. "google", "docker", "instagram"
+    const logoMatch = this.icons.get(cleanId) || this.findByQuery(cleanId);
+    if (logoMatch && logoMatch.name !== iconName) {
+      const isWordmark = iconMatch ? true : false;
+      const role = isWordmark ? 'wordmark-horizontal' : 'logo';
+      assets.push({
+        assetId: `${identityId}-iconify-logos-${role}`,
+        identityId,
+        sourceProvider: 'iconify',
+        sourceCollection: 'logos',
+        sourceId: logoMatch.sourceId,
+        sourceVersion: this.version,
+        role,
+        context: ['web', 'desktop'],
+        contextOrigin: 'inferred',
+        graphicVariant: 'color',
+        file: `${identityId}-iconify-${role}.svg`,
+        rawSha256: '',
+        license: logoMatch.license,
+        sourceUrl: logoMatch.sourceUrl,
+        colorType: 'multi-color',
+        xmlValid: true,
+        renderable: true,
+        integrityVerified: true,
+        isCanonical: false,
+        _svgFetcher: () => this.getRawSvg(logoMatch.name)
+      });
+    }
+
+    return assets;
+  }
+
   getAll() {
     return Array.from(this.icons.values());
   }

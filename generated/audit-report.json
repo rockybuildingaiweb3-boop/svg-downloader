@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-09-05T10:05:35.585Z",
+  "doctorStatus": "HEALTHY",
+  "sourceCoverage": {
+    "simpleIcons": {
+      "count": 3457,
+      "version": "16.29.0"
+    },
+    "devicon": {
+      "count": 578,
+      "version": "2.17.0"
+    },
+    "svgLogos": {
+      "count": 2110,
+      "version": "1.2.13"
+    },
+    "official": {
+      "count": 6
+    },
+    "wikimedia": {
+      "count": 6
+    }
+  },
+  "catalogMetrics": {
+    "canonicalIdentities": 135,
+    "totalAssets": 614,
+    "totalVariants": 1313,
+    "valid": 614,
+    "warnings": 0,
+    "unresolved": 0,
+    "multiColorAssets": 215,
+    "missingViewBox": 0,
+    "hashMismatches": 0,
+    "duplicateAssets": 41,
+    "staleFiles": 0,
+    "uiCatalogFresh": true
+  }
+}

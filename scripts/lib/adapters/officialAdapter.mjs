@@ -74,6 +74,7 @@ export class OfficialAdapter {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
+        timeoutId.unref?.();
         const res = await fetch(entry.sourceUrl, {
           signal: controller.signal,
           headers: { 'User-Agent': 'Brand-Tech-SVG-Pipeline/2.0' }
@@ -92,6 +93,41 @@ export class OfficialAdapter {
     }
 
     return null;
+  }
+
+  /**
+   * Enumerate verified vendor assets for an identity
+   * @param {string} identityId
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  getAssets(identityId) {
+    const match = this.get(identityId);
+    if (!match) return [];
+    const isWiki = match.source === 'wikimedia';
+    const role = match.notes?.toLowerCase().includes('mark') ? 'mark' : 'logo';
+    return [{
+      assetId: `${identityId}-${isWiki ? 'wikimedia' : 'official'}-${role}`,
+      identityId,
+      sourceProvider: isWiki ? 'wikimedia' : 'official',
+      sourceCollection: isWiki ? 'commons-controlled' : 'vendor-archive',
+      sourceId: match.sourceId,
+      sourceVersion: match.sourceVersion || 'official',
+      role,
+      context: ['general', 'web', 'desktop'],
+      contextOrigin: 'source-confirmed',
+      graphicVariant: 'official',
+      file: `${identityId}.svg`,
+      rawSha256: '',
+      license: match.license,
+      sourceUrl: match.sourceUrl,
+      colorType: 'multi-color',
+      xmlValid: true,
+      renderable: true,
+      integrityVerified: true,
+      isCanonical: false,
+      notes: match.notes,
+      _svgFetcher: () => this.getRawSvg(match.slug)
+    }];
   }
 
   getAll() {

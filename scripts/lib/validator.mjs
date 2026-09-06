@@ -17,7 +17,8 @@ export function computeSha256(content) {
 }
 
 /**
- * Validates an SVG document thoroughly using XML parser
+ * Validates an SVG document thoroughly using XML parser and AST inspection
+ * Requirement 44 & 45: AST-aware, no regex parsing, comprehensive multi-color detection
  * @param {string} svgContent
  * @param {string} [contextName='']
  * @returns {import('./types.mjs').ValidationResult}
@@ -147,27 +148,76 @@ export function validateSvg(svgContent, contextName = '') {
     };
   }
 
-  // 6. Check for vector child elements and count them
+  // 6. AST-Aware Element Counting and Multi-Color Detection (Requirement 45)
   let elementCount = 0;
   const graphicTags = ['path', 'polygon', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'g', 'use', 'image'];
-  const distinctFills = new Set();
+  const gradientTags = ['lineargradient', 'radialgradient', 'meshgradient', 'pattern'];
+  const distinctColors = new Set();
+  let hasGradient = false;
+
+  function extractColorsFromStyle(styleStr) {
+    if (!styleStr || typeof styleStr !== 'string') return;
+    const rules = styleStr.split(';');
+    for (const rule of rules) {
+      const [prop, val] = rule.split(':').map(s => s?.trim().toLowerCase());
+      if ((prop === 'fill' || prop === 'stroke' || prop === 'stop-color') && val) {
+        if (val !== 'none' && val !== 'currentcolor' && val !== 'inherit' && !val.startsWith('url(')) {
+          distinctColors.add(val);
+        } else if (val.startsWith('url(')) {
+          hasGradient = true;
+        }
+      }
+    }
+  }
 
   function scanNode(node) {
     if (!node || typeof node !== 'object') return;
     for (const [key, val] of Object.entries(node)) {
-      if (graphicTags.includes(key.toLowerCase())) {
+      const lowerKey = key.toLowerCase();
+
+      // Count graphic tags
+      if (graphicTags.includes(lowerKey)) {
         if (Array.isArray(val)) {
           elementCount += val.length;
         } else {
           elementCount += 1;
         }
       }
-      if ((key === '@_fill' || key === '@_stroke') && typeof val === 'string') {
+
+      // Detect gradient definitions
+      if (gradientTags.includes(lowerKey)) {
+        hasGradient = true;
+      }
+
+      // Check fill attribute
+      if ((lowerKey === '@_fill' || lowerKey === '@_stroke') && typeof val === 'string') {
         const c = val.trim().toLowerCase();
-        if (c && c !== 'none' && c !== 'currentcolor' && c !== 'inherit') {
-          distinctFills.add(c);
+        if (c.startsWith('url(')) {
+          hasGradient = true;
+        } else if (c && c !== 'none' && c !== 'currentcolor' && c !== 'inherit') {
+          distinctColors.add(c);
         }
       }
+
+      // Check stop-color attribute for gradients
+      if (lowerKey === '@_stop-color' && typeof val === 'string') {
+        const c = val.trim().toLowerCase();
+        if (c && c !== 'none' && c !== 'currentcolor' && c !== 'inherit') {
+          distinctColors.add(c);
+        }
+      }
+
+      // Check inline style attribute
+      if (lowerKey === '@_style' && typeof val === 'string') {
+        extractColorsFromStyle(val);
+      }
+
+      // Check embedded CSS in <style>
+      if (lowerKey === 'style' && typeof val === 'object' && val['#text']) {
+        extractColorsFromStyle(val['#text']);
+      }
+
+      // Recurse into child objects/arrays
       if (typeof val === 'object') {
         if (Array.isArray(val)) {
           for (const item of val) scanNode(item);
@@ -192,18 +242,22 @@ export function validateSvg(svgContent, contextName = '') {
     };
   }
 
-  const isMultiColor = distinctFills.size > 1;
+  // Requirement 45: A multi-color SVG can contain multiple distinct colors OR gradients
+  const isMultiColor = hasGradient || distinctColors.size > 1;
 
   return {
     status: 'VALID',
     message: isMultiColor
-      ? `Valid multi-color SVG (${distinctFills.size} colors, ${elementCount} elements)`
+      ? `Valid multi-color SVG (${distinctColors.size} colors, ${hasGradient ? 'with gradients, ' : ''}${elementCount} elements)`
       : `Valid monochrome SVG (${elementCount} elements)`,
     sha256: sha,
     isMultiColor,
     xmlValid: true,
     renderable: true,
+    svgRenderable: true,
     elementCount,
+    distinctColors: Array.from(distinctColors),
+    hasGradient,
     viewBox,
     width: Number(width) || undefined,
     height: Number(height) || undefined

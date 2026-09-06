@@ -39,6 +39,22 @@ async function main() {
     return;
   }
 
+  if (args.includes('--verify-catalog')) {
+    try {
+      const generatedCat = await fs.readFile(path.join(GENERATED_DIR, 'catalog.json'), 'utf8');
+      const publicCat = await fs.readFile(path.join(ROOT, 'public', 'catalog.json'), 'utf8');
+      if (!publicCat || publicCat.length !== generatedCat.length) {
+        console.error('❌ Build check failed: generated catalog is stale or missing. Run "npm run sync" first.');
+        process.exit(1);
+      }
+      console.log('✅ Verified catalog is fresh.');
+      return;
+    } catch (err) {
+      console.error(`❌ Build check failed: ${err.message}. Run "npm run sync" first.`);
+      process.exit(1);
+    }
+  }
+
   const resolver = new IconResolver(ROOT);
   await resolver.load();
 
@@ -96,9 +112,20 @@ async function main() {
   if (isAllMode || scopeArg === 'all') {
     console.log('📦 Execution Scope: ALL DISCOVERED IDENTITIES across all adapters');
     iconsToResolve = resolver.discoverAllIdentities();
-  } else if (scopeArg === 'mainstream' || command === 'update' || (args.filter(a => !a.startsWith('-') && a !== 'sync').length === 0)) {
+  } else if (scopeArg === 'mainstream') {
     console.log('📦 Execution Scope: MAINSTREAM (Curated high-priority industry collection)');
     iconsToResolve = resolver.collections.mainstream || [];
+  } else if (scopeArg === 'catalog' || command === 'update' || (args.filter(a => !a.startsWith('-') && a !== 'sync').length === 0)) {
+    console.log('📦 Execution Scope: FULL CATALOG (All category collections)');
+    const allCatIds = new Set(resolver.collections.mainstream || []);
+    if (resolver.collections.categories) {
+      for (const list of Object.values(resolver.collections.categories)) {
+        if (Array.isArray(list)) {
+          for (const id of list) allCatIds.add(id);
+        }
+      }
+    }
+    iconsToResolve = Array.from(allCatIds);
   } else {
     // Custom positional icons
     const customList = args
@@ -177,11 +204,19 @@ async function main() {
       record.verificationStatus = valResult.status === 'WARNING' ? 'warning' : 'verified';
       record.verified = true;
 
+      // Synchronize canonical asset object
+      if (record.canonicalAsset) {
+        record.canonicalAsset.rawSha256 = valResult.sha256;
+        record.canonicalAsset.xmlValid = valResult.xmlValid;
+        record.canonicalAsset.renderable = valResult.renderable;
+        record.canonicalAsset.integrityVerified = true;
+      }
+
       if (valResult.status === 'WARNING') {
         console.log(`WARNING  ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${valResult.message}`);
         warnings.push({ id: record.id, message: valResult.message });
       } else {
-        console.log(`VALID    ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${record.title}`);
+        console.log(`VALID    ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${record.title} (${record.assets?.length || 1} family assets)`);
       }
 
       downloadedCount++;
@@ -192,6 +227,32 @@ async function main() {
         const pubPath = path.join(PUBLIC_ICONS_DIR, record.file);
         await fs.writeFile(genPath, cleanRawSvg, 'utf8');
         await fs.writeFile(pubPath, cleanRawSvg, 'utf8');
+
+        // Also validate and write authentic subsidiary family assets
+        if (record.assets && Array.isArray(record.assets)) {
+          for (const asset of record.assets) {
+            if (asset === record.canonicalAsset) continue;
+            try {
+              if (asset._svgFetcher) {
+                const aSvg = await asset._svgFetcher();
+                if (aSvg) {
+                  const aVal = validateSvg(aSvg, asset.assetId);
+                  asset.rawSha256 = aVal.sha256;
+                  asset.xmlValid = aVal.xmlValid;
+                  asset.renderable = aVal.renderable;
+                  asset.integrityVerified = true;
+
+                  const aGenPath = path.join(GENERATED_ICONS_DIR, asset.file);
+                  const aPubPath = path.join(PUBLIC_ICONS_DIR, asset.file);
+                  await fs.writeFile(aGenPath, aSvg.trim(), 'utf8');
+                  await fs.writeFile(aPubPath, aSvg.trim(), 'utf8');
+                }
+              }
+            } catch (errSub) {
+              // Non-fatal for alternative variant
+            }
+          }
+        }
       }
 
       resolvedRecords.push(record);
@@ -231,9 +292,12 @@ async function main() {
     const manifestPath = path.join(GENERATED_DIR, 'manifest.json');
     const conflictsPath = path.join(GENERATED_DIR, 'conflicts.json');
 
+    const sourcesPath = path.join(GENERATED_DIR, 'sources.json');
+
     await fs.copyFile(catalogPath, path.join(PUBLIC_ICONS_DIR, '..', 'catalog.json'));
     await fs.copyFile(manifestPath, path.join(PUBLIC_ICONS_DIR, '..', 'manifest.json'));
     await fs.copyFile(conflictsPath, path.join(PUBLIC_ICONS_DIR, '..', 'conflicts.json'));
+    await fs.copyFile(sourcesPath, path.join(PUBLIC_ICONS_DIR, '..', 'sources.json'));
 
     // Also copy to src/data/catalog.json for compile-time bundle access
     await fs.copyFile(catalogPath, path.join(SRC_DATA_DIR, 'catalog.json'));
@@ -277,7 +341,15 @@ function customListSpecified(args) {
 async function cleanStaleAssets(dir, activeRecords, dryRun = false) {
   let count = 0;
   try {
-    const activeFiles = new Set(activeRecords.map(r => r.file));
+    const activeFiles = new Set();
+    for (const r of activeRecords) {
+      if (r.file) activeFiles.add(r.file);
+      if (r.assets && Array.isArray(r.assets)) {
+        for (const a of r.assets) {
+          if (a.file) activeFiles.add(a.file);
+        }
+      }
+    }
     const entries = await fs.readdir(dir);
     for (const f of entries) {
       if (!f.endsWith('.svg')) continue;

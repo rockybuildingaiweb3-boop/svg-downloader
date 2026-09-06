@@ -151,6 +151,58 @@ export class DeviconAdapter {
     return null;
   }
 
+  /**
+   * Enumerate assets for a given identity across all its variants
+   * @param {string} identityId
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  getAssets(identityId) {
+    const match = this.findByQuery(identityId);
+    if (!match) return [];
+    const assets = [];
+    for (const variant of match.variantList) {
+      let role = 'symbol';
+      let context = ['general', 'web'];
+      if (variant === 'original') {
+        role = 'logo';
+        context = ['web', 'desktop'];
+      } else if (variant === 'plain') {
+        role = 'symbol';
+        context = ['general', 'web'];
+      } else if (variant === 'line') {
+        role = 'symbol';
+        context = ['general'];
+      } else if (variant.includes('wordmark')) {
+        role = 'wordmark-horizontal';
+        context = ['web', 'desktop'];
+      }
+
+      assets.push({
+        assetId: `${identityId}-devicon-${variant}`,
+        identityId,
+        sourceProvider: 'devicon',
+        sourceCollection: 'devicon',
+        sourceId: match.name,
+        sourceVersion: this.version,
+        role,
+        context,
+        contextOrigin: 'source-confirmed',
+        graphicVariant: variant,
+        file: `${identityId}-devicon-${variant}.svg`,
+        rawSha256: '',
+        license: match.license,
+        sourceUrl: match.sourceUrl,
+        colorType: variant.includes('plain') || variant.includes('line') ? 'monochrome' : 'multi-color',
+        xmlValid: true,
+        renderable: true,
+        integrityVerified: true,
+        isCanonical: false,
+        _svgFetcher: () => this.getRawSvg(match.name, variant)
+      });
+    }
+    return assets;
+  }
+
   getAll() {
     return Array.from(this.icons.values());
   }

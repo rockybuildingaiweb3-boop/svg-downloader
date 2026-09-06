@@ -125,6 +125,38 @@ export class SimpleIconsAdapter {
     return fs.readFile(entry.svgPath, 'utf8');
   }
 
+  /**
+   * Enumerate assets for a given identity
+   * @param {string} identityId
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  getAssets(identityId) {
+    const match = this.findByQuery(identityId);
+    if (!match) return [];
+    return [{
+      assetId: `${identityId}-simpleicons-symbol`,
+      identityId,
+      sourceProvider: 'simple-icons',
+      sourceCollection: 'simple-icons',
+      sourceId: match.slug,
+      sourceVersion: this.version,
+      role: 'symbol',
+      context: ['general', 'web', 'mobile', 'social'],
+      contextOrigin: 'source-confirmed',
+      graphicVariant: 'monochrome',
+      file: `${identityId}.svg`,
+      rawSha256: '',
+      license: match.license,
+      sourceUrl: match.sourceUrl,
+      colorType: 'monochrome',
+      xmlValid: true,
+      renderable: true,
+      integrityVerified: true,
+      isCanonical: false,
+      _svgFetcher: () => this.getRawSvg(match.slug)
+    }];
+  }
+
   getAll() {
     return Array.from(this.icons.values());
   }
