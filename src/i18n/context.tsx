@@ -42,25 +42,53 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
+    // 1. Persisted user selection
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved && (saved === 'en' || saved === 'zh-CN' || saved === 'fr' || saved === 'de' || saved === 'ja')) {
         return saved as SupportedLanguage;
       }
-    } catch {
-      // ignore storage errors
-    }
-    return 'en'; // Strict default: English
+    } catch {}
+
+    // 2. Explicit URL locale if supported
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const params = new URLSearchParams(window.location.search);
+        const urlLang = params.get('lang') || params.get('locale');
+        if (urlLang) {
+          const clean = urlLang.toLowerCase();
+          if (clean === 'en') return 'en';
+          if (clean === 'zh' || clean === 'zh-cn' || clean === 'zh_cn') return 'zh-CN';
+          if (clean === 'fr') return 'fr';
+          if (clean === 'de') return 'de';
+          if (clean === 'ja') return 'ja';
+        }
+      }
+    } catch {}
+
+    // 3. Browser language
+    try {
+      if (typeof navigator !== 'undefined' && navigator.language) {
+        const nav = navigator.language.toLowerCase();
+        if (nav.startsWith('zh')) return 'zh-CN';
+        if (nav.startsWith('fr')) return 'fr';
+        if (nav.startsWith('de')) return 'de';
+        if (nav.startsWith('ja')) return 'ja';
+      }
+    } catch {}
+
+    // 4. Default: English
+    return 'en';
   });
 
   const setLanguage = (lang: SupportedLanguage) => {
     setLanguageState(lang);
     try {
       localStorage.setItem(STORAGE_KEY, lang);
-      document.documentElement.lang = lang;
-    } catch {
-      // ignore storage errors
-    }
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = lang;
+      }
+    } catch {}
   };
 
   useEffect(() => {

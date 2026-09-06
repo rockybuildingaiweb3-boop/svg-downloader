@@ -328,14 +328,14 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
               title={t.inspector.uploadTitle}
             >
               <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="hidden sm:inline">Inspect External SVG</span>
+              <span className="hidden sm:inline">{t.inspector.inspectExternalSvg}</span>
             </button>
 
             <button
               ref={closeBtnRef}
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              aria-label="Close"
+              aria-label={t.inspector.closeBtn}
             >
               <X className="w-5 h-5" />
             </button>
@@ -629,7 +629,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                   />
                 </div>
               ) : (
-                <span className="text-xs text-slate-400">No SVG file</span>
+                <span className="text-xs text-slate-400">{t.inspector.noSvgFile}</span>
               )}
 
               <div className="absolute bottom-2.5 right-3 flex items-center gap-2">
@@ -673,7 +673,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                 <span className="font-bold text-slate-800 text-xs mt-0.5 block truncate">
                   {currentAsset?.license || icon.license || 'Trademark / CC0'}
                 </span>
-                <span className="text-2xs text-slate-500 block">Upstream Verified</span>
+                <span className="text-2xs text-slate-500 block">{t.inspector.upstreamVerified}</span>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -689,7 +689,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                     <ExternalLink className="w-3 h-3 shrink-0" />
                   </a>
                 ) : (
-                  <span className="text-xs text-slate-400 block">Primary Brand Archive</span>
+                  <span className="text-xs text-slate-400 block">{t.inspector.primaryBrandArchive}</span>
                 )}
               </div>
             </div>
@@ -894,18 +894,18 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
 
                 <div className="relative flex py-1 items-center">
                   <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink mx-2 text-2xs text-slate-400 uppercase">Or</span>
+                  <span className="flex-shrink mx-2 text-2xs text-slate-400 uppercase">{t.inspector.orLabel}</span>
                   <div className="flex-grow border-t border-slate-200"></div>
                 </div>
 
                 <div>
                   <label className="text-2xs font-semibold text-slate-700 block mb-1">
-                    Option 2: Upload Local SVG File
+                    {t.inspector.uploadSubtitle}
                   </label>
                   <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl cursor-pointer bg-slate-50 hover:bg-indigo-50/30 transition-colors">
                     <FileUp className="w-6 h-6 text-indigo-500 mb-1" />
-                    <span className="text-xs font-medium text-slate-700">Choose .svg file</span>
-                    <span className="text-2xs text-slate-400 mt-0.5">Vector XML analyzed locally in browser</span>
+                    <span className="text-xs font-medium text-slate-700">{t.inspector.chooseSvgFile}</span>
+                    <span className="text-2xs text-slate-400 mt-0.5">{t.inspector.analyzedLocally}</span>
                     <input
                       type="file"
                       accept=".svg"

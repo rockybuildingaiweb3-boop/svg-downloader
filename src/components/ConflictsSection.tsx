@@ -82,10 +82,10 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
               </span>
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  {t.header.tabConflicts}
+                  {t.conflictsView.title}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Deterministic arbitration policy resolving multi-source collisions across Simple Icons, Devicon, and official vendor archives without <code className="text-amber-700 bg-amber-50 px-1 py-0.5 rounded font-mono">-2.svg</code> collisions.
+                  {t.conflictsView.subtitle}
                 </p>
               </div>
             </div>
@@ -95,8 +95,8 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
             <div className="px-3 py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <div>
-                <span className="font-bold block">0 Collision Errors</span>
-                <span className="text-2xs text-emerald-600">Canonical taxonomy intact</span>
+                <span className="font-bold block">{t.conflictsView.zeroCollisionsTitle}</span>
+                <span className="text-2xs text-emerald-600">{t.conflictsView.zeroCollisionsDesc}</span>
               </div>
             </div>
           </div>
@@ -105,29 +105,28 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100 text-xs">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-slate-400 block text-2xs">Identities Audited</span>
+            <span className="text-slate-400 block text-2xs">{t.conflictsView.identitiesAuditedTitle}</span>
             <span className="text-base font-extrabold text-slate-900">{CURATED_ICONS.length}</span>
-            <span className="text-2xs text-slate-500 block">High-priority brands</span>
+            <span className="text-2xs text-slate-500 block">{t.conflictsView.identitiesAuditedDesc}</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-slate-400 block text-2xs">Multi-Source Candidates</span>
+            <span className="text-slate-400 block text-2xs">{t.conflictsView.multiSourceCandidatesTitle}</span>
             <span className="text-base font-extrabold text-indigo-600">{conflictsData.totalConflictsDetected || 83}</span>
-            <span className="text-2xs text-slate-500 block">2+ upstream sources</span>
+            <span className="text-2xs text-slate-500 block">{t.conflictsView.multiSourceCandidatesDesc}</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-slate-400 block text-2xs">Arbitration Strategy</span>
+            <span className="text-slate-400 block text-2xs">{t.conflictsView.arbitrationStrategyTitle}</span>
             <span className="text-base font-extrabold text-emerald-600 font-mono capitalize">
               {conflictsData.policy || 'brand'}
             </span>
-            <span className="text-2xs text-slate-500 block">Color & vendor fidelity</span>
+            <span className="text-2xs text-slate-500 block">{t.conflictsView.arbitrationStrategyDesc}</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-slate-400 block text-2xs">Audit Ledger Status</span>
+            <span className="text-slate-400 block text-2xs">{t.conflictsView.ledgerStatusTitle}</span>
             <span className="text-base font-extrabold text-slate-800 flex items-center gap-1">
               <FileCheck className="w-4 h-4 text-emerald-600" />
-              <span>Synchronized</span>
+              <span className="font-mono text-xs">{t.conflictsView.ledgerStatusDesc}</span>
             </span>
-            <span className="text-2xs font-mono text-slate-400 block">public/conflicts.json</span>
           </div>
         </div>
       </div>
@@ -140,7 +139,7 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search arbitrated brands (e.g. apple, react, python, google)..."
+            placeholder={t.conflictsView.searchPlaceholder}
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white text-slate-800 placeholder-slate-400"
           />
         </div>
@@ -148,10 +147,10 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <span className="text-2xs flex items-center gap-1 font-medium">
             <Filter className="w-3 h-3" />
-            <span>Showing:</span>
+            <span>{t.filters.showingCount}:</span>
           </span>
           <span className="font-bold text-slate-800">
-            {filteredConflicts.length} / {conflictsList.length} arbitrated decisions
+            {filteredConflicts.length} / {conflictsList.length}
           </span>
         </div>
       </div>
@@ -196,7 +195,7 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
 
                     {/* Canonical choice callout */}
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="text-slate-400 text-2xs">Arbitrated Primary:</span>
+                      <span className="text-slate-400 text-2xs">{t.conflictsView.selectedCanonical}:</span>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         <span>{item.resolvedSource}</span>
@@ -225,14 +224,14 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
 
               {/* Policy Decision Resolution Statement */}
               <div className="mt-3 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/80 text-xs text-indigo-950">
-                <span className="font-bold text-indigo-900 block mb-0.5">Resolution Rationale:</span>
+                <span className="font-bold text-indigo-900 block mb-0.5">{t.conflictsView.resolutionExplanation}:</span>
                 <p className="text-2xs text-indigo-800 font-mono">{item.resolution}</p>
               </div>
 
               {/* Competing Alternatives Breakdown */}
               <div className="mt-3 pt-3 border-t border-slate-100">
                 <span className="text-2xs font-bold text-slate-500 block mb-2">
-                  Competing Upstream Candidates ({item.competingAssets.length}):
+                  {t.conflictsView.competingAssets} ({item.competingAssets.length}):
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {item.competingAssets.map(comp => (

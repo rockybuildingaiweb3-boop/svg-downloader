@@ -323,17 +323,18 @@ export function searchCatalogAssetAware(query: string, catalog: IconItem[]): Ass
     if (iconId === intent.resolvedIdentityId || iconSlug === intent.resolvedIdentityId) {
       score += 50;
       checklist.exactIdentity = true;
-      reasons.push(`✓ 精确标识: ${icon.id}`);
+      reasons.push(`ID: ${icon.id}`);
     } else if (iconAliases.includes(intent.targetIdentity)) {
       score += 45;
       checklist.aliasMatch = true;
-      reasons.push(`✓ 别名: ${intent.targetIdentity} -> ${icon.id}`);
+      reasons.push(`Alias: ${intent.targetIdentity} -> ${icon.id}`);
     } else if (iconTitle === intent.targetIdentity || iconTitle.includes(intent.targetIdentity)) {
       score += 35;
-      reasons.push(`✓ 品牌名: ${icon.title}`);
+      checklist.exactIdentity = false;
+      reasons.push(`Brand: ${icon.title}`);
     } else if (iconId.includes(intent.targetIdentity)) {
       score += 25;
-      reasons.push(`✓ 包含: ${icon.id}`);
+      reasons.push(`Match: ${icon.id}`);
     } else if (intent.targetIdentity.length === 0 && (intent.roleConstraint || intent.contextConstraint || intent.variantPreference)) {
       // Query specified only role/context without identity
       score += 10;
@@ -359,17 +360,17 @@ export function searchCatalogAssetAware(query: string, catalog: IconItem[]): Ass
         if (intent.roleConstraint && matchedAsset.role === intent.roleConstraint) {
           score += 20;
           checklist.roleMatch = true;
-          reasons.push(`✓ 角色: ${intent.roleConstraint}`);
+          reasons.push(`Role: ${intent.roleConstraint}`);
         }
         if (intent.contextConstraint && matchedAsset.context?.includes(intent.contextConstraint)) {
           score += 15;
           checklist.contextMatch = true;
-          reasons.push(`✓ 上下文: ${intent.contextConstraint}`);
+          reasons.push(`Context: ${intent.contextConstraint}`);
         }
         if (intent.variantPreference && (matchedAsset.graphicVariant === intent.variantPreference || matchedAsset.colorType === intent.variantPreference)) {
           score += 15;
           checklist.variantMatch = true;
-          reasons.push(`✓ 变体: ${intent.variantPreference}`);
+          reasons.push(`Variant: ${intent.variantPreference}`);
         }
       } else if (intent.mode === 'strict') {
         // In strict mode, skip if constraint was unsatisfied
@@ -384,7 +385,7 @@ export function searchCatalogAssetAware(query: string, catalog: IconItem[]): Ass
     results.push({
       icon,
       matchedAsset,
-      matchReason: reasons.join(' · ') || '匹配查询',
+      matchReason: reasons.join(' · ') || 'Matched query',
       matchScore: Math.min(100, score),
       matchChecklist: checklist
     });

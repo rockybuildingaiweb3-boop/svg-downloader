@@ -336,21 +336,32 @@ async function main() {
     const generator = new RegistryGenerator(GENERATED_DIR, recordsToPersist, metadata);
     await generator.generateAll();
 
-    // Copy catalog.json, registry.json, manifest.json, conflicts.json, sources.json to public/ and src/data/
+    // Copy catalog.json, registry.json, manifest.json, conflicts.json, sources.json, coverage.json, categories.json, statistics.json to public/ and src/data/
     const catalogPath = path.join(GENERATED_DIR, 'catalog.json');
     const registryPath = path.join(GENERATED_DIR, 'registry.json');
     const manifestPath = path.join(GENERATED_DIR, 'manifest.json');
+    const sourceManifestPath = path.join(GENERATED_DIR, 'source-manifest.json');
     const conflictsPath = path.join(GENERATED_DIR, 'conflicts.json');
     const sourcesPath = path.join(GENERATED_DIR, 'sources.json');
+    const coveragePath = path.join(GENERATED_DIR, 'coverage.json');
+    const categoriesPath = path.join(GENERATED_DIR, 'categories.json');
+    const statisticsPath = path.join(GENERATED_DIR, 'statistics.json');
 
     await fs.copyFile(catalogPath, path.join(PUBLIC_ICONS_DIR, '..', 'catalog.json'));
     await fs.copyFile(registryPath, path.join(PUBLIC_ICONS_DIR, '..', 'registry.json'));
     await fs.copyFile(manifestPath, path.join(PUBLIC_ICONS_DIR, '..', 'manifest.json'));
+    await fs.copyFile(sourceManifestPath, path.join(PUBLIC_ICONS_DIR, '..', 'source-manifest.json'));
     await fs.copyFile(conflictsPath, path.join(PUBLIC_ICONS_DIR, '..', 'conflicts.json'));
     await fs.copyFile(sourcesPath, path.join(PUBLIC_ICONS_DIR, '..', 'sources.json'));
+    await fs.copyFile(coveragePath, path.join(PUBLIC_ICONS_DIR, '..', 'coverage.json'));
+    await fs.copyFile(categoriesPath, path.join(PUBLIC_ICONS_DIR, '..', 'categories.json'));
+    await fs.copyFile(statisticsPath, path.join(PUBLIC_ICONS_DIR, '..', 'statistics.json'));
 
-    // Also copy to src/data/catalog.json for compile-time bundle access
+    // Also copy to src/data/ for compile-time bundle access
     await fs.copyFile(catalogPath, path.join(SRC_DATA_DIR, 'catalog.json'));
+    await fs.copyFile(registryPath, path.join(SRC_DATA_DIR, 'registry.json'));
+    await fs.copyFile(coveragePath, path.join(SRC_DATA_DIR, 'coverage.json'));
+    await fs.copyFile(categoriesPath, path.join(SRC_DATA_DIR, 'categories.json'));
   }
 
   // Output Standard Statistics Breakdown

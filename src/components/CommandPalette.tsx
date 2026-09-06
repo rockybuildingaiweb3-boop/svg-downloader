@@ -236,8 +236,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         {/* Footer shortcuts hint */}
         <div className="bg-slate-50 px-4 py-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-400">
-          <span>Navigate with <kbd className="font-mono bg-white px-1 py-0.5 rounded border">↑</kbd> <kbd className="font-mono bg-white px-1 py-0.5 rounded border">↓</kbd></span>
-          <span>Select with <kbd className="font-mono bg-white px-1 py-0.5 rounded border">↵ Enter</kbd></span>
+          <span>{t.commandPalette.navigateWith} <kbd className="font-mono bg-white px-1 py-0.5 rounded border">↑</kbd> <kbd className="font-mono bg-white px-1 py-0.5 rounded border">↓</kbd></span>
+          <span>{t.commandPalette.selectWith} <kbd className="font-mono bg-white px-1 py-0.5 rounded border">{t.commandPalette.enterKey}</kbd></span>
         </div>
       </div>
     </div>

@@ -271,7 +271,7 @@ export function generateHtmlEmbed(item: IconItem, fileName: string, role?: strin
   return `<!-- ${item.title} Authentic Canonical Vector (${role || item.role}) -->
 <img 
   src="/icons/${fileName}" 
-  alt="${item.title} Logo" 
+  alt="${item.title}" 
   width="24" 
   height="24" 
   loading="lazy" 

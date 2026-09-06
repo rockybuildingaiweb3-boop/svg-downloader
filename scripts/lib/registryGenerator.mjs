@@ -19,6 +19,10 @@ export class RegistryGenerator {
       this.generateRegistryJson(),
       this.generateCatalogJson(),
       this.generateManifestJson(),
+      this.generateSourceManifestJson(),
+      this.generateCoverageJson(),
+      this.generateCategoriesJson(),
+      this.generateStatisticsJson(),
       this.generateConflictsJson(),
       this.generateSourcesJson(),
       this.generateTypeScriptIndex(),
@@ -121,6 +125,199 @@ export class RegistryGenerator {
 
     const filePath = path.join(this.outDir, 'manifest.json');
     await fs.writeFile(filePath, JSON.stringify(manifest), 'utf8');
+  }
+
+  async generateSourceManifestJson() {
+    const cleanRecords = this.records.map(r => this.cleanRecord(r));
+    const sources = [...new Set(cleanRecords.map(r => r.sourceProvider || r.source))];
+    const countsBySource = {};
+    for (const s of sources) {
+      countsBySource[s] = cleanRecords.filter(r => (r.sourceProvider || r.source) === s).length;
+    }
+
+    const manifest = {
+      generatedAt: new Date().toISOString(),
+      generator: 'Canonical SVG Sync Pipeline v2.0 (Authoritative)',
+      sourceVersions: this.metadata.sourceVersions || {
+        'simple-icons': '16.29.0',
+        'devicon': '2.17.0',
+        'iconify-logos': '1.2.13',
+        'official-vendor': 'pinned-archive',
+        'wikimedia-commons': 'pinned-archive'
+      },
+      totalIdentities: cleanRecords.length,
+      totalAssets: cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
+      sources,
+      countsBySource,
+      icons: cleanRecords
+    };
+
+    const filePath = path.join(this.outDir, 'source-manifest.json');
+    await fs.writeFile(filePath, JSON.stringify(manifest), 'utf8');
+  }
+
+  async generateCoverageJson() {
+    const cleanRecords = this.records.map(r => this.cleanRecord(r));
+    let totalAssets = 0;
+
+    const providerCounts = {
+      'official': { identities: 0, assets: 0 },
+      'simple-icons': { identities: 0, assets: 0 },
+      'svg-logos': { identities: 0, assets: 0 },
+      'devicon': { identities: 0, assets: 0 },
+      'wikimedia': { identities: 0, assets: 0 }
+    };
+
+    let singleSourceCount = 0;
+    let twoSourcesCount = 0;
+    let threeSourcesCount = 0;
+    let fourOrMoreSourcesCount = 0;
+    const singleSourceIdentities = [];
+    const twoSourceIdentities = [];
+
+    const categoryBreakdown = {};
+    let uncategorizedCount = 0;
+    let needsReviewCount = 0;
+
+    for (const r of cleanRecords) {
+      const assets = r.assets && r.assets.length > 0 ? r.assets : [];
+      totalAssets += Math.max(assets.length, 1);
+
+      // Categories
+      const cat = r.primaryCategory || r.category || 'uncategorized';
+      categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+      if (cat === 'uncategorized') uncategorizedCount++;
+      if (cat === 'needs-review') needsReviewCount++;
+
+      // Source availability
+      const availableProviders = new Set();
+      if (r.sourceCoverage) {
+        for (const [prov, state] of Object.entries(r.sourceCoverage)) {
+          if (state === 'available') availableProviders.add(prov);
+        }
+      } else {
+        for (const a of assets) {
+          const prov = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
+          if (prov) availableProviders.add(prov);
+        }
+      }
+
+      for (const prov of availableProviders) {
+        if (providerCounts[prov]) {
+          providerCounts[prov].identities++;
+        }
+      }
+
+      for (const a of assets) {
+        const prov = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
+        if (providerCounts[prov]) {
+          providerCounts[prov].assets++;
+        }
+      }
+
+      const count = availableProviders.size;
+      if (count === 1) {
+        singleSourceCount++;
+        singleSourceIdentities.push(r.id);
+      } else if (count === 2) {
+        twoSourcesCount++;
+        twoSourceIdentities.push(r.id);
+      } else if (count === 3) {
+        threeSourcesCount++;
+      } else if (count >= 4) {
+        fourOrMoreSourcesCount++;
+      }
+    }
+
+    const coverageReport = {
+      generatedAt: new Date().toISOString(),
+      totalIdentities: cleanRecords.length,
+      totalAssets,
+      totalProviders: 5,
+      providerMatrix: {
+        'official': providerCounts['official'].identities,
+        'simple-icons': providerCounts['simple-icons'].identities,
+        'svg-logos': providerCounts['svg-logos'].identities,
+        'devicon': providerCounts['devicon'].identities,
+        'wikimedia': providerCounts['wikimedia'].identities
+      },
+      providerAssetMatrix: {
+        'official': providerCounts['official'].assets,
+        'simple-icons': providerCounts['simple-icons'].assets,
+        'svg-logos': providerCounts['svg-logos'].assets,
+        'devicon': providerCounts['devicon'].assets,
+        'wikimedia': providerCounts['wikimedia'].assets
+      },
+      sourceDistribution: {
+        singleSourceIdentities: singleSourceCount,
+        twoSourceIdentities: twoSourcesCount,
+        threeSourceIdentities: threeSourcesCount,
+        fourOrMoreSourceIdentities: fourOrMoreSourcesCount,
+        sampleSingleSources: singleSourceIdentities.slice(0, 100),
+        sampleTwoSources: twoSourceIdentities.slice(0, 100)
+      },
+      categoryCoverage: {
+        breakdown: categoryBreakdown,
+        uncategorized: uncategorizedCount,
+        needsReview: needsReviewCount
+      }
+    };
+
+    const filePath = path.join(this.outDir, 'coverage.json');
+    await fs.writeFile(filePath, JSON.stringify(coverageReport, null, 2), 'utf8');
+  }
+
+  async generateCategoriesJson() {
+    const cleanRecords = this.records.map(r => this.cleanRecord(r));
+    const categoriesMap = {};
+
+    for (const r of cleanRecords) {
+      const cats = Array.isArray(r.categories) && r.categories.length > 0
+        ? r.categories
+        : [r.primaryCategory || r.category || 'uncategorized'];
+
+      for (const cat of cats) {
+        if (!categoriesMap[cat]) {
+          categoriesMap[cat] = {
+            id: cat,
+            identitiesCount: 0,
+            assetsCount: 0,
+            identities: []
+          };
+        }
+        categoriesMap[cat].identitiesCount++;
+        categoriesMap[cat].assetsCount += (r.assets?.length || 1);
+        if (categoriesMap[cat].identities.length < 50) {
+          categoriesMap[cat].identities.push(r.id);
+        }
+      }
+    }
+
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      totalCategories: Object.keys(categoriesMap).length,
+      categories: categoriesMap
+    };
+
+    const filePath = path.join(this.outDir, 'categories.json');
+    await fs.writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8');
+  }
+
+  async generateStatisticsJson() {
+    const cleanRecords = this.records.map(r => this.cleanRecord(r));
+    const totalAssets = cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0);
+
+    const stats = {
+      generatedAt: new Date().toISOString(),
+      totalIdentities: cleanRecords.length,
+      totalAssets,
+      totalProviders: 5,
+      verifiedIdentities: cleanRecords.filter(r => r.verified || r.verificationStatus === 'verified').length,
+      conflictsCount: (this.metadata.conflicts || []).length
+    };
+
+    const filePath = path.join(this.outDir, 'statistics.json');
+    await fs.writeFile(filePath, JSON.stringify(stats, null, 2), 'utf8');
   }
 
   async generateConflictsJson() {

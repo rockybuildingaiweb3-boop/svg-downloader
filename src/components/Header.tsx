@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenCommandPalette}
                 className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
-                aria-label="Search and commands"
+                aria-label={t.header.searchAndCommands}
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -171,10 +171,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenCommandPalette}
               className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 bg-slate-100 hover:bg-slate-200/80 rounded-xl border border-slate-200 transition-colors cursor-pointer"
-              title="Open Command Palette (Ctrl+K)"
+              title={t.header.openCommandPalette}
             >
               <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>Quick Search</span>
+              <span>{t.header.quickSearch}</span>
               <kbd className="font-mono text-2xs bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-400">
                 Ctrl+K
               </kbd>
@@ -233,11 +233,11 @@ export const Header: React.FC<HeaderProps> = ({
                   id="btn-download-all-zip"
                   onClick={onDownloadMainstreamBundle}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-l-xl text-white bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer"
-                  title="Download verified manifest bundle with React/Vue type definitions"
+                  title={t.header.downloadBundleTooltip}
                 >
                   <Package className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{t.header.downloadMainstreamBundle}</span>
-                  <span className="sm:hidden">Bundle</span>
+                  <span className="sm:hidden">{t.header.bundleBtn}</span>
                 </button>
 
                 <button

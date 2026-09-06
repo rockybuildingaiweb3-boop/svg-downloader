@@ -367,12 +367,12 @@ export const AiVsOfficialSection: React.FC = () => {
                 <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
                   <div className="flex items-center gap-1">
                     <Box className="w-3.5 h-3.5 text-slate-400" />
-                    <span>ViewBox: </span>
+                    <span>{t.comparison.viewBoxLabel} </span>
                     <span className="font-mono font-medium text-slate-800">{secondaryStats?.viewBox || '24 24'}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Binary className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Nodes: </span>
+                    <span>{t.comparison.nodesLabel} </span>
                     <span className="font-mono font-medium text-slate-800">{secondaryStats?.elementCount || 0}</span>
                   </div>
                   <div className="col-span-2 flex items-center gap-1 text-2xs text-slate-500 font-mono truncate">
@@ -409,12 +409,12 @@ export const AiVsOfficialSection: React.FC = () => {
                 <div className="mt-4 pt-3 border-t border-emerald-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
                   <div className="flex items-center gap-1">
                     <Box className="w-3.5 h-3.5 text-slate-400" />
-                    <span>ViewBox: </span>
+                    <span>{t.comparison.viewBoxLabel} </span>
                     <span className="font-mono font-medium text-slate-800">{officialStats?.viewBox || '24 24'}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Binary className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Nodes: </span>
+                    <span>{t.comparison.nodesLabel} </span>
                     <span className="font-mono font-medium text-slate-800">{officialStats?.elementCount || 0}</span>
                   </div>
                   <div className="col-span-2 flex items-center gap-1 text-2xs text-slate-500 font-mono truncate">
@@ -472,11 +472,11 @@ export const AiVsOfficialSection: React.FC = () => {
                       <span>{claim.feature}</span>
                     </div>
                     <div className="text-rose-700 bg-rose-50/40 p-2.5 rounded-lg border border-rose-100">
-                      <span className="font-semibold block mb-0.5">Synthetic Observation:</span>
+                      <span className="font-semibold block mb-0.5">{t.comparison.syntheticObservation}</span>
                       <span>{claim.syntheticObservation}</span>
                     </div>
                     <div className="text-emerald-800 bg-emerald-50/40 p-2.5 rounded-lg border border-emerald-100">
-                      <span className="font-semibold block mb-0.5">Canonical Official Specification:</span>
+                      <span className="font-semibold block mb-0.5">{t.comparison.canonicalSpecification}</span>
                       <span>{claim.canonicalOfficialSpec}</span>
                     </div>
                   </div>

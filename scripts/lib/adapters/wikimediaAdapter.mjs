@@ -103,6 +103,57 @@ export class WikimediaAdapter {
     return null;
   }
 
+  /**
+   * Enumerate assets for a given identity from Wikimedia Commons
+   * @param {string} identityId
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  getAssets(identityId) {
+    const clean = (identityId || '').toLowerCase().trim();
+    const match = this.get(clean);
+    if (!match) return [];
+
+    const role = match.notes?.toLowerCase().includes('mark') ? 'mark' : 'logo';
+    return [{
+      assetId: `${clean}-wikimedia-${role}`,
+      identityId: clean,
+      sourceProvider: 'wikimedia',
+      sourceCollection: 'commons-controlled',
+      sourceId: match.sourceId,
+      sourceVersion: match.sourceVersion || 'commons-archive',
+      role,
+      roleOrigin: 'source-confirmed',
+      context: ['general', 'web'],
+      contextOrigin: 'unknown',
+      graphicVariant: 'color',
+      file: `${clean}-wikimedia-${role}.svg`,
+      rawSha256: '',
+      license: match.license,
+      licenseStatus: 'known',
+      sourceUrl: match.sourceUrl,
+      colorType: 'multi-color',
+      sourceTrust: 'community',
+      xmlValid: false,
+      renderable: false,
+      integrityVerified: false,
+      isCanonical: false,
+      notes: match.notes,
+      _svgFetcher: () => this.getRawSvg(match.slug)
+    }];
+  }
+
+  /**
+   * Full source inventory enumeration for Wikimedia assets
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  listAllAssets() {
+    const assets = [];
+    for (const item of this.icons.values()) {
+      assets.push(...this.getAssets(item.slug));
+    }
+    return assets;
+  }
+
   getAll() {
     return Array.from(this.icons.values());
   }
@@ -111,3 +162,4 @@ export class WikimediaAdapter {
     return this.icons.size;
   }
 }
+

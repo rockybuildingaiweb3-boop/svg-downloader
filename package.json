@@ -12,7 +12,7 @@
     "sync": "node scripts/icon-sync.mjs",
     "doctor": "node scripts/icon-doctor.mjs",
     "verify": "node scripts/icon-sync.mjs verify",
-    "audit": "node scripts/icon-sync.mjs audit",
+    "audit": "node scripts/audit-i18n.mjs --strict && node scripts/icon-sync.mjs audit",
     "test": "node scripts/test-registry.mjs",
     "lint": "tsc --noEmit"
   },

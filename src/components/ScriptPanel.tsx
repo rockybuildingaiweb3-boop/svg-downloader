@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { SourcePolicy } from '../types';
 import { copyRawSvg } from '../utils/svgHelpers';
+import { useTranslation } from '../i18n/context';
 
 interface ScriptPanelProps {
   selectedSlugs?: string[];
@@ -24,56 +25,40 @@ interface ScriptPanelProps {
 export const ScriptPanel: React.FC<ScriptPanelProps> = ({
   selectedSlugs = [],
 }) => {
+  const { t, format } = useTranslation();
   const [activeCommand, setActiveCommand] = useState<string>('sync-mainstream');
   const [policy, setPolicy] = useState<SourcePolicy>('brand');
   const [scope, setScope] = useState<'mainstream' | 'selected' | 'all'>('mainstream');
   const [dryRun, setDryRun] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
 
-  // Build real CLI command based on options
+  // Generate runnable CLI command based on options
   const generatedCommand = React.useMemo(() => {
-    let cmd = 'npm run sync';
-    const flags: string[] = [];
-
-    if (activeCommand === 'verify') {
-      return 'npm run verify';
+    let cmd = 'node scripts/icon-sync.mjs';
+    if (activeCommand === 'sync-mainstream') {
+      cmd += ' sync';
+      if (scope === 'all') cmd += ' --all';
+      if (scope === 'selected' && selectedSlugs.length > 0) {
+        cmd += ` --selected "${selectedSlugs.join(',')}"`;
+      }
+      if (policy !== 'brand') {
+        cmd += ` --policy ${policy}`;
+      }
+      if (dryRun) cmd += ' --dry-run';
+    } else if (activeCommand === 'verify') {
+      cmd += ' verify';
+    } else if (activeCommand === 'doctor') {
+      cmd += ' doctor';
+    } else if (activeCommand === 'sources') {
+      cmd += ' sources';
+    } else if (activeCommand === 'variants') {
+      cmd += ' variants';
+    } else if (activeCommand === 'audit') {
+      cmd += ' audit';
     }
-    if (activeCommand === 'doctor') {
-      return 'npm run doctor';
-    }
-    if (activeCommand === 'audit') {
-      return 'npm run audit';
-    }
-    if (activeCommand === 'sources') {
-      return 'npm run sync -- sources';
-    }
-    if (activeCommand === 'variants') {
-      return 'npm run sync -- variants';
-    }
-
-    // Sync sub-options
-    if (policy && policy !== 'brand') {
-      flags.push(`--policy ${policy}`);
-    }
-
-    if (scope === 'all') {
-      flags.push('--all');
-    } else if (scope === 'selected' && selectedSlugs.length > 0) {
-      flags.push(selectedSlugs.join(','));
-    } else if (scope === 'mainstream') {
-      flags.push('--scope mainstream');
-    }
-
-    if (dryRun) {
-      flags.push('--dry-run');
-    }
-
-    if (flags.length > 0) {
-      cmd += ` -- ${flags.join(' ')}`;
-    }
-
     return cmd;
-  }, [activeCommand, policy, scope, selectedSlugs, dryRun]);
+  }, [activeCommand, policy, scope, dryRun, selectedSlugs]);
 
   const handleCopy = async () => {
     const ok = await copyRawSvg(generatedCommand);
@@ -83,30 +68,46 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
     }
   };
 
+  const handleSimulate = () => {
+    setIsRunning(true);
+    setTimeout(() => {
+      setIsRunning(false);
+    }, 1200);
+  };
+
+  // Simulated output log stream
   const simLogs = [
     '$ ' + generatedCommand,
-    '🚀 Starting Canonical SVG Sync Pipeline...',
-    `- Active Source Policy: "${policy}"`,
-    '- Simple Icons:  16.30.0 (3459 icons)',
-    '- Devicon:       2.17.0 (578 icons)',
-    '- SVG Logos:     1.2.13 (2110 icons)',
-    '- Official:      6 verified vendor assets',
-    dryRun ? '- Mode:          --dry-run (no disk modifications will be performed)\n' : '',
-    'STATUS   CANONICAL ID      SOURCE         FILE           INFO',
+    '=======================================================================',
+    '⚙️ SVG REGISTRY SYNC PIPELINE - AUTONOMOUS MULTI-SOURCE INGESTION',
+    '=======================================================================',
+    `Timestamp:      ${new Date().toISOString()}`,
+    `Command:        ${activeCommand.toUpperCase()}`,
+    `Precedence:     ${policy.toUpperCase()} (Official > SVG Logos > Simple Icons > Devicon)`,
+    `Scope:          ${scope.toUpperCase()} (${scope === 'selected' ? selectedSlugs.length : 135} identities targeted)`,
+    `Mode:           ${dryRun ? 'DRY-RUN (zero disk mutations)' : 'LIVE SYNC (strict atomic writes)'}`,
     '-----------------------------------------------------------------------',
-    'VALID    apple             svg-logos      apple.svg      Apple (4 family assets)',
-    'VALID    react             devicon        react.svg      React (6 family assets)',
-    'VALID    github            devicon        github.svg     GitHub (6 family assets)',
-    'VALID    instagram         svg-logos      instagram.svg  Instagram (3 family assets)',
-    'VALID    microsoft         wikimedia      microsoft.svg  Microsoft (3 family assets)',
-    'VALID    google            svg-logos      google.svg     Google (7 family assets)',
-    'VALID    openai            wikimedia      openai.svg     OpenAI (3 family assets)',
-    'VALID    amazon            wikimedia      amazon.svg     Amazon (1 family assets)',
-    'VALID    docker            devicon        docker.svg     Docker (7 family assets)',
-    'VALID    cloudflare        svg-logos      cloudflare.svg Cloudflare (7 family assets)',
+    'Source Adapters Loaded:',
+    '  [x] simple-icons    v16.30.0 (3,400+ vectors)',
+    '  [x] devicon         v2.17.0 (570+ tech stacks)',
+    '  [x] svg-logos       v1.2.13 (2,100+ multi-color)',
+    '  [x] official        Vendor Press Centers (Strict Provenance)',
+    '  [x] wikimedia       Controlled Wikimedia Commons Archives',
     '-----------------------------------------------------------------------',
-    '✨ PIPELINE SYNCHRONIZATION SUMMARY',
+    'VALIDATED: react -> simple-icons (monochrome) + devicon (original/line)',
+    'VALIDATED: github -> official (primary-dark) + simple-icons (symbol)',
+    'VALIDATED: typescript -> devicon (original) + simple-icons (monochrome)',
+    'VALIDATED: stripe -> official (wordmark-blurple) + svg-logos (logos)',
+    'VALIDATED: apple -> official (primary-black) + simple-icons (monochrome)',
+    'VALIDATED: vue -> devicon (original) + simple-icons (monochrome)',
+    'VALIDATED: docker -> devicon (original-wordmark) + simple-icons',
+    'VALIDATED: tailwindcss -> simple-icons + devicon (plain)',
+    'VALIDATED: vercel -> official (primary-black) + simple-icons',
+    'VALIDATED: openai -> official (primary-spark) + simple-icons',
     '-----------------------------------------------------------------------',
+    dryRun
+      ? 'DRY-RUN FINISHED: 0 files written to disk (safe simulation complete)'
+      : 'SYNC SUCCESS: Catalog, manifest, and public artifacts refreshed.',
     'Discovered:     10 | Resolved: 10 | Validated: 10 | Conflicts: 10 | Unresolved: 0',
     '======================================================================='
   ].filter(Boolean);
@@ -124,10 +125,10 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
               </span>
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  CLI 自动化流水线 & 开发者命令工作台
+                  {t.scriptPanel.title}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  所有前端呈现资产均由 <code className="text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded font-mono">scripts/icon-sync.mjs</code> 单权威引擎驱动，保证构建的一致性与可复现性。
+                  {t.scriptPanel.subtitle}
                 </p>
               </div>
             </div>
@@ -140,7 +141,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
               className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? '已复制命令' : '复制命令'}</span>
+              <span>{copied ? t.scriptPanel.copiedCommand : t.scriptPanel.copyCommand}</span>
             </button>
           </div>
         </div>
@@ -155,7 +156,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
             onClick={handleCopy}
             className="text-2xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 transition-colors shrink-0 ml-2"
           >
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? t.scriptPanel.copiedCommand : t.scriptPanel.copyCommand}
           </button>
         </div>
       </div>
@@ -170,28 +171,28 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
             {/* Command selection */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                执行动作 (Pipeline Action)
+                Pipeline Action
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'sync-mainstream', label: '同步图库 (sync)' },
-                  { id: 'verify', label: '哈希与XML校验 (verify)' },
-                  { id: 'doctor', label: '环境自检 (doctor)' },
-                  { id: 'sources', label: '查看数据源 (sources)' },
-                  { id: 'variants', label: '变体分布 (variants)' },
-                  { id: 'audit', label: '完整性审计 (audit)' }
+                  { id: 'sync-mainstream', label: 'sync' },
+                  { id: 'verify', label: 'verify' },
+                  { id: 'doctor', label: 'doctor' },
+                  { id: 'sources', label: 'sources' },
+                  { id: 'variants', label: 'variants' },
+                  { id: 'audit', label: 'audit' }
                 ].map(cmd => (
                   <button
                     key={cmd.id}
                     id={`btn-cmd-${cmd.id}`}
                     onClick={() => setActiveCommand(cmd.id)}
-                    className={`p-2 rounded-lg text-left border text-xs transition-all cursor-pointer ${
+                    className={`p-2 rounded-lg text-left border text-xs font-mono transition-all cursor-pointer ${
                       activeCommand === cmd.id
                         ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 font-semibold'
                         : 'border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    {cmd.label}
+                    npm run {cmd.label}
                   </button>
                 ))}
               </div>
@@ -202,7 +203,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                 {/* Source Policy */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    解析优先策略 (--policy)
+                    {t.scriptPanel.policyLabel}
                   </label>
                   <select
                     id="select-policy"
@@ -210,17 +211,17 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                     onChange={e => setPolicy(e.target.value as any)}
                     className="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium text-slate-800"
                   >
-                    <option value="brand">品牌多色优先 (Official &gt; SVG Logos &gt; Simple Icons &gt; Devicon)</option>
-                    <option value="technology">开发者工具优先 (Devicon &gt; SVG Logos &gt; Simple Icons)</option>
-                    <option value="monochrome">单色矢量优先 (Simple Icons &gt; Devicon &gt; Official)</option>
-                    <option value="official">官方厂商档案优先 (Official &gt; Wikimedia)</option>
+                    <option value="brand">{t.scriptPanel.policyBrand}</option>
+                    <option value="technology">{t.scriptPanel.policyDevTools}</option>
+                    <option value="monochrome">{t.scriptPanel.policyMonochrome}</option>
+                    <option value="official">{t.scriptPanel.policyOfficial}</option>
                   </select>
                 </div>
 
                 {/* Scope */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    同步范围 (Scope)
+                    {t.scriptPanel.scopeLabel}
                   </label>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <button
@@ -232,7 +233,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                           : 'border-slate-200 text-slate-600'
                       }`}
                     >
-                      主流集合
+                      {t.scriptPanel.scopeMainstream}
                     </button>
                     <button
                       id="btn-scope-selected"
@@ -243,7 +244,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                           : 'border-slate-200 text-slate-600'
                       }`}
                     >
-                      已选 ({selectedSlugs.length})
+                      {format(t.scriptPanel.scopeSelected, { count: selectedSlugs.length })}
                     </button>
                     <button
                       id="btn-scope-all"
@@ -254,7 +255,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                           : 'border-slate-200 text-slate-600'
                       }`}
                     >
-                      全量 (--all)
+                      {t.scriptPanel.scopeAll}
                     </button>
                   </div>
                 </div>
@@ -269,7 +270,7 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                       onChange={e => setDryRun(e.target.checked)}
                       className="w-4 h-4 rounded text-indigo-600 border-slate-300"
                     />
-                    <span>模拟运行 (--dry-run: 不修改磁盘)</span>
+                    <span>{t.scriptPanel.dryRunLabel}</span>
                   </label>
                 </div>
               </>
@@ -281,24 +282,24 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs text-slate-600 space-y-2.5">
             <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>架构保证 (Pipeline Guarantees)</span>
+              <span>{t.scriptPanel.guaranteesTitle}</span>
             </h4>
             <ul className="space-y-1.5 text-2xs text-slate-600">
               <li className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>杜绝 AI 贝塞尔控制点生成的失真图形</span>
+                <span>{t.scriptPanel.noAiBezier}</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>禁止正则颜色替换，保留官方多色/单色原生字节</span>
+                <span>{t.scriptPanel.noRegexColor}</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>无数值后缀冲突（如 -2.svg），基于策略精确归一</span>
+                <span>{t.scriptPanel.noNumericSuffix}</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>清单驱动安全清理，避免陈旧或多余残余文件</span>
+                <span>{t.scriptPanel.manifestClean}</span>
               </li>
             </ul>
           </div>
@@ -315,10 +316,10 @@ export const ScriptPanel: React.FC<ScriptPanelProps> = ({
                   <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
                   <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
                 </div>
-                <span className="text-2xs font-mono text-slate-400 ml-2">bash - icon-sync-pipeline</span>
+                <span className="text-2xs font-mono text-slate-400 ml-2">{t.scriptPanel.pipelineBash}</span>
               </div>
 
-              <span className="text-2xs font-mono text-indigo-400">Node.js ES Module</span>
+              <span className="text-2xs font-mono text-indigo-400">{t.scriptPanel.nodeModule}</span>
             </div>
 
             {/* Terminal Screen Logs */}

@@ -200,7 +200,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
             </span>
           )}
           {asset.verificationStatus === 'verified' && (
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title="Verified Vector" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t.card.verifiedVector} />
           )}
         </div>
 
@@ -238,9 +238,9 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         <button
           id={`btn-copy-svg-${asset.assetId}`}
           onClick={handleCopySvg}
-          aria-label="Copy SVG Code"
+          aria-label={t.card.copySvgCode}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors cursor-pointer"
-          title="Copy SVG"
+          title={t.card.copySvg}
         >
           {copiedType === 'svg' ? (
             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -252,9 +252,9 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         <button
           id={`btn-copy-jsx-${asset.assetId}`}
           onClick={handleCopyJsx}
-          aria-label="Copy React JSX"
+          aria-label={t.card.copyReactJsx}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors cursor-pointer"
-          title="Copy React JSX"
+          title={t.card.copyJsx}
         >
           {copiedType === 'jsx' ? (
             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -266,9 +266,9 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         <button
           id={`btn-download-svg-${asset.assetId}`}
           onClick={handleDownload}
-          aria-label="Download SVG"
+          aria-label={t.card.downloadSvg}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors cursor-pointer"
-          title="Download SVG"
+          title={t.card.downloadSvg}
         >
           <Download className="w-3.5 h-3.5" />
         </button>
@@ -277,9 +277,9 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
           <button
             id={`btn-inspect-svg-${asset.assetId}`}
             onClick={() => onInspect(parentIcon)}
-            aria-label="Inspect Asset Family"
+            aria-label={t.card.inspectAssetFamily}
             className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 text-xs transition-colors cursor-pointer"
-            title="Inspect Asset Family"
+            title={t.card.inspectAssetFamily}
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>

@@ -199,6 +199,10 @@ export interface BrandAsset {
   rawSvg?: string;
   canonicalDecision?: CanonicalDecision;
   licenseStatus?: string;
+  primaryCategory?: string;
+  categories?: string[];
+  categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
+  categoryConfidence?: number;
 }
 
 export interface ConcreteAssetItem extends BrandAsset {
@@ -206,6 +210,10 @@ export interface ConcreteAssetItem extends BrandAsset {
   identitySlug?: string;
   brandColor?: string;
   category?: string;
+  primaryCategory?: string;
+  categories?: string[];
+  categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
+  categoryConfidence?: number;
   matchScore?: number;
   matchChecklist?: string[];
   matchReason?: string;
@@ -228,6 +236,10 @@ export interface BrandIdentity {
   title: string;
   canonicalName: string;
   category: string;
+  primaryCategory?: string;
+  categories?: string[];
+  categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
+  categoryConfidence?: number;
   brandColor?: string;
   aliases?: string[];
   tags?: string[];
@@ -237,6 +249,10 @@ export interface BrandIdentity {
   totalAssets: number;
   sourceRecords: SourceRecord[];
   sourcesAvailable: SourceProvider[];
+  sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
+  sourceCoverageFound?: number;
+  sourceCoverageChecked?: number;
+  sourceCoverageScore?: string;
   rolesAvailable: AssetRole[];
   contextsAvailable: UsageContext[];
   variantsAvailable: string[];
@@ -281,6 +297,14 @@ export interface IconRecord {
   sourceUrl?: string;
   brandColor?: string;
   category: string;
+  primaryCategory?: string;
+  categories?: string[];
+  categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
+  categoryConfidence?: number;
+  sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
+  sourceCoverageFound?: number;
+  sourceCoverageChecked?: number;
+  sourceCoverageScore?: string;
   // Granular verification
   xmlValid: boolean;
   svgRenderable?: boolean;
@@ -314,6 +338,14 @@ export interface IconItem {
   fileName: string;
   title: string;
   category: string;
+  primaryCategory?: string;
+  categories?: string[];
+  categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
+  categoryConfidence?: number;
+  sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
+  sourceCoverageFound?: number;
+  sourceCoverageChecked?: number;
+  sourceCoverageScore?: string;
   hex: string;
   svg?: string;
   source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos' | 'iconify';

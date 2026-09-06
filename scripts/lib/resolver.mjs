@@ -4,6 +4,8 @@ import { SimpleIconsAdapter } from './adapters/simpleIconsAdapter.mjs';
 import { DeviconAdapter } from './adapters/deviconAdapter.mjs';
 import { OfficialAdapter } from './adapters/officialAdapter.mjs';
 import { SvgLogosAdapter } from './adapters/svgLogosAdapter.mjs';
+import { WikimediaAdapter } from './adapters/wikimediaAdapter.mjs';
+import { classifyIdentity } from './categoryClassifier.mjs';
 
 /**
  * Authoritative Single Source-of-Truth Resolver with Pluggable Source Policies
@@ -15,7 +17,9 @@ export class IconResolver {
     this.devicon = new DeviconAdapter(rootDir);
     this.official = new OfficialAdapter(rootDir);
     this.svgLogos = new SvgLogosAdapter(rootDir);
+    this.wikimedia = new WikimediaAdapter(rootDir);
     this.aliases = new Map();
+    this.canonicalToAliases = new Map();
     this.collections = { mainstream: [], categories: {} };
     this.sourcePolicies = {
       defaultPolicy: 'brand',
@@ -55,7 +59,13 @@ export class IconResolver {
       const aliasContent = await fs.readFile(path.join(this.rootDir, 'config', 'aliases.json'), 'utf8');
       const aliasJson = JSON.parse(aliasContent);
       for (const [k, v] of Object.entries(aliasJson)) {
-        this.aliases.set(k.toLowerCase().trim(), v.toLowerCase().trim());
+        const cleanK = k.toLowerCase().trim();
+        const cleanV = v.toLowerCase().trim();
+        this.aliases.set(cleanK, cleanV);
+        if (!this.canonicalToAliases.has(cleanV)) {
+          this.canonicalToAliases.set(cleanV, new Set());
+        }
+        this.canonicalToAliases.get(cleanV).add(cleanK);
       }
     } catch (err) {
       console.warn(`[IconResolver] Warning: could not load config/aliases.json: ${err.message}`);
@@ -80,12 +90,13 @@ export class IconResolver {
       console.warn(`[IconResolver] Warning: could not load config/source-policies.json: ${err.message}`);
     }
 
-    // 4. Load all 4 adapters in parallel
+    // 4. Load all 5 adapters in parallel
     await Promise.all([
       this.simpleIcons.load(),
       this.devicon.load(),
       this.official.load(),
-      this.svgLogos.load()
+      this.svgLogos.load(),
+      this.wikimedia.load()
     ]);
 
     this.loaded = true;
@@ -177,29 +188,123 @@ export class IconResolver {
   }
 
   /**
-   * Discovers complete Asset Family and builds Source Records (evidence)
+   * Discovers complete Asset Family and builds Source Records (evidence) across all 5 enabled providers
+   * Active Cross-Source Resolution with Bidirectional Alias Clustering
    * @param {string} canonicalId
-   * @returns {{ allFamilyAssets: import('./types.mjs').BrandAsset[], sourceRecords: import('./types.mjs').SourceRecord[] }}
+   * @returns {{ allFamilyAssets: import('./types.mjs').BrandAsset[], sourceRecords: import('./types.mjs').SourceRecord[], sourceCoverage: Record<string, string>, sourceCoverageFound: number, sourceCoverageChecked: number, sourceCoverageScore: string, deviconTags: string[], identityAliases: string[] }}
    */
   getAssetFamily(canonicalId) {
-    const officialAssets = this.official.getAssets(canonicalId);
-    const svgLogosAssets = this.svgLogos.getAssets(canonicalId);
-    const deviconAssets = this.devicon.getAssets(canonicalId);
-    const simpleIconsAssets = this.simpleIcons.getAssets(canonicalId);
+    // 1. Gather all candidate aliases for this canonical identity
+    const candidates = new Set();
+    const cleanId = (canonicalId || '').toLowerCase().trim();
+    candidates.add(cleanId);
+    candidates.add(cleanId.replace(/[\s_]+/g, '-'));
+    candidates.add(cleanId.replace(/[^a-z0-9]/g, ''));
+
+    if (this.canonicalToAliases.has(cleanId)) {
+      for (const alt of this.canonicalToAliases.get(cleanId)) {
+        candidates.add(alt);
+        candidates.add(alt.replace(/[\s_]+/g, '-'));
+        candidates.add(alt.replace(/[^a-z0-9]/g, ''));
+      }
+    }
+
+    const candidateList = Array.from(candidates);
+
+    // 2. Query Official Vendor Provider
+    const officialAssets = [];
+    for (const c of candidateList) {
+      const found = this.official.getAssets(c);
+      if (found.length > 0) {
+        officialAssets.push(...found);
+        break;
+      }
+    }
+
+    // 3. Query Wikimedia Commons Provider
+    const wikimediaAssets = [];
+    for (const c of candidateList) {
+      const found = this.wikimedia.getAssets(c);
+      if (found.length > 0) {
+        wikimediaAssets.push(...found);
+        break;
+      }
+    }
+
+    // 4. Query SVG Logos Provider (with -icon probe)
+    const svgLogosAssets = [];
+    const seenSvgNames = new Set();
+    for (const c of candidateList) {
+      const found = this.svgLogos.getAssets(c);
+      for (const a of found) {
+        if (!seenSvgNames.has(a.sourceId)) {
+          seenSvgNames.add(a.sourceId);
+          svgLogosAssets.push(a);
+        }
+      }
+      if (!c.endsWith('-icon')) {
+        const foundIcon = this.svgLogos.getAssets(`${c}-icon`);
+        for (const a of foundIcon) {
+          if (!seenSvgNames.has(a.sourceId)) {
+            seenSvgNames.add(a.sourceId);
+            svgLogosAssets.push(a);
+          }
+        }
+      }
+    }
+
+    // 5. Query Devicon Provider
+    const deviconAssets = [];
+    let deviconTags = [];
+    for (const c of candidateList) {
+      const devMatch = this.devicon.findByQuery(c);
+      if (devMatch && Array.isArray(devMatch.tags) && devMatch.tags.length > 0) {
+        deviconTags = devMatch.tags;
+      }
+      const found = this.devicon.getAssets(c);
+      if (found.length > 0) {
+        deviconAssets.push(...found);
+        break;
+      }
+    }
+
+    // 6. Query Simple Icons Provider
+    const simpleIconsAssets = [];
+    for (const c of candidateList) {
+      const found = this.simpleIcons.getAssets(c);
+      if (found.length > 0) {
+        simpleIconsAssets.push(...found);
+        break;
+      }
+    }
+
+    // Explicit Source Availability Status (Objective 3.2 & 3.4)
+    const sourceCoverage = {
+      official: officialAssets.length > 0 ? 'available' : 'not-found',
+      wikimedia: wikimediaAssets.length > 0 ? 'available' : 'not-found',
+      'svg-logos': svgLogosAssets.length > 0 ? 'available' : 'not-found',
+      devicon: deviconAssets.length > 0 ? 'available' : 'not-found',
+      'simple-icons': simpleIconsAssets.length > 0 ? 'available' : 'not-found'
+    };
+
+    const sourceCoverageFound = Object.values(sourceCoverage).filter(s => s === 'available').length;
+    const sourceCoverageChecked = 5;
+    const sourceCoverageScore = `${sourceCoverageFound} / ${sourceCoverageChecked}`;
 
     const allFamilyAssets = [
       ...officialAssets,
+      ...wikimediaAssets,
       ...svgLogosAssets,
       ...deviconAssets,
       ...simpleIconsAssets
     ];
 
-    // Annotate assets with granular verification fields, semantically correct source labels, and trust states
+    // Ensure assets reference canonicalId as their identityId
     for (const asset of allFamilyAssets) {
+      asset.identityId = canonicalId;
       const { sourcePlatform, trustState } = this.getSourcePlatformAndTrust(asset.sourceProvider, asset.sourceCollection);
       asset.sourcePlatform = sourcePlatform;
       asset.trustState = trustState;
-      // Principle 11: Verification MUST NEVER default to true before actual SVG parsing & hashing
       asset.xmlValid = false;
       asset.svgRenderable = false;
       asset.renderable = false;
@@ -210,15 +315,15 @@ export class IconResolver {
       asset.verificationStatus = 'unresolved';
     }
 
-    // Build Source Records (Requirement 22: Distinguish source evidence from canonical asset)
+    // Build Source Records (Requirement 22 & 3.3: Distinguish source evidence from canonical asset)
     const sourceRecordsMap = new Map();
 
     for (const a of allFamilyAssets) {
-      const prov = a.sourceProvider;
+      const prov = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
       if (!sourceRecordsMap.has(prov)) {
-        const { sourcePlatform, trustState } = this.getSourcePlatformAndTrust(prov, a.sourceCollection);
+        const { sourcePlatform, trustState } = this.getSourcePlatformAndTrust(a.sourceProvider, a.sourceCollection);
         sourceRecordsMap.set(prov, {
-          sourceProvider: prov,
+          sourceProvider: a.sourceProvider,
           sourcePlatform,
           sourceCollection: a.sourceCollection,
           sourceId: a.sourceId,
@@ -240,7 +345,13 @@ export class IconResolver {
 
     return {
       allFamilyAssets,
-      sourceRecords: Array.from(sourceRecordsMap.values())
+      sourceRecords: Array.from(sourceRecordsMap.values()),
+      sourceCoverage,
+      sourceCoverageFound,
+      sourceCoverageChecked,
+      sourceCoverageScore,
+      deviconTags,
+      identityAliases: candidateList
     };
   }
 
@@ -412,7 +523,16 @@ export class IconResolver {
     const canonicalId = this.resolveIdentity(normalized) || this.applyAlias(normalized);
     if (!canonicalId) return null;
 
-    const { allFamilyAssets, sourceRecords } = this.getAssetFamily(canonicalId);
+    const {
+      allFamilyAssets,
+      sourceRecords,
+      sourceCoverage,
+      sourceCoverageFound,
+      sourceCoverageChecked,
+      sourceCoverageScore,
+      deviconTags,
+      identityAliases
+    } = this.getAssetFamily(canonicalId);
     if (allFamilyAssets.length === 0) return null;
 
     const canonicalAsset = this.resolveAsset(canonicalId, options, allFamilyAssets);
@@ -422,7 +542,13 @@ export class IconResolver {
       canonicalId,
       canonicalAsset,
       allFamilyAssets,
-      sourceRecords
+      sourceRecords,
+      sourceCoverage,
+      sourceCoverageFound,
+      sourceCoverageChecked,
+      sourceCoverageScore,
+      deviconTags,
+      identityAliases
     };
   }
 
@@ -439,7 +565,18 @@ export class IconResolver {
     const resolved = await this.resolveBestAsset(inputQuery, options);
     if (!resolved) return null;
 
-    const { canonicalId, canonicalAsset, allFamilyAssets, sourceRecords } = resolved;
+    const {
+      canonicalId,
+      canonicalAsset,
+      allFamilyAssets,
+      sourceRecords,
+      sourceCoverage,
+      sourceCoverageFound,
+      sourceCoverageChecked,
+      sourceCoverageScore,
+      deviconTags,
+      identityAliases
+    } = resolved;
     const policyKey = options.policy || this.sourcePolicies.defaultPolicy || 'brand';
 
     // Mark canonical status and clean filenames without collision
@@ -476,20 +613,41 @@ export class IconResolver {
 
     // Find display title
     const offMatch = this.official.get(canonicalId);
+    const wikiMatch = this.wikimedia.get(canonicalId);
     const siMatch = this.simpleIcons.findByQuery(canonicalId);
     const devMatch = this.devicon.findByQuery(canonicalId);
     const logoMatch = this.svgLogos.findByQuery(canonicalId);
 
     let title = canonicalId.charAt(0).toUpperCase() + canonicalId.slice(1);
     if (offMatch?.title) title = offMatch.title;
+    else if (wikiMatch?.title) title = wikiMatch.title;
     else if (siMatch?.title) title = siMatch.title;
     else if (devMatch?.title) title = devMatch.title.charAt(0).toUpperCase() + devMatch.title.slice(1);
     else if (logoMatch?.title) title = logoMatch.title;
 
     let brandColor = '#111827';
     if (offMatch?.hex) brandColor = offMatch.hex;
+    else if (wikiMatch?.hex) brandColor = wikiMatch.hex;
     else if (siMatch?.hex) brandColor = siMatch.hex;
     else if (devMatch?.hex) brandColor = devMatch.hex;
+
+    // Multi-Category Classification (Objective 1)
+    const catClassification = classifyIdentity({
+      id: canonicalId,
+      title,
+      aliases: identityAliases,
+      deviconTags,
+      collections: this.collections
+    });
+
+    // Annotate all family assets with category metadata
+    for (const a of allFamilyAssets) {
+      a.primaryCategory = catClassification.primaryCategory;
+      a.categories = catClassification.categories;
+      a.categorySource = catClassification.categorySource;
+      a.categoryConfidence = catClassification.categoryConfidence;
+      a.category = catClassification.primaryCategory;
+    }
 
     // Alternative Sources list for backward compatibility
     const alternativeSources = [];
@@ -538,7 +696,15 @@ export class IconResolver {
       license: canonicalAsset.license,
       sourceUrl: canonicalAsset.sourceUrl,
       brandColor,
-      category: offMatch?.category || this.getCategory(canonicalId),
+      category: catClassification.primaryCategory,
+      primaryCategory: catClassification.primaryCategory,
+      categories: catClassification.categories,
+      categorySource: catClassification.categorySource,
+      categoryConfidence: catClassification.categoryConfidence,
+      sourceCoverage,
+      sourceCoverageFound,
+      sourceCoverageChecked,
+      sourceCoverageScore,
       // Granular verification fields: Must NOT default to true before actual SVG parsing & hashing
       xmlValid: false,
       svgRenderable: false,
@@ -586,6 +752,11 @@ export class IconResolver {
 
     // 2. Add all official items
     for (const item of this.official.getAll()) {
+      idSet.add(this.applyAlias(item.slug));
+    }
+
+    // 2b. Add all wikimedia items
+    for (const item of this.wikimedia.getAll()) {
       idSet.add(this.applyAlias(item.slug));
     }
 

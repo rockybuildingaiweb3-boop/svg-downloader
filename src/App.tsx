@@ -32,7 +32,8 @@ import {
   getSemanticSourceLabel
 } from './types';
 import { REGISTRY_ITEMS, REGISTRY_ASSETS, REGISTRY_STATS, ASSET_MAP, CURATED_ICONS, ICON_MAP } from './data/catalog';
-import { CATEGORIES } from './data/curatedIcons';
+import { CATEGORY_DEFINITIONS } from './taxonomy/taxonomy';
+import { computeCategoryStats } from './taxonomy/categoryResolver';
 import { Header, ActiveTabType } from './components/Header';
 import { IconCard } from './components/IconCard';
 import { ConcreteAssetCard } from './components/ConcreteAssetCard';
@@ -97,6 +98,11 @@ export default function App() {
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [inspectedIcon, setInspectedIcon] = useState<IconItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Dynamic Category Stats computed from the active registry
+  const categoryStatsData = useMemo(() => {
+    return computeCategoryStats(REGISTRY_ITEMS);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -172,7 +178,7 @@ export default function App() {
 
   // Filtered icons
   const filteredIcons = useMemo(() => {
-    const baseFiltered = CURATED_ICONS.map(icon => {
+    const baseFiltered = REGISTRY_ITEMS.map(icon => {
       const overrideAssetId = activeAssetOverrides[icon.id];
       if (overrideAssetId && icon.assets) {
         const found = icon.assets.find(a => a.assetId === overrideAssetId);
@@ -204,13 +210,12 @@ export default function App() {
         if (!selectedSlugs.includes(icon.slug)) return false;
       }
 
-      // 1. Category filter
+      // 1. Category filter (multi-category aware)
       if (selectedCategory !== 'all') {
-        if (selectedCategory === 'mainstream') {
-          if (icon.category !== 'mainstream' && icon.category !== 'brands' && icon.category !== 'technologies') {
-            // keep
-          }
-        } else if (icon.category !== selectedCategory) {
+        const cats: string[] = Array.isArray(icon.categories) && icon.categories.length > 0
+          ? icon.categories
+          : (icon.category ? [icon.category] : ['uncategorized']);
+        if (!cats.includes(selectedCategory) && icon.primaryCategory !== selectedCategory && icon.category !== selectedCategory) {
           return false;
         }
       }
@@ -337,9 +342,14 @@ export default function App() {
         if (!selectedAssetIds.includes(asset.assetId)) return false;
       }
 
-      // 1. Category filter
-      if (selectedCategory !== 'all' && asset.category !== selectedCategory) {
-        return false;
+      // 1. Category filter (multi-category aware)
+      if (selectedCategory !== 'all') {
+        const cats: string[] = Array.isArray(asset.categories) && asset.categories.length > 0
+          ? asset.categories
+          : (asset.category ? [asset.category] : ['uncategorized']);
+        if (!cats.includes(selectedCategory) && asset.primaryCategory !== selectedCategory && asset.category !== selectedCategory) {
+          return false;
+        }
       }
 
       // 2. Source filter
@@ -543,22 +553,7 @@ export default function App() {
 
   // Helper category label mapping
   const getCategoryLabel = (catId: string) => {
-    const map: Record<string, string> = {
-      all: t.filters.categories.all,
-      mainstream: t.filters.categories.mainstream,
-      brands: t.filters.categories.brands,
-      technologies: t.filters.categories.technologies,
-      apps: t.filters.categories.apps,
-      cloud: t.filters.categories.cloud,
-      databases: t.filters.categories.databases,
-      'developer-tools': t.filters.categories.developerTools,
-      design: t.filters.categories.design,
-      social: t.filters.categories.social,
-      gaming: t.filters.categories.gaming,
-      web3: t.filters.categories.web3,
-      custom: t.filters.categories.custom,
-    };
-    return map[catId] || catId;
+    return t.filters.categories[catId] || catId;
   };
 
   return (
@@ -589,11 +584,11 @@ export default function App() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Multi-Source SVG Registry</span>
+              <span>{t.header.multiSourceBadge}</span>
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
             <span className="text-slate-200 font-medium">
-              <strong className="text-white">{REGISTRY_STATS.totalIdentities.toLocaleString()}</strong> Identities · <strong className="text-white">{REGISTRY_STATS.totalAssets.toLocaleString()}</strong> Authentic Assets
+              <strong className="text-white">{REGISTRY_STATS.totalIdentities.toLocaleString()}</strong> {t.header.identitiesWord} · <strong className="text-white">{REGISTRY_STATS.totalAssets.toLocaleString()}</strong> {t.header.assetsWord}
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
             <span className="text-slate-400 font-mono text-2xs">
@@ -603,11 +598,11 @@ export default function App() {
 
           <div className="flex items-center gap-3 text-2xs text-slate-400">
             <span className="text-emerald-300 flex items-center gap-1 font-semibold">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> Zero Fake SVGs
+              <Check className="w-3.5 h-3.5 text-emerald-400" /> {t.header.zeroFakeSvgs}
             </span>
             <span>•</span>
             <span className="text-indigo-300 font-mono">
-              {REGISTRY_STATS.conflictsCount} Collisions Resolved by Policy
+              {REGISTRY_STATS.conflictsCount} {t.header.collisionsResolved}
             </span>
           </div>
         </div>
@@ -625,16 +620,16 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-indigo-400" />
-                    <span>Registry Browsing Level</span>
+                    <span>{t.header.browseModeLabel}</span>
                   </h2>
                   <span className="px-2 py-0.5 rounded-full text-3xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Source Inventory First
+                    {t.header.sourceInventoryFirst}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5">
                   {browseLevel === 'identities'
-                    ? `Browsing ${REGISTRY_ITEMS.length.toLocaleString()} verified brand & tech identities across 4 upstream sources`
-                    : `Browsing ${REGISTRY_ASSETS.length.toLocaleString()} individual authentic vector assets across all variants & providers`}
+                    ? `${t.header.browseIdentitiesTitle} (${REGISTRY_ITEMS.length.toLocaleString()})`
+                    : `${t.header.browseAssetsTitle} (${REGISTRY_ASSETS.length.toLocaleString()})`}
                 </p>
               </div>
 
@@ -650,7 +645,7 @@ export default function App() {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>Browse Identities ({REGISTRY_ITEMS.length.toLocaleString()})</span>
+                  <span>{t.header.browseIdentitiesTitle} ({REGISTRY_ITEMS.length.toLocaleString()})</span>
                 </button>
                 <button
                   id="btn-browse-assets"
@@ -662,7 +657,7 @@ export default function App() {
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Browse Assets ({REGISTRY_ASSETS.length.toLocaleString()})</span>
+                  <span>{t.header.browseAssetsTitle} ({REGISTRY_ASSETS.length.toLocaleString()})</span>
                 </button>
               </div>
             </div>
@@ -789,7 +784,7 @@ export default function App() {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>{t.filters.collections.all} ({CURATED_ICONS.length})</span>
+                  <span>{t.filters.collections.all} ({REGISTRY_ITEMS.length})</span>
                 </button>
 
                 <button
@@ -836,17 +831,20 @@ export default function App() {
 
               {/* Row 2: Category Chips */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-                {CATEGORIES.map(cat => {
+                {CATEGORY_DEFINITIONS.map(cat => {
+                  const stat = categoryStatsData.categoryStats[cat.id];
                   const count =
                     cat.id === 'all'
-                      ? CURATED_ICONS.length
-                      : CURATED_ICONS.filter(i => i.category === cat.id).length;
+                      ? REGISTRY_ITEMS.length
+                      : (stat ? stat.identitiesCount : 0);
+
+                  if (count === 0 && cat.id !== 'all') return null;
 
                   return (
                     <button
                       key={cat.id}
                       id={`filter-cat-${cat.id}`}
-                      onClick={() => setSelectedCategory(cat.id)}
+                      onClick={() => setSelectedCategory(cat.id as any)}
                       className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                         selectedCategory === cat.id
                           ? 'bg-slate-900 text-white shadow-xs font-semibold'
@@ -861,7 +859,7 @@ export default function App() {
                             : 'bg-slate-200 text-slate-600'
                         }`}
                       >
-                        {count}
+                        {count.toLocaleString()}
                       </span>
                     </button>
                   );
@@ -884,12 +882,12 @@ export default function App() {
                       onChange={e => setSelectedRole(e.target.value as any)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">{t.filters.allRoles}</option>
-                      <option value="symbol">Symbol (Single mark)</option>
-                      <option value="logo">Logo (Complete mark)</option>
-                      <option value="wordmark">Wordmark (Logotype)</option>
-                      <option value="app-icon">App Icon</option>
-                      <option value="favicon">Favicon</option>
+                      <option value="all">{t.filters.roleOptions.all || t.filters.allRoles}</option>
+                      <option value="symbol">{t.filters.roleOptions.symbol}</option>
+                      <option value="logo">{t.filters.roleOptions.logo}</option>
+                      <option value="wordmark">{t.filters.roleOptions.wordmark}</option>
+                      <option value="app-icon">{t.filters.roleOptions['app-icon']}</option>
+                      <option value="favicon">{t.filters.roleOptions.favicon}</option>
                     </select>
                   </div>
 
@@ -905,13 +903,13 @@ export default function App() {
                       onChange={e => setSelectedContext(e.target.value as any)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">{t.filters.allContexts}</option>
-                      <option value="web">Web & Cloud</option>
-                      <option value="desktop">Desktop</option>
-                      <option value="mobile">Mobile</option>
-                      <option value="app-store">App Store</option>
-                      <option value="social">Social & Avatar</option>
-                      <option value="general">General</option>
+                      <option value="all">{t.filters.contextOptions.all || t.filters.allContexts}</option>
+                      <option value="web">{t.filters.contextOptions.web}</option>
+                      <option value="desktop">{t.filters.contextOptions.desktop}</option>
+                      <option value="mobile">{t.filters.contextOptions.mobile}</option>
+                      <option value="app-store">{t.filters.contextOptions['app-store']}</option>
+                      <option value="social">{t.filters.contextOptions.social}</option>
+                      <option value="general">{t.filters.contextOptions.general}</option>
                     </select>
                   </div>
 
@@ -927,13 +925,13 @@ export default function App() {
                       onChange={e => setSelectedVariant(e.target.value)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">{t.filters.allVariants}</option>
-                      <option value="color">Color (Standard multi-color)</option>
-                      <option value="monochrome">Monochrome (Single-tone)</option>
-                      <option value="original">Original (Native corporate)</option>
-                      <option value="plain">Plain (Clean geometry)</option>
-                      <option value="line">Line (Outlined)</option>
-                      <option value="wordmark">Wordmark (Horizontal)</option>
+                      <option value="all">{t.filters.variantOptions.all || t.filters.allVariants}</option>
+                      <option value="color">{t.filters.variantOptions.color}</option>
+                      <option value="monochrome">{t.filters.variantOptions.monochrome}</option>
+                      <option value="original">{t.filters.variantOptions.original}</option>
+                      <option value="plain">{t.filters.variantOptions.plain}</option>
+                      <option value="line">{t.filters.variantOptions.line}</option>
+                      <option value="wordmark">{t.filters.variantOptions.wordmark}</option>
                     </select>
                   </div>
 
@@ -949,11 +947,11 @@ export default function App() {
                       onChange={e => setSelectedTrustState(e.target.value as any)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">{t.filters.allTrustStates}</option>
-                      <option value="trusted">Trusted (Vendor Design Guidelines)</option>
-                      <option value="verified">Verified (Cryptographic SHA-256)</option>
-                      <option value="community">Community (Open-source maintained)</option>
-                      <option value="unverified">Unverified</option>
+                      <option value="all">{t.filters.trustOptions.all || t.filters.allTrustStates}</option>
+                      <option value="trusted">{t.filters.trustOptions.trusted}</option>
+                      <option value="verified">{t.filters.trustOptions.verified}</option>
+                      <option value="community">{t.filters.trustOptions.community}</option>
+                      <option value="unverified">{t.filters.trustOptions.unverified}</option>
                     </select>
                   </div>
 

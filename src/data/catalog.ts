@@ -79,7 +79,17 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     slug: rec.id,
     fileName: rec.file,
     title: rec.title,
-    category: rec.category || 'mainstream',
+    category: rec.primaryCategory || rec.category || 'technology',
+    primaryCategory: rec.primaryCategory || rec.category || 'technology',
+    categories: Array.isArray(rec.categories) && rec.categories.length > 0
+      ? rec.categories
+      : [rec.primaryCategory || rec.category || 'technology'],
+    categorySource: rec.categorySource || 'derived',
+    categoryConfidence: rec.categoryConfidence ?? 0.8,
+    sourceCoverage: rec.sourceCoverage,
+    sourceCoverageFound: rec.sourceCoverageFound,
+    sourceCoverageChecked: rec.sourceCoverageChecked,
+    sourceCoverageScore: rec.sourceCoverageScore,
     hex: (rec.brandColor || '#111827').replace('#', ''),
     source: rec.source,
     sourceProvider,
@@ -140,7 +150,11 @@ for (const icon of REGISTRY_ITEMS) {
       identityTitle: icon.title,
       identitySlug: icon.slug,
       brandColor: icon.hex ? `#${icon.hex}` : undefined,
-      category: icon.category
+      category: icon.category,
+      primaryCategory: icon.primaryCategory,
+      categories: icon.categories,
+      categorySource: icon.categorySource,
+      categoryConfidence: icon.categoryConfidence,
     });
   }
 }
