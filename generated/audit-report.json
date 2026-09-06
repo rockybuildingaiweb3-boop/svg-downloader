@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T11:23:51.074Z",
+  "generatedAt": "2026-09-06T11:45:00.153Z",
   "doctorStatus": "HEALTHY",
   "sourceCoverage": {
     "simpleIcons": {
@@ -23,16 +23,23 @@
   },
   "catalogMetrics": {
     "canonicalIdentities": 135,
-    "totalAssets": 614,
-    "totalVariants": 1313,
-    "valid": 614,
+    "totalAssets": 603,
+    "totalVariants": 1291,
+    "valid": 603,
     "warnings": 0,
     "unresolved": 0,
-    "multiColorAssets": 215,
+    "multiColorAssets": 205,
     "missingViewBox": 0,
     "hashMismatches": 0,
     "duplicateAssets": 41,
     "staleFiles": 0,
+    "contextOriginDistribution": {
+      "source-confirmed": 0,
+      "inferred": 0,
+      "unknown": 603
+    },
+    "structuralMetricsCoverage": 603,
+    "geometryAnomalies": 0,
     "uiCatalogFresh": true
   }
 }

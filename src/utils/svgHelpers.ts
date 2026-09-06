@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { IconItem, BrandAsset } from '../types';
+import { IconItem, BrandAsset, DownloadReceipt } from '../types';
 
 /**
  * Explicit Error thrown when an authentic asset cannot be resolved or found.
@@ -88,9 +88,12 @@ export async function fetchRawSvg(fileName: string): Promise<string | null> {
 /**
  * Download an authentic canonical raw SVG.
  * Guaranteed 100% byte-faithful to the official canonical source.
- * Disables and rejects download if asset is missing or unresolved (Requirement 26 & 48).
+ * Generates an immutable DownloadReceipt (Principle 25).
  */
-export async function downloadSingleSvg(item: IconItem, asset?: BrandAsset): Promise<{ fileName: string; sha256: string }> {
+export async function downloadSingleSvg(
+  item: IconItem,
+  asset?: BrandAsset
+): Promise<{ fileName: string; sha256: string; fileSize: number; receipt: DownloadReceipt }> {
   if (item.verificationStatus === 'unresolved' || asset?.verificationStatus === 'unresolved') {
     throw new AssetNotFoundError(
       item.id,
@@ -115,12 +118,35 @@ export async function downloadSingleSvg(item: IconItem, asset?: BrandAsset): Pro
     console.warn(`[Security Audit] SHA-256 discrepancy for ${targetFile}: computed ${computedSha} vs expected ${expectedSha}`);
   }
 
+  const encoder = new TextEncoder();
+  const byteLength = encoder.encode(rawSvg).length;
+
   const blob = new Blob([rawSvg], { type: 'image/svg+xml;charset=utf-8' });
   triggerBlobDownload(blob, targetFile.endsWith('.svg') ? targetFile : `${targetFile}.svg`);
 
+  const activeAsset = asset || item.canonicalAsset;
+
+  const receipt: DownloadReceipt = {
+    fileName: targetFile,
+    identityId: item.id,
+    title: item.title,
+    fileSize: byteLength,
+    sourceProvider: activeAsset?.sourceProvider || item.sourceProvider,
+    sourcePlatform: activeAsset?.sourcePlatform || item.sourcePlatform,
+    role: activeAsset?.role || item.role,
+    graphicVariant: activeAsset?.graphicVariant || item.graphicVariant,
+    rawSha256: computedSha,
+    license: activeAsset?.license || item.license,
+    sourceUrl: activeAsset?.sourceUrl || item.sourceUrl,
+    verificationStatus: activeAsset?.verificationStatus || item.verificationStatus,
+    timestamp: new Date().toISOString()
+  };
+
   return {
     fileName: targetFile,
-    sha256: computedSha
+    sha256: computedSha,
+    fileSize: byteLength,
+    receipt
   };
 }
 
@@ -236,6 +262,52 @@ export function generateVueSfc(item: IconItem, rawSvg: string, asset?: BrandAsse
 // Authentically preserved vector geometry
 </script>
 `;
+}
+
+/**
+ * Generate standard HTML <img> embed snippet
+ */
+export function generateHtmlEmbed(item: IconItem, fileName: string, role?: string): string {
+  return `<!-- ${item.title} Authentic Canonical Vector (${role || item.role}) -->
+<img 
+  src="/icons/${fileName}" 
+  alt="${item.title} Logo" 
+  width="24" 
+  height="24" 
+  loading="lazy" 
+/>`;
+}
+
+/**
+ * Generate CSS background-image snippet
+ */
+export function generateCssSnippet(item: IconItem, fileName: string): string {
+  return `/* ${item.title} SVG Background */
+.icon-${item.id} {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: url('/icons/${fileName}') no-repeat center / contain;
+}`;
+}
+
+/**
+ * Generate GitHub/Markdown embed snippet
+ */
+export function generateMarkdownSnippet(item: IconItem, fileName: string): string {
+  return `<!-- ${item.title} Markdown Badge -->
+<img src="/icons/${fileName}" alt="${item.title}" width="20" height="20" /> [${item.title}](/icons/${fileName})`;
+}
+
+/**
+ * Generate Tailwind CSS JSX snippet
+ */
+export function generateTailwindSnippet(item: IconItem, fileName: string): string {
+  return `<img 
+  src="/icons/${fileName}" 
+  alt="${item.title}" 
+  className="w-6 h-6 inline-block object-contain transition-transform hover:scale-110" 
+/>`;
 }
 
 /**

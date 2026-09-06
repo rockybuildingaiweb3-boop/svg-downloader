@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Download, Copy, Check, Code, Maximize2, ShieldCheck, Layers, AlertCircle, AlertTriangle, ExternalLink } from 'lucide-react';
-import { IconItem, getSemanticSourceLabel, getTrustStateBadge } from '../types';
+import { Download, Copy, Check, Code, Maximize2, ShieldCheck, Layers, AlertCircle, AlertTriangle, ExternalLink, Heart } from 'lucide-react';
+import { IconItem, DownloadReceipt, getSemanticSourceLabel, getTrustStateBadge } from '../types';
 import {
   fetchRawSvg,
   downloadSingleSvg,
@@ -14,6 +14,9 @@ interface IconCardProps {
   isSelected: boolean;
   onToggleSelect: (slug: string) => void;
   onInspect: (icon: IconItem) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
+  onDownloadReceipt?: (receipt: DownloadReceipt) => void;
 }
 
 export const IconCard: React.FC<IconCardProps> = ({
@@ -21,6 +24,9 @@ export const IconCard: React.FC<IconCardProps> = ({
   isSelected,
   onToggleSelect,
   onInspect,
+  isFavorite = false,
+  onToggleFavorite,
+  onDownloadReceipt,
 }) => {
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | 'hex' | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -74,8 +80,11 @@ export const IconCard: React.FC<IconCardProps> = ({
     e.stopPropagation();
     if (isUnresolved) return;
     try {
-      await downloadSingleSvg(icon);
+      const receipt = await downloadSingleSvg(icon);
       setDownloadError(null);
+      if (onDownloadReceipt) {
+        onDownloadReceipt(receipt);
+      }
     } catch (err: any) {
       setDownloadError(err.message || '无法下载未解析的资产');
       setTimeout(() => setDownloadError(null), 3000);
@@ -103,7 +112,7 @@ export const IconCard: React.FC<IconCardProps> = ({
           : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-sm'
       }`}
     >
-      {/* Top Header: Select Checkbox, Source Label & Trust Badge */}
+      {/* Top Header: Select Checkbox, Source Label, Trust Badge & Favorite / Hex */}
       <div className="flex items-center justify-between w-full mb-2" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-1.5 flex-wrap">
           <label className="flex items-center cursor-pointer select-none">
@@ -128,21 +137,52 @@ export const IconCard: React.FC<IconCardProps> = ({
           </span>
         </div>
 
-        {/* Brand Hex Pill */}
-        <button
-          onClick={handleCopyHex}
-          title={`点击复制官方品牌元数据色 ${cleanHex}`}
-          aria-label={`复制品牌色值 ${cleanHex}`}
-          className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors flex items-center gap-1 shrink-0 focus:ring-1 focus:ring-slate-400 focus:outline-none"
-        >
-          <span
-            className="w-2 h-2 rounded-full inline-block border border-black/10 shrink-0"
-            style={{ backgroundColor: cleanHex }}
-            aria-hidden="true"
-          />
-          <span className="truncate">{copiedType === 'hex' ? '已复制' : cleanHex}</span>
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Favorite Toggle Button */}
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(icon.id);
+              }}
+              title={isFavorite ? '从收藏夹中移除' : '加入我的收藏'}
+              aria-label={isFavorite ? '取消收藏' : '添加收藏'}
+              className={`p-1 rounded-md text-xs transition-colors cursor-pointer ${
+                isFavorite
+                  ? 'text-rose-500 hover:text-rose-600 bg-rose-50'
+                  : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'
+              }`}
+            >
+              <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
+            </button>
+          )}
+
+          {/* Brand Hex Pill */}
+          <button
+            onClick={handleCopyHex}
+            title={`点击复制官方品牌元数据色 ${cleanHex}`}
+            aria-label={`复制品牌色值 ${cleanHex}`}
+            className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors flex items-center gap-1 shrink-0 focus:ring-1 focus:ring-slate-400 focus:outline-none"
+          >
+            <span
+              className="w-2 h-2 rounded-full inline-block border border-black/10 shrink-0"
+              style={{ backgroundColor: cleanHex }}
+              aria-hidden="true"
+            />
+            <span className="truncate">{copiedType === 'hex' ? '已复制' : cleanHex}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Search Match Explainability Badge */}
+      {icon.matchScore !== undefined && (
+        <div className="flex items-center justify-between gap-1 mb-1.5 px-2 py-0.5 bg-indigo-50/90 rounded-md border border-indigo-200 text-[10px] font-mono text-indigo-900">
+          <span className="font-semibold text-indigo-700">{icon.matchScore}% 匹配</span>
+          <span className="truncate text-[9px] text-indigo-600" title={icon.matchChecklist?.join(' · ')}>
+            {icon.matchReason || icon.matchChecklist?.[0]}
+          </span>
+        </div>
+      )}
 
       {/* Asset Family Summary Badge: e.g. "4 assets · 3 sources" */}
       <div className="flex items-center justify-between gap-1 mb-1">
@@ -203,7 +243,7 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Role & Context Tags */}
+      {/* Role, Context & Color Structure Tags */}
       <div className="flex items-center justify-center gap-1 mb-1.5 flex-wrap">
         <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium capitalize">
           {icon.role || 'logo'}
@@ -211,6 +251,11 @@ export const IconCard: React.FC<IconCardProps> = ({
         {icon.graphicVariant && icon.graphicVariant !== 'default' && (
           <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-50 text-slate-500 font-mono">
             {icon.graphicVariant}
+          </span>
+        )}
+        {icon.colorType && icon.colorType !== 'unknown' && (
+          <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 font-medium">
+            {icon.colorType === 'monochrome' ? '纯单色' : icon.colorType === 'gradient' ? '渐变色' : icon.colorType === 'multi-color' ? '多色系' : icon.colorType}
           </span>
         )}
         {icon.context && icon.context.length > 0 && icon.context[0] !== 'general' && (

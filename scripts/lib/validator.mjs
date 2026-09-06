@@ -148,20 +148,29 @@ export function validateSvg(svgContent, contextName = '') {
     };
   }
 
-  // 6. AST-Aware Element Counting and Multi-Color Detection (Requirement 45)
+  // 6. AST-Aware Element Counting and Multi-Color Detection (Requirement 45 & Structural Analysis)
   let elementCount = 0;
+  let pathCount = 0;
   const graphicTags = ['path', 'polygon', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'g', 'use', 'image'];
   const gradientTags = ['lineargradient', 'radialgradient', 'meshgradient', 'pattern'];
   const distinctColors = new Set();
   let hasGradient = false;
+  let hasMask = false;
+  let hasClipPath = false;
+  let hasText = false;
+  let hasStyles = false;
+  let hasCurrentColor = false;
 
   function extractColorsFromStyle(styleStr) {
     if (!styleStr || typeof styleStr !== 'string') return;
+    hasStyles = true;
     const rules = styleStr.split(';');
     for (const rule of rules) {
       const [prop, val] = rule.split(':').map(s => s?.trim().toLowerCase());
       if ((prop === 'fill' || prop === 'stroke' || prop === 'stop-color') && val) {
-        if (val !== 'none' && val !== 'currentcolor' && val !== 'inherit' && !val.startsWith('url(')) {
+        if (val === 'currentcolor') {
+          hasCurrentColor = true;
+        } else if (val !== 'none' && val !== 'inherit' && !val.startsWith('url(')) {
           distinctColors.add(val);
         } else if (val.startsWith('url(')) {
           hasGradient = true;
@@ -174,6 +183,28 @@ export function validateSvg(svgContent, contextName = '') {
     if (!node || typeof node !== 'object') return;
     for (const [key, val] of Object.entries(node)) {
       const lowerKey = key.toLowerCase();
+
+      // Detect path nodes
+      if (lowerKey === 'path') {
+        if (Array.isArray(val)) {
+          pathCount += val.length;
+        } else {
+          pathCount += 1;
+        }
+      }
+
+      // Detect text elements
+      if (lowerKey === 'text' || lowerKey === 'tspan') {
+        hasText = true;
+      }
+
+      // Detect mask and clipPath
+      if (lowerKey === 'mask' || lowerKey === '@_mask') {
+        hasMask = true;
+      }
+      if (lowerKey === 'clippath' || lowerKey === '@_clip-path' || lowerKey === '@_clippath') {
+        hasClipPath = true;
+      }
 
       // Count graphic tags
       if (graphicTags.includes(lowerKey)) {
@@ -192,9 +223,11 @@ export function validateSvg(svgContent, contextName = '') {
       // Check fill attribute
       if ((lowerKey === '@_fill' || lowerKey === '@_stroke') && typeof val === 'string') {
         const c = val.trim().toLowerCase();
-        if (c.startsWith('url(')) {
+        if (c === 'currentcolor') {
+          hasCurrentColor = true;
+        } else if (c.startsWith('url(')) {
           hasGradient = true;
-        } else if (c && c !== 'none' && c !== 'currentcolor' && c !== 'inherit') {
+        } else if (c && c !== 'none' && c !== 'inherit') {
           distinctColors.add(c);
         }
       }
@@ -202,7 +235,9 @@ export function validateSvg(svgContent, contextName = '') {
       // Check stop-color attribute for gradients
       if (lowerKey === '@_stop-color' && typeof val === 'string') {
         const c = val.trim().toLowerCase();
-        if (c && c !== 'none' && c !== 'currentcolor' && c !== 'inherit') {
+        if (c === 'currentcolor') {
+          hasCurrentColor = true;
+        } else if (c && c !== 'none' && c !== 'inherit') {
           distinctColors.add(c);
         }
       }
@@ -242,8 +277,50 @@ export function validateSvg(svgContent, contextName = '') {
     };
   }
 
-  // Requirement 45: A multi-color SVG can contain multiple distinct colors OR gradients
+  // Calculate Aspect Ratio from viewBox or width/height
+  let aspectRatio = undefined;
+  if (viewBox) {
+    const parts = viewBox.trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+      aspectRatio = Number((parts[2] / parts[3]).toFixed(3));
+    }
+  } else if (width && height && Number(width) > 0 && Number(height) > 0) {
+    aspectRatio = Number((Number(width) / Number(height)).toFixed(3));
+  }
+
+  // Determine SvgColorType
+  let colorType = 'monochrome';
+  if (hasGradient) {
+    colorType = 'gradient';
+  } else if (distinctColors.size > 1) {
+    colorType = 'multi-color';
+  } else if (distinctColors.size === 1) {
+    colorType = 'single-color';
+  } else if (hasCurrentColor && distinctColors.size === 0) {
+    colorType = 'currentColor';
+  }
+
   const isMultiColor = hasGradient || distinctColors.size > 1;
+  const fileSize = Buffer.byteLength(trimmed, 'utf8');
+
+  const structuralMetrics = {
+    viewBox,
+    width: Number(width) || undefined,
+    height: Number(height) || undefined,
+    aspectRatio,
+    fileSize,
+    elementCount,
+    pathCount,
+    colorCount: distinctColors.size,
+    colorType,
+    distinctColors: Array.from(distinctColors),
+    hasGradient,
+    hasMask,
+    hasClipPath,
+    hasText,
+    hasStyles,
+    hasCurrentColor
+  };
 
   return {
     status: 'VALID',
@@ -256,10 +333,15 @@ export function validateSvg(svgContent, contextName = '') {
     renderable: true,
     svgRenderable: true,
     elementCount,
+    pathCount,
     distinctColors: Array.from(distinctColors),
     hasGradient,
     viewBox,
     width: Number(width) || undefined,
-    height: Number(height) || undefined
+    height: Number(height) || undefined,
+    aspectRatio,
+    fileSize,
+    colorType,
+    structuralMetrics
   };
 }

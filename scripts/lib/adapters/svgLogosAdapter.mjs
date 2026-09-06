@@ -139,69 +139,57 @@ export class SvgLogosAdapter {
     return entry.rawSvg;
   }
 
+  getAssets(identityId) {
+    return this.getAssetsForIdentity(identityId);
+  }
+
   /**
    * Enumerate assets for a given identity from Iconify Logos
    * @param {string} identityId
    * @returns {Array<import('../types.mjs').BrandAsset>}
    */
-  getAssets(identityId) {
+  getAssetsForIdentity(identityId) {
     const assets = [];
-    const cleanId = identityId.toLowerCase().trim();
+    const cleanId = (identityId || '').toLowerCase().trim();
+    // Enumerate actual source assets for cleanId and known variant suffixes
+    const candidateSuffixes = ['', '-icon', '-wordmark', '-tile'];
+    const seenNames = new Set();
 
-    // 1. Check icon variant e.g. "google-icon", "docker-icon", "instagram-icon"
-    const iconName = `${cleanId}-icon`;
-    const iconMatch = this.icons.get(iconName);
-    if (iconMatch) {
+    for (const suffix of candidateSuffixes) {
+      const candidateName = `${cleanId}${suffix}`;
+      const match = this.icons.get(candidateName);
+      if (!match || seenNames.has(match.name)) continue;
+      seenNames.add(match.name);
+
+      const ratio = match.width && match.height ? Number((match.width / match.height).toFixed(2)) : 1.0;
+      let role = 'logo';
+      if (suffix === '-icon' || ratio <= 1.25) {
+        role = 'symbol';
+      } else if (suffix === '-wordmark' || ratio >= 2.0) {
+        role = 'wordmark-horizontal';
+      }
+
       assets.push({
-        assetId: `${identityId}-iconify-logos-symbol`,
+        assetId: `${identityId}-iconify-logos-${role}${suffix ? '-' + suffix.slice(1) : ''}`,
         identityId,
         sourceProvider: 'iconify',
         sourceCollection: 'logos',
-        sourceId: iconMatch.sourceId,
-        sourceVersion: this.version,
-        role: 'symbol',
-        context: ['web', 'mobile', 'social'],
-        contextOrigin: 'inferred',
-        graphicVariant: 'color',
-        file: `${identityId}-iconify-symbol.svg`,
-        rawSha256: '',
-        license: iconMatch.license,
-        sourceUrl: iconMatch.sourceUrl,
-        colorType: 'multi-color',
-        xmlValid: true,
-        renderable: true,
-        integrityVerified: true,
-        isCanonical: false,
-        _svgFetcher: () => this.getRawSvg(iconMatch.name)
-      });
-    }
-
-    // 2. Check full logo/wordmark e.g. "google", "docker", "instagram"
-    const logoMatch = this.icons.get(cleanId) || this.findByQuery(cleanId);
-    if (logoMatch && logoMatch.name !== iconName) {
-      const isWordmark = iconMatch ? true : false;
-      const role = isWordmark ? 'wordmark-horizontal' : 'logo';
-      assets.push({
-        assetId: `${identityId}-iconify-logos-${role}`,
-        identityId,
-        sourceProvider: 'iconify',
-        sourceCollection: 'logos',
-        sourceId: logoMatch.sourceId,
+        sourceId: match.sourceId,
         sourceVersion: this.version,
         role,
-        context: ['web', 'desktop'],
-        contextOrigin: 'inferred',
+        context: ['general'],
+        contextOrigin: 'unknown',
         graphicVariant: 'color',
-        file: `${identityId}-iconify-${role}.svg`,
+        file: `${identityId}-iconify-${role}${suffix ? '-' + suffix.slice(1) : ''}.svg`,
         rawSha256: '',
-        license: logoMatch.license,
-        sourceUrl: logoMatch.sourceUrl,
+        license: match.license,
+        sourceUrl: match.sourceUrl,
         colorType: 'multi-color',
-        xmlValid: true,
-        renderable: true,
-        integrityVerified: true,
+        xmlValid: false,
+        renderable: false,
+        integrityVerified: false,
         isCanonical: false,
-        _svgFetcher: () => this.getRawSvg(logoMatch.name)
+        _svgFetcher: () => this.getRawSvg(match.name)
       });
     }
 

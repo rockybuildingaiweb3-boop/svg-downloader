@@ -94,6 +94,51 @@ export interface SourceRecord {
   availableVariants: string[];
 }
 
+export type MatchingMode = 'strict' | 'preferred' | 'fallback';
+
+export type SvgColorType = 'monochrome' | 'single-color' | 'multi-color' | 'gradient' | 'currentColor' | 'unknown';
+
+/**
+ * Measurable SVG Structural Metadata calculated via XML AST analysis
+ */
+export interface SvgStructuralMetrics {
+  viewBox?: string;
+  width?: number;
+  height?: number;
+  aspectRatio?: number;
+  fileSize: number; // in bytes
+  elementCount: number;
+  pathCount: number;
+  colorCount: number;
+  colorType: SvgColorType;
+  distinctColors: string[];
+  hasGradient: boolean;
+  hasMask: boolean;
+  hasClipPath: boolean;
+  hasText: boolean;
+  hasStyles: boolean;
+  hasCurrentColor: boolean;
+}
+
+/**
+ * Download Receipt shown after a successful download
+ */
+export interface DownloadReceipt {
+  fileName: string;
+  identityId: string;
+  title: string;
+  fileSize: number;
+  sourceProvider: SourceProvider;
+  sourcePlatform: string;
+  role: AssetRole;
+  graphicVariant: string;
+  rawSha256: string;
+  license?: string;
+  sourceUrl?: string;
+  verificationStatus: string;
+  timestamp: string;
+}
+
 /**
  * An individual authentic vector asset in an identity's Asset Family
  * Raw canonical SVG must NEVER be modified.
@@ -125,8 +170,9 @@ export interface BrandAsset {
   renderable: boolean;
   verificationStatus: 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
   trustState: TrustState;
-  colorType?: 'monochrome' | 'multi-color';
+  colorType?: SvgColorType;
   elementCount?: number;
+  structuralMetrics?: SvgStructuralMetrics;
   notes?: string;
   rawSvg?: string;
 }
@@ -216,6 +262,8 @@ export interface IconRecord {
   sourceRecords?: SourceRecord[];
   conflicts?: string[];
   notes?: string;
+  colorType?: SvgColorType;
+  structuralMetrics?: SvgStructuralMetrics;
   // Asset family modeling
   canonicalAssetId?: string;
   canonicalAsset?: BrandAsset;
@@ -265,11 +313,17 @@ export interface IconItem {
   verified: boolean;
   conflicts?: string[];
   notes?: string;
+  colorType?: SvgColorType;
+  structuralMetrics?: SvgStructuralMetrics;
   // Full Asset Family support
   canonicalAssetId: string;
   canonicalAsset: BrandAsset;
-  assets: BrandAsset[];
-  totalAssets: number;
+  assets?: BrandAsset[];
+  totalAssets?: number;
+  // Search explainability
+  matchScore?: number;
+  matchChecklist?: string[];
+  matchReason?: string;
   aliases?: string[];
 }
 

@@ -1,5 +1,38 @@
 import aliasesData from '../../config/aliases.json';
-import { IconItem, BrandAsset, AssetRole, UsageContext, SourceProvider, SourcePolicy } from '../types';
+import { IconItem, BrandAsset, AssetRole, UsageContext, SourceProvider, SourcePolicy, MatchingMode } from '../types';
+
+/**
+ * Resolves an alias or brand synonym to canonical identity id
+ */
+export function resolveAlias(name: string): string {
+  if (!name) return '';
+  const lower = name.toLowerCase().trim();
+  const aliases = aliasesData as Record<string, string>;
+  return aliases[lower] || lower;
+}
+
+/**
+ * Resolves brand identity from catalog by id, title, or alias
+ */
+export function resolveIdentity(query: string, catalog: IconItem[]): IconItem | null {
+  if (!query) return null;
+  const lower = query.toLowerCase().trim();
+  const canonicalId = resolveAlias(lower);
+
+  // Exact id or canonicalId
+  const match = catalog.find(i => i.id === canonicalId || i.slug === canonicalId || i.id === lower);
+  if (match) return match;
+
+  // Title match
+  const titleMatch = catalog.find(i => i.title.toLowerCase() === lower);
+  if (titleMatch) return titleMatch;
+
+  // Alias / tags match
+  const aliasMatch = catalog.find(i => i.aliases?.some(a => a.toLowerCase() === lower));
+  if (aliasMatch) return aliasMatch;
+
+  return null;
+}
 
 export interface AssetCriteria {
   role?: AssetRole | string;
@@ -7,14 +40,25 @@ export interface AssetCriteria {
   variant?: string;
   sourceProvider?: SourceProvider | string;
   policy?: SourcePolicy;
+  mode?: MatchingMode; // 'strict' | 'preferred' | 'fallback'
+}
+
+export interface MatchChecklist {
+  exactIdentity: boolean;
+  aliasMatch: boolean;
+  roleMatch: boolean;
+  contextMatch: boolean;
+  variantMatch: boolean;
+  trustedSource: boolean;
 }
 
 export interface ResolvedAssetMatch {
   identity: IconItem;
-  matchedAsset: BrandAsset;
+  matchedAsset: BrandAsset | null;
   allAssets: BrandAsset[];
-  matchType: 'exact-identity' | 'alias' | 'role-context-match' | 'fuzzy-identity' | 'tag';
+  matchType: 'exact-identity' | 'alias' | 'role-context-match' | 'fuzzy-identity' | 'tag' | 'unresolved';
   matchReason?: string;
+  fallbackOccurred?: boolean;
 }
 
 export interface AssetAwareSearchResult {
@@ -22,86 +66,112 @@ export interface AssetAwareSearchResult {
   matchedAsset?: BrandAsset;
   matchReason: string;
   matchScore: number;
+  matchChecklist?: MatchChecklist;
 }
 
-// Canonical Aliases Map: resolves aliases strictly to identity IDs, not filenames.
-const ALIASES_MAP: Record<string, string> = {
-  ...aliasesData,
-  node: 'nodedotjs',
-  nodejs: 'nodedotjs',
-  next: 'nextdotjs',
-  nextjs: 'nextdotjs',
-  vue: 'vuedotjs',
-  vuejs: 'vuedotjs',
-  aws: 'amazonwebservices',
-  gcp: 'googlecloud',
-  azure: 'microsoftazure',
-  twitter: 'x',
-  cpp: 'cplusplus',
-  'c++': 'cplusplus',
-  golang: 'go',
-  js: 'javascript',
-  ts: 'typescript',
-  py: 'python',
-  k8s: 'kubernetes',
-  vscode: 'visualstudiocode',
-  tailwind: 'tailwindcss',
-  nuxt: 'nuxt',
-  nuxtjs: 'nuxt'
-};
-
-/**
- * Step 1: Normalize query string
- */
-export function normalizeQuery(query: string): string {
-  if (!query) return '';
-  return query
-    .toLowerCase()
-    .trim()
-    .replace(/[\s_]+/g, '-')
-    .replace(/[^a-z0-9+-]/g, '');
+export interface ParsedSearchIntent {
+  rawQuery: string;
+  targetIdentity: string;
+  resolvedIdentityId: string;
+  roleConstraint: AssetRole | null;
+  contextConstraint: UsageContext | null;
+  variantPreference: string | null;
+  mode: MatchingMode;
 }
 
 /**
- * Step 2: Alias Resolution (resolves alias to identity ID, never to filenames)
+ * Parses natural-language user queries into structured constraints
+ * e.g., "Instagram icon for mobile navigation" -> { targetIdentity: 'instagram', role: 'symbol', context: 'mobile' }
  */
-export function resolveAlias(raw: string): string {
-  const norm = normalizeQuery(raw);
-  if (ALIASES_MAP[norm]) return ALIASES_MAP[norm];
+export function parseSearchIntent(query: string): ParsedSearchIntent {
+  const trimmed = (query || '').trim();
+  const rawTokens = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
 
-  const stripped = norm.replace(/[^a-z0-9]/g, '');
-  if (ALIASES_MAP[stripped]) return ALIASES_MAP[stripped];
+  const ROLE_MAP: Record<string, AssetRole> = {
+    symbol: 'symbol',
+    icon: 'symbol',
+    glyph: 'symbol',
+    logo: 'logo',
+    brandmark: 'logo',
+    wordmark: 'wordmark-horizontal',
+    'wordmark-horizontal': 'wordmark-horizontal',
+    'wordmark-stacked': 'wordmark-stacked',
+    favicon: 'favicon',
+    'app-icon': 'app-icon',
+    appicon: 'app-icon',
+    badge: 'badge',
+    mark: 'mark'
+  };
 
-  return norm;
-}
+  const CONTEXT_MAP: Record<string, UsageContext> = {
+    mobile: 'mobile',
+    phone: 'mobile',
+    ios: 'mobile',
+    android: 'mobile',
+    navigation: 'mobile',
+    web: 'web',
+    website: 'web',
+    header: 'web',
+    footer: 'web',
+    desktop: 'desktop',
+    social: 'social',
+    avatar: 'avatar',
+    app: 'app-store',
+    'app-store': 'app-store'
+  };
 
-/**
- * Step 3: Identity Resolution
- * query -> normalize -> alias resolution -> identity resolution
- */
-export function resolveIdentity(query: string, catalog: IconItem[]): IconItem | null {
-  if (!query || !catalog.length) return null;
-  const normalized = normalizeQuery(query);
-  const canonicalId = resolveAlias(normalized);
+  const VARIANT_MAP: Record<string, string> = {
+    color: 'color',
+    multicolor: 'color',
+    'multi-color': 'color',
+    monochrome: 'monochrome',
+    mono: 'monochrome',
+    white: 'monochrome',
+    black: 'monochrome',
+    dark: 'monochrome',
+    original: 'original',
+    plain: 'plain',
+    line: 'line'
+  };
 
-  // Exact ID / slug match
-  const exact = catalog.find(i => i.id === canonicalId || i.slug === canonicalId);
-  if (exact) return exact;
+  let roleConstraint: AssetRole | null = null;
+  let contextConstraint: UsageContext | null = null;
+  let variantPreference: string | null = null;
+  const identityTokens: string[] = [];
 
-  // Title match
-  const titleMatch = catalog.find(i => normalizeQuery(i.title) === normalized);
-  if (titleMatch) return titleMatch;
+  const stopWords = new Set(['for', 'the', 'a', 'an', 'in', 'on', 'with', 'and', 'only', 'strict']);
+  let isStrict = trimmed.toLowerCase().includes('only') || trimmed.toLowerCase().includes('strict');
 
-  // Normalized prefix match
-  const prefixMatch = catalog.find(i => i.id.startsWith(canonicalId) || i.slug.startsWith(canonicalId));
-  if (prefixMatch) return prefixMatch;
+  for (const token of rawTokens) {
+    if (ROLE_MAP[token]) {
+      roleConstraint = ROLE_MAP[token];
+    } else if (CONTEXT_MAP[token]) {
+      contextConstraint = CONTEXT_MAP[token];
+    } else if (VARIANT_MAP[token]) {
+      variantPreference = VARIANT_MAP[token];
+    } else if (!stopWords.has(token)) {
+      identityTokens.push(token);
+    }
+  }
 
-  return null;
+  const targetIdentity = identityTokens.join('-') || rawTokens[0] || '';
+  const resolvedIdentityId = resolveAlias(targetIdentity);
+
+  return {
+    rawQuery: query,
+    targetIdentity,
+    resolvedIdentityId,
+    roleConstraint,
+    contextConstraint,
+    variantPreference,
+    mode: isStrict ? 'strict' : 'preferred'
+  };
 }
 
 /**
  * Step 4: Asset Resolution within an Identity Family
- * context matching -> role matching -> variant matching -> source policy
+ * Supports 'strict', 'preferred', and 'fallback' matching semantics
+ * When strict: zero matching candidates = null (Principle 9 & 10)
  */
 export function resolveAsset(identity: IconItem, criteria: AssetCriteria = {}): BrandAsset | null {
   if (!identity || !identity.assets || identity.assets.length === 0) {
@@ -109,46 +179,72 @@ export function resolveAsset(identity: IconItem, criteria: AssetCriteria = {}): 
   }
 
   const assets = identity.assets;
+  const mode = criteria.mode || 'preferred';
 
-  // 1. If explicit source provider requested
-  let filtered = assets;
-  if (criteria.sourceProvider && criteria.sourceProvider !== 'all') {
-    const provMatches = filtered.filter(a => a.sourceProvider === criteria.sourceProvider);
-    if (provMatches.length > 0) filtered = provMatches;
+  // In STRICT mode, hard constraints must be satisfied
+  if (mode === 'strict') {
+    const candidates = assets.filter(a => {
+      if (criteria.sourceProvider && criteria.sourceProvider !== 'all' && a.sourceProvider !== criteria.sourceProvider) {
+        return false;
+      }
+      if (criteria.role && criteria.role !== 'all' && a.role !== criteria.role) {
+        return false;
+      }
+      if (criteria.context && criteria.context !== 'all' && !a.context?.includes(criteria.context as any)) {
+        return false;
+      }
+      if (criteria.variant && criteria.variant !== 'all') {
+        const matchesVariant =
+          a.graphicVariant === criteria.variant ||
+          (criteria.variant === 'monochrome' && a.colorType === 'monochrome') ||
+          (criteria.variant === 'color' && a.colorType === 'multi-color');
+        if (!matchesVariant) return false;
+      }
+      return true;
+    });
+
+    if (candidates.length === 0) {
+      // Hard constraint failure: return null instead of silently falling back to a generic logo
+      return null;
+    }
+
+    return candidates.find(a => a.isCanonical) || candidates[0];
   }
 
-  // 2. If role requested (symbol, logo, wordmark, app-icon, favicon, etc.)
-  if (criteria.role && criteria.role !== 'all') {
-    const roleMatches = filtered.filter(a => a.role === criteria.role);
-    if (roleMatches.length > 0) filtered = roleMatches;
-  }
+  // In PREFERRED mode: candidate scoring
+  const scored = assets.map(a => {
+    let score = 0;
+    if (criteria.sourceProvider && criteria.sourceProvider !== 'all' && a.sourceProvider === criteria.sourceProvider) {
+      score += 100;
+    }
+    if (criteria.role && criteria.role !== 'all') {
+      if (a.role === criteria.role) score += 60;
+      else score -= 20;
+    }
+    if (criteria.context && criteria.context !== 'all') {
+      if (a.context?.includes(criteria.context as any)) score += 50;
+      else score -= 15;
+    }
+    if (criteria.variant && criteria.variant !== 'all') {
+      const matchesVariant =
+        a.graphicVariant === criteria.variant ||
+        (criteria.variant === 'monochrome' && a.colorType === 'monochrome') ||
+        (criteria.variant === 'color' && a.colorType === 'multi-color');
+      if (matchesVariant) score += 40;
+      else score -= 10;
+    }
+    if (a.isCanonical) score += 25;
+    if (a.trustState === 'verified' || a.trustState === 'trusted') score += 20;
 
-  // 3. If context requested (web, mobile, desktop, app-store, social, etc.)
-  if (criteria.context && criteria.context !== 'all') {
-    const contextMatches = filtered.filter(a => a.context?.includes(criteria.context as any));
-    if (contextMatches.length > 0) filtered = contextMatches;
-  }
+    return { asset: a, score };
+  });
 
-  // 4. If variant requested (color, monochrome, original, plain, line, wordmark)
-  if (criteria.variant && criteria.variant !== 'all') {
-    const variantMatches = filtered.filter(a =>
-      a.graphicVariant === criteria.variant ||
-      (criteria.variant === 'monochrome' && a.colorType === 'monochrome') ||
-      (criteria.variant === 'color' && a.colorType === 'multi-color')
-    );
-    if (variantMatches.length > 0) filtered = variantMatches;
-  }
-
-  // 5. Prefer canonical asset if it is among filtered
-  const canonicalInFiltered = filtered.find(a => a.isCanonical || a.assetId === identity.canonicalAssetId);
-  if (canonicalInFiltered) return canonicalInFiltered;
-
-  return filtered[0] || identity.canonicalAsset || assets[0];
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.asset || identity.canonicalAsset || assets[0];
 }
 
 /**
  * Step 5: Complete Resolver Pipeline
- * query -> normalize -> alias -> identity -> asset family discovery -> context matching -> role matching -> variant matching -> canonical asset selection
  */
 export function resolveBestAsset(
   query: string,
@@ -158,29 +254,32 @@ export function resolveBestAsset(
   const identity = resolveIdentity(query, catalog);
   if (!identity) return null;
 
-  const matchedAsset = resolveAsset(identity, criteria) || identity.canonicalAsset;
+  const matchedAsset = resolveAsset(identity, criteria);
+
+  if (!matchedAsset && criteria.mode === 'strict') {
+    return {
+      identity,
+      matchedAsset: null,
+      allAssets: identity.assets || [],
+      matchType: 'unresolved',
+      matchReason: `Strict constraint not met for identity "${identity.id}"`
+    };
+  }
+
+  const finalAsset = matchedAsset || identity.canonicalAsset;
 
   return {
     identity,
-    matchedAsset,
-    allAssets: identity.assets || [matchedAsset],
+    matchedAsset: finalAsset,
+    allAssets: identity.assets || [finalAsset],
     matchType: 'exact-identity',
-    matchReason: `Resolved identity "${identity.id}" with asset role "${matchedAsset.role}" (${matchedAsset.graphicVariant})`
+    matchReason: `Resolved identity "${identity.id}" with asset role "${finalAsset.role}" (${finalAsset.graphicVariant})`
   };
 }
 
 /**
- * Step 6: Asset-Aware Multi-Token Search
- * Supports:
- * - title, canonical identity, slug, aliases
- * - source, source collection
- * - asset role (e.g. symbol, logo, wordmark, favicon, app-icon)
- * - graphic variant (e.g. color, monochrome, original, plain, wordmark)
- * - context (e.g. mobile, web, desktop, social)
- * - category
- * 
- * Handles multi-token queries like:
- * "instagram mobile", "instagram favicon", "github wordmark", "nextjs", "node", "aws"
+ * Step 6: Asset-Aware Natural Language & Multi-Token Search
+ * Returns explainable search scoring and match checklists
  */
 export function searchCatalogAssetAware(query: string, catalog: IconItem[]): AssetAwareSearchResult[] {
   if (!query || !query.trim()) {
@@ -188,110 +287,107 @@ export function searchCatalogAssetAware(query: string, catalog: IconItem[]): Ass
       icon,
       matchedAsset: icon.canonicalAsset,
       matchReason: 'Catalog baseline',
-      matchScore: 0
+      matchScore: 0,
+      matchChecklist: {
+        exactIdentity: false,
+        aliasMatch: false,
+        roleMatch: false,
+        contextMatch: false,
+        variantMatch: false,
+        trustedSource: true
+      }
     }));
   }
 
-  const rawTokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  if (rawTokens.length === 0) return [];
-
-  // Known role and context keywords
-  const ROLE_KEYWORDS = ['symbol', 'logo', 'wordmark', 'favicon', 'app-icon', 'badge', 'mark', 'icon'];
-  const CONTEXT_KEYWORDS = ['mobile', 'web', 'desktop', 'social', 'app-store', 'avatar', 'general'];
-  const VARIANT_KEYWORDS = ['monochrome', 'mono', 'color', 'original', 'plain', 'line', 'white', 'dark'];
-
-  let roleFilter: string | null = null;
-  let contextFilter: string | null = null;
-  let variantFilter: string | null = null;
-  const identityTokens: string[] = [];
-
-  for (const token of rawTokens) {
-    if (ROLE_KEYWORDS.includes(token)) {
-      roleFilter = token === 'icon' ? 'symbol' : token;
-    } else if (CONTEXT_KEYWORDS.includes(token)) {
-      contextFilter = token;
-    } else if (VARIANT_KEYWORDS.includes(token)) {
-      variantFilter = token === 'mono' ? 'monochrome' : token;
-    } else {
-      identityTokens.push(token);
-    }
-  }
-
-  const targetIdentityQuery = identityTokens.join('-') || rawTokens[0];
-  const resolvedTargetId = resolveAlias(targetIdentityQuery);
-
+  const intent = parseSearchIntent(query);
   const results: AssetAwareSearchResult[] = [];
 
   for (const icon of catalog) {
     let score = 0;
-    let matchReason = '';
-    let matchedAsset: BrandAsset | undefined = icon.canonicalAsset;
+    const reasons: string[] = [];
+    const checklist: MatchChecklist = {
+      exactIdentity: false,
+      aliasMatch: false,
+      roleMatch: false,
+      contextMatch: false,
+      variantMatch: false,
+      trustedSource: icon.trustState === 'verified' || icon.trustState === 'trusted'
+    };
 
     const iconId = icon.id.toLowerCase();
     const iconSlug = icon.slug.toLowerCase();
     const iconTitle = icon.title.toLowerCase();
-    const iconCategory = icon.category.toLowerCase();
     const iconAliases = (icon.aliases || []).map(a => a.toLowerCase());
 
-    // 1. Check Identity Match
-    if (iconId === resolvedTargetId || iconSlug === resolvedTargetId) {
-      score += 100;
-      matchReason = `精确匹配标识: ${icon.id}`;
-    } else if (iconAliases.includes(targetIdentityQuery)) {
-      score += 90;
-      matchReason = `别名匹配: ${targetIdentityQuery} -> ${icon.id}`;
-    } else if (iconTitle === targetIdentityQuery || iconTitle.includes(targetIdentityQuery)) {
-      score += 70;
-      matchReason = `品牌标题匹配: ${icon.title}`;
-    } else if (iconId.includes(targetIdentityQuery) || iconSlug.includes(targetIdentityQuery)) {
+    // 1. Identity exactness
+    if (iconId === intent.resolvedIdentityId || iconSlug === intent.resolvedIdentityId) {
       score += 50;
-      matchReason = `标识前缀/包含匹配`;
-    } else if (iconCategory.includes(targetIdentityQuery)) {
-      score += 30;
-      matchReason = `分类匹配: ${icon.category}`;
-    }
-
-    // If query has no identity tokens (e.g. user just typed "mobile" or "wordmark")
-    if (identityTokens.length === 0 && (roleFilter || contextFilter || variantFilter)) {
+      checklist.exactIdentity = true;
+      reasons.push(`✓ 精确标识: ${icon.id}`);
+    } else if (iconAliases.includes(intent.targetIdentity)) {
+      score += 45;
+      checklist.aliasMatch = true;
+      reasons.push(`✓ 别名: ${intent.targetIdentity} -> ${icon.id}`);
+    } else if (iconTitle === intent.targetIdentity || iconTitle.includes(intent.targetIdentity)) {
+      score += 35;
+      reasons.push(`✓ 品牌名: ${icon.title}`);
+    } else if (iconId.includes(intent.targetIdentity)) {
+      score += 25;
+      reasons.push(`✓ 包含: ${icon.id}`);
+    } else if (intent.targetIdentity.length === 0 && (intent.roleConstraint || intent.contextConstraint || intent.variantPreference)) {
+      // Query specified only role/context without identity
       score += 10;
     }
 
-    // 2. Check Asset-Aware Role / Context / Variant Match
-    if (score > 0 || identityTokens.length === 0) {
-      const family = icon.assets || [icon.canonicalAsset];
+    if (score === 0) continue;
 
-      let candidate = family.find(a => {
-        let match = true;
-        if (roleFilter && a.role !== roleFilter) match = false;
-        if (contextFilter && !a.context?.includes(contextFilter as any)) match = false;
-        if (variantFilter && a.graphicVariant !== variantFilter && a.colorType !== variantFilter) match = false;
-        return match;
-      });
+    // 2. Asset matching within family
+    const family = icon.assets || [icon.canonicalAsset];
+    let matchedAsset = icon.canonicalAsset;
 
-      if (candidate) {
-        matchedAsset = candidate;
-        score += 40;
-        const reasons: string[] = [];
-        if (roleFilter) reasons.push(`角色: ${roleFilter}`);
-        if (contextFilter) reasons.push(`上下文: ${contextFilter}`);
-        if (variantFilter) reasons.push(`变体: ${variantFilter}`);
-        matchReason = `${matchReason ? matchReason + ' + ' : ''}精准资产形态 (${reasons.join(', ')})`;
-      } else if (roleFilter || contextFilter || variantFilter) {
-        // If user specifically requested role/context and this icon has NO matching asset, lower score
-        if (identityTokens.length === 0) {
-          continue; // Skip icons without that asset role
+    if (intent.roleConstraint || intent.contextConstraint || intent.variantPreference) {
+      const criteria: AssetCriteria = {
+        role: intent.roleConstraint || undefined,
+        context: intent.contextConstraint || undefined,
+        variant: intent.variantPreference || undefined,
+        mode: intent.mode
+      };
+
+      const resolved = resolveAsset(icon, criteria);
+      if (resolved) {
+        matchedAsset = resolved;
+        if (intent.roleConstraint && matchedAsset.role === intent.roleConstraint) {
+          score += 20;
+          checklist.roleMatch = true;
+          reasons.push(`✓ 角色: ${intent.roleConstraint}`);
         }
+        if (intent.contextConstraint && matchedAsset.context?.includes(intent.contextConstraint)) {
+          score += 15;
+          checklist.contextMatch = true;
+          reasons.push(`✓ 上下文: ${intent.contextConstraint}`);
+        }
+        if (intent.variantPreference && (matchedAsset.graphicVariant === intent.variantPreference || matchedAsset.colorType === intent.variantPreference)) {
+          score += 15;
+          checklist.variantMatch = true;
+          reasons.push(`✓ 变体: ${intent.variantPreference}`);
+        }
+      } else if (intent.mode === 'strict') {
+        // In strict mode, skip if constraint was unsatisfied
+        continue;
       }
     }
 
-    if (score > 0) {
-      results.push({
-        icon,
-        matchedAsset: matchedAsset || icon.canonicalAsset,
-        matchReason: matchReason || '匹配查询',
-        matchScore: score
-      });
+    if (checklist.trustedSource) {
+      score += 5;
     }
+
+    results.push({
+      icon,
+      matchedAsset,
+      matchReason: reasons.join(' · ') || '匹配查询',
+      matchScore: Math.min(100, score),
+      matchChecklist: checklist
+    });
   }
 
   // Sort descending by score

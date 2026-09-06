@@ -7,12 +7,16 @@ export const CANONICAL_CATALOG: IconRecord[] = rawCatalog as unknown as IconReco
 /**
  * Maps canonical record to UI IconItem with full BrandIdentity and AssetFamily support
  */
-export const CURATED_ICONS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
+/**
+ * Authoritative Canonical Registry Catalog Items
+ * Full BrandIdentity and AssetFamily support
+ */
+export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
   const sourceProvider = (rec.sourceProvider || (rec.source === 'svg-logos' ? 'iconify' : rec.source)) as any;
   const sourceCollection = rec.sourceCollection || (rec.source === 'svg-logos' ? 'logos' : rec.source);
   const role = (rec.role || 'logo') as any;
-  const context = (rec.context || ['general', 'web']) as any[];
-  const contextOrigin = (rec.contextOrigin || 'source-confirmed') as any;
+  const context = (rec.context || ['general']) as any[];
+  const contextOrigin = (rec.contextOrigin || 'unknown') as any;
   const graphicVariant = rec.graphicVariant || rec.variant || 'default';
   const trustState = (rec.trustState || (rec.sourceTrusted ? 'verified' : 'community')) as any;
 
@@ -33,15 +37,17 @@ export const CURATED_ICONS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     license: rec.license || 'CC0 / Trademark',
     sourceUrl: rec.sourceUrl,
     isCanonical: true,
-    xmlValid: rec.xmlValid ?? true,
-    svgRenderable: rec.svgRenderable ?? rec.renderable ?? true,
-    sourceTrusted: rec.sourceTrusted ?? true,
-    canonicalResolved: rec.canonicalResolved ?? true,
-    integrityVerified: rec.integrityVerified ?? true,
-    variantVerified: rec.variantVerified ?? true,
-    renderable: rec.renderable ?? true,
-    verificationStatus: rec.verificationStatus || (rec.verified ? 'verified' : 'warning'),
+    xmlValid: rec.xmlValid ?? false,
+    svgRenderable: rec.svgRenderable ?? rec.renderable ?? false,
+    sourceTrusted: rec.sourceTrusted ?? (trustState === 'verified' || trustState === 'trusted'),
+    canonicalResolved: rec.canonicalResolved ?? false,
+    integrityVerified: rec.integrityVerified ?? false,
+    variantVerified: rec.variantVerified ?? false,
+    renderable: rec.renderable ?? false,
+    verificationStatus: rec.verificationStatus || (rec.verified ? 'verified' : 'unresolved'),
     trustState,
+    colorType: rec.colorType || (rec.assets?.[0]?.colorType) || 'monochrome',
+    structuralMetrics: rec.structuralMetrics || (rec.assets?.[0]?.structuralMetrics),
     notes: rec.notes
   };
 
@@ -49,15 +55,17 @@ export const CURATED_ICONS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     ? rec.assets.map(a => ({
         ...a,
         sourcePlatform: getSemanticSourceLabel(a.sourceProvider || sourceProvider, a.sourceCollection || sourceCollection),
-        xmlValid: a.xmlValid ?? true,
-        svgRenderable: a.svgRenderable ?? a.renderable ?? true,
-        sourceTrusted: a.sourceTrusted ?? true,
-        canonicalResolved: a.canonicalResolved ?? true,
-        integrityVerified: a.integrityVerified ?? true,
-        variantVerified: a.variantVerified ?? true,
-        renderable: a.renderable ?? true,
-        verificationStatus: a.verificationStatus || 'verified',
-        trustState: a.trustState || trustState
+        xmlValid: a.xmlValid ?? false,
+        svgRenderable: a.svgRenderable ?? a.renderable ?? false,
+        sourceTrusted: a.sourceTrusted ?? (a.trustState === 'verified' || a.trustState === 'trusted'),
+        canonicalResolved: a.canonicalResolved ?? false,
+        integrityVerified: a.integrityVerified ?? false,
+        variantVerified: a.variantVerified ?? false,
+        renderable: a.renderable ?? false,
+        verificationStatus: a.verificationStatus || 'unresolved',
+        trustState: a.trustState || trustState,
+        colorType: a.colorType || 'monochrome',
+        structuralMetrics: a.structuralMetrics
       }))
     : [defaultAsset];
 
@@ -93,18 +101,20 @@ export const CURATED_ICONS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     sourceRecords,
     sourcesCount,
     // Granular verification flags
-    xmlValid: rec.xmlValid ?? true,
-    svgRenderable: rec.svgRenderable ?? rec.renderable ?? true,
-    sourceTrusted: rec.sourceTrusted ?? true,
-    canonicalResolved: rec.canonicalResolved ?? true,
-    integrityVerified: rec.integrityVerified ?? true,
-    variantVerified: rec.variantVerified ?? true,
-    renderable: rec.renderable ?? true,
-    verificationStatus: rec.verificationStatus || (rec.verified ? 'verified' : 'warning'),
+    xmlValid: rec.xmlValid ?? false,
+    svgRenderable: rec.svgRenderable ?? rec.renderable ?? false,
+    sourceTrusted: rec.sourceTrusted ?? (trustState === 'verified' || trustState === 'trusted'),
+    canonicalResolved: rec.canonicalResolved ?? false,
+    integrityVerified: rec.integrityVerified ?? false,
+    variantVerified: rec.variantVerified ?? false,
+    renderable: rec.renderable ?? false,
+    verificationStatus: rec.verificationStatus || (rec.verified ? 'verified' : 'unresolved'),
     trustState,
-    verified: rec.verified ?? true,
+    verified: rec.verified ?? false,
     conflicts: rec.conflicts,
     notes: rec.notes,
+    colorType: canonicalAsset.colorType || rec.colorType || 'monochrome',
+    structuralMetrics: canonicalAsset.structuralMetrics || rec.structuralMetrics,
     canonicalAssetId: canonicalAsset.assetId,
     canonicalAsset,
     assets,
@@ -112,7 +122,10 @@ export const CURATED_ICONS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
   };
 });
 
-export const ICON_MAP: Record<string, IconItem> = CURATED_ICONS.reduce((acc, icon) => {
+// Backward-compatible alias (Principle 34)
+export const CURATED_ICONS: IconItem[] = REGISTRY_ITEMS;
+
+export const ICON_MAP: Record<string, IconItem> = REGISTRY_ITEMS.reduce((acc, icon) => {
   acc[icon.slug] = icon;
   return acc;
 }, {} as Record<string, IconItem>);

@@ -206,16 +206,25 @@ async function main() {
       record.rawSha256 = valResult.sha256;
       record.xmlValid = valResult.xmlValid;
       record.renderable = valResult.renderable;
+      record.svgRenderable = valResult.svgRenderable;
       record.integrityVerified = true;
+      record.variantVerified = true;
       record.verificationStatus = valResult.status === 'WARNING' ? 'warning' : 'verified';
       record.verified = true;
+      record.colorType = valResult.colorType;
+      record.structuralMetrics = valResult.structuralMetrics;
 
       // Synchronize canonical asset object
       if (record.canonicalAsset) {
         record.canonicalAsset.rawSha256 = valResult.sha256;
         record.canonicalAsset.xmlValid = valResult.xmlValid;
         record.canonicalAsset.renderable = valResult.renderable;
+        record.canonicalAsset.svgRenderable = valResult.svgRenderable;
         record.canonicalAsset.integrityVerified = true;
+        record.canonicalAsset.variantVerified = true;
+        record.canonicalAsset.verificationStatus = record.verificationStatus;
+        record.canonicalAsset.colorType = valResult.colorType;
+        record.canonicalAsset.structuralMetrics = valResult.structuralMetrics;
       }
 
       if (valResult.status === 'WARNING') {
@@ -246,7 +255,12 @@ async function main() {
                   asset.rawSha256 = aVal.sha256;
                   asset.xmlValid = aVal.xmlValid;
                   asset.renderable = aVal.renderable;
+                  asset.svgRenderable = aVal.svgRenderable;
                   asset.integrityVerified = true;
+                  asset.variantVerified = true;
+                  asset.verificationStatus = aVal.status === 'WARNING' ? 'warning' : 'verified';
+                  asset.colorType = aVal.colorType;
+                  asset.structuralMetrics = aVal.structuralMetrics;
 
                   const aGenPath = path.join(GENERATED_ICONS_DIR, asset.file);
                   const aPubPath = path.join(PUBLIC_ICONS_DIR, asset.file);

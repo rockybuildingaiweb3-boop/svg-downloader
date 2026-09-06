@@ -21,14 +21,21 @@ import {
   ArrowRight,
   Package,
   FolderArchive,
-  Link2
+  Link2,
+  FileCheck,
+  CheckCheck,
+  Cpu
 } from 'lucide-react';
-import { IconItem, BrandAsset, getSemanticSourceLabel, getTrustStateBadge } from '../types';
+import { IconItem, BrandAsset, DownloadReceipt, getSemanticSourceLabel, getTrustStateBadge } from '../types';
 import {
   fetchRawSvg,
   downloadSingleSvg,
   generateReactJsx,
   generateVueSfc,
+  generateHtmlEmbed,
+  generateCssSnippet,
+  generateMarkdownSnippet,
+  generateTailwindSnippet,
   generateDerivedMonochromeSvg,
   copyRawSvg,
   copyAssetUrl,
@@ -52,7 +59,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
   const [rawSvg, setRawSvg] = useState<string>('');
   const [previewSize, setPreviewSize] = useState<number>(64);
-  const [activeCodeTab, setActiveCodeTab] = useState<'svg' | 'jsx' | 'vue' | 'html'>('svg');
+  const [activeCodeTab, setActiveCodeTab] = useState<'svg' | 'jsx' | 'vue' | 'html' | 'css' | 'tailwind' | 'markdown'>('svg');
   const [bgMode, setBgMode] = useState<'white' | 'dark' | 'grid'>('white');
   const [isCopied, setIsCopied] = useState(false);
   const [isUrlCopied, setIsUrlCopied] = useState(false);
@@ -60,6 +67,8 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const [isPackDownloading, setIsPackDownloading] = useState(false);
   const [isFamilyDownloading, setIsFamilyDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadReceipt, setDownloadReceipt] = useState<DownloadReceipt | null>(null);
+  const [receiptCopiedSha, setReceiptCopiedSha] = useState(false);
   const [liveSha256, setLiveSha256] = useState<string>('');
   const [integrityStatus, setIntegrityStatus] = useState<{ verified: boolean; message: string }>({
     verified: true,
@@ -164,7 +173,13 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
       ? jsxCode
       : activeCodeTab === 'vue'
       ? vueCode
-      : htmlImgCode;
+      : activeCodeTab === 'html'
+      ? generateHtmlEmbed(activeIconItem, currentFileName || '', currentAsset?.role)
+      : activeCodeTab === 'css'
+      ? generateCssSnippet(activeIconItem, currentFileName || '')
+      : activeCodeTab === 'tailwind'
+      ? generateTailwindSnippet(activeIconItem, currentFileName || '')
+      : generateMarkdownSnippet(activeIconItem, currentFileName || '');
 
   // 1. Action: "Copy this asset"
   const handleCopyAsset = async () => {
@@ -188,7 +203,8 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
     if (!currentAsset) return;
     try {
       setDownloadError(null);
-      await downloadSingleSvg(icon, currentAsset);
+      const receipt = await downloadSingleSvg(icon, currentAsset);
+      setDownloadReceipt(receipt);
     } catch (err: any) {
       setDownloadError(err.message || '无法下载未解析的资产');
       setTimeout(() => setDownloadError(null), 4000);
@@ -399,6 +415,64 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Download Receipt Banner (Requirement 25, 27) */}
+        {downloadReceipt && (
+          <div className="mx-6 my-2.5 p-3.5 bg-emerald-50/90 border border-emerald-300 rounded-xl text-xs space-y-2 shadow-xs animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-semibold text-emerald-900">
+                  资产下载凭证 (Download Receipt) · 官方源存证已开具
+                </span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-mono">
+                  {(downloadReceipt.fileSize / 1024).toFixed(2)} KB
+                </span>
+              </div>
+              <button
+                onClick={() => setDownloadReceipt(null)}
+                className="text-emerald-700 hover:text-emerald-900 text-xs font-medium cursor-pointer p-0.5"
+                title="关闭凭证"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-emerald-800 bg-white/70 p-2 rounded-lg border border-emerald-200/60 font-mono">
+              <div>
+                <span className="text-slate-500 block text-[9px]">文件</span>
+                <span className="font-medium truncate block">{downloadReceipt.fileName}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[9px]">形态/角色</span>
+                <span className="font-medium truncate block">{downloadReceipt.role} ({downloadReceipt.graphicVariant})</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[9px]">来源提供方</span>
+                <span className="font-medium truncate block">{downloadReceipt.sourcePlatform}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[9px]">下载时间</span>
+                <span className="font-medium truncate block">{new Date(downloadReceipt.timestamp).toLocaleTimeString()}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2 bg-emerald-100/60 px-2 py-1.5 rounded-lg border border-emerald-200 text-[10px] font-mono">
+              <span className="truncate text-emerald-900">
+                SHA-256: {downloadReceipt.rawSha256}
+              </span>
+              <button
+                onClick={async () => {
+                  await copyRawSvg(downloadReceipt.rawSha256);
+                  setReceiptCopiedSha(true);
+                  setTimeout(() => setReceiptCopiedSha(false), 1500);
+                }}
+                className="shrink-0 flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-medium cursor-pointer"
+              >
+                {receiptCopiedSha ? <CheckCheck className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                <span>{receiptCopiedSha ? '已复制' : '复制哈希'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {downloadError && (
           <div className="px-6 py-2 bg-rose-50 border-b border-rose-200 text-xs text-rose-700 flex items-center gap-2">
@@ -657,15 +731,113 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             )}
           </div>
 
-          {/* Section 4: Engineering Code Tabs */}
+          {/* Section 4: Vector Structural Geometry AST Analysis & True Color Separation */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+              <span>矢量几何结构 AST 深度透视 (Structural Vector Geometry)</span>
+            </h3>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px]">画幅比例 (Aspect Ratio)</span>
+                <span className="font-semibold text-slate-800 text-xs mt-0.5 block font-mono">
+                  {currentAsset?.structuralMetrics?.aspectRatio
+                    ? `${currentAsset.structuralMetrics.aspectRatio.toFixed(2)} : 1`
+                    : '1.00 : 1'}
+                </span>
+                <span className="text-[10px] text-slate-500 block">
+                  {currentAsset?.structuralMetrics?.aspectRatio && currentAsset.structuralMetrics.aspectRatio >= 2.0
+                    ? '横版横宽形态 (Wordmark)'
+                    : '正方/标准图标 (Symbol)'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px]">矢量路径 & 节点 (AST Nodes)</span>
+                <span className="font-semibold text-slate-800 text-xs mt-0.5 block font-mono">
+                  {currentAsset?.structuralMetrics?.pathCount ?? 1} 路径 · {currentAsset?.structuralMetrics?.elementCount ?? 1} 节点
+                </span>
+                <span className="text-[10px] text-slate-500 block">
+                  {(currentAsset?.structuralMetrics?.fileSize || (rawSvg ? new TextEncoder().encode(rawSvg).length : 0)) > 0
+                    ? `${((currentAsset?.structuralMetrics?.fileSize || new TextEncoder().encode(rawSvg).length) / 1024).toFixed(2)} KB`
+                    : '紧凑矢量'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px]">矢量色彩分类 (Color Structure)</span>
+                <span className="font-semibold text-slate-800 text-xs mt-0.5 block capitalize font-mono">
+                  {currentAsset?.colorType || currentAsset?.structuralMetrics?.colorType || 'monochrome'}
+                </span>
+                <span className="text-[10px] text-slate-500 block">
+                  含 {currentAsset?.structuralMetrics?.colorCount ?? 1} 种独立色相
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px]">官方品牌主色 (Brand Hex Meta)</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                    style={{ backgroundColor: cleanHex }}
+                  />
+                  <span className="font-mono text-xs font-semibold text-slate-800">{cleanHex}</span>
+                </div>
+                <span className="text-[10px] text-slate-500 block">元数据规范建议色</span>
+              </div>
+            </div>
+
+            {/* AST Feature Badges */}
+            <div className="flex items-center gap-1.5 flex-wrap p-2.5 bg-slate-50/70 rounded-xl border border-slate-100 text-[10px]">
+              <span className="font-semibold text-slate-600 mr-1">几何特性:</span>
+              <span className={`px-2 py-0.5 rounded font-medium ${
+                currentAsset?.structuralMetrics?.hasGradient
+                  ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {currentAsset?.structuralMetrics?.hasGradient ? '支持渐变 (<gradient>)' : '纯色填充'}
+              </span>
+              <span className={`px-2 py-0.5 rounded font-medium ${
+                currentAsset?.structuralMetrics?.hasCurrentColor
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {currentAsset?.structuralMetrics?.hasCurrentColor ? '动态 currentColor 支持' : '静态色彩'}
+              </span>
+              <span className={`px-2 py-0.5 rounded font-medium ${
+                currentAsset?.structuralMetrics?.hasClipPath
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {currentAsset?.structuralMetrics?.hasClipPath ? '包含裁切 (<clipPath>)' : '无裁切'}
+              </span>
+              <span className={`px-2 py-0.5 rounded font-medium ${
+                currentAsset?.structuralMetrics?.hasMask
+                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {currentAsset?.structuralMetrics?.hasMask ? '包含遮罩 (<mask>)' : '无遮罩'}
+              </span>
+              <span className={`px-2 py-0.5 rounded font-medium ${
+                currentAsset?.structuralMetrics?.hasText
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              }`}>
+                {currentAsset?.structuralMetrics?.hasText ? '⚠️ 包含文字 (<text>)' : '✓ 100% 路径几何'}
+              </span>
+            </div>
+          </div>
+
+          {/* Section 5: Engineering Code Tabs (7 Standard Formats) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-1" role="tablist" aria-label="代码格式选项">
+              <div className="flex items-center gap-1 flex-wrap" role="tablist" aria-label="代码格式选项">
                 <button
                   role="tab"
                   aria-selected={activeCodeTab === 'svg'}
                   onClick={() => setActiveCodeTab('svg')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'svg'
                       ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
@@ -677,7 +849,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                   role="tab"
                   aria-selected={activeCodeTab === 'jsx'}
                   onClick={() => setActiveCodeTab('jsx')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'jsx'
                       ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
@@ -689,7 +861,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                   role="tab"
                   aria-selected={activeCodeTab === 'vue'}
                   onClick={() => setActiveCodeTab('vue')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'vue'
                       ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
@@ -701,13 +873,49 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                   role="tab"
                   aria-selected={activeCodeTab === 'html'}
                   onClick={() => setActiveCodeTab('html')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     activeCodeTab === 'html'
                       ? 'bg-slate-900 text-white'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   HTML Tag
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={activeCodeTab === 'css'}
+                  onClick={() => setActiveCodeTab('css')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    activeCodeTab === 'css'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  CSS 背景
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={activeCodeTab === 'tailwind'}
+                  onClick={() => setActiveCodeTab('tailwind')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    activeCodeTab === 'tailwind'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Tailwind
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={activeCodeTab === 'markdown'}
+                  onClick={() => setActiveCodeTab('markdown')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    activeCodeTab === 'markdown'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Markdown
                 </button>
               </div>
 

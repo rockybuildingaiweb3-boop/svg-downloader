@@ -162,19 +162,12 @@ export class DeviconAdapter {
     const assets = [];
     for (const variant of match.variantList) {
       let role = 'symbol';
-      let context = ['general', 'web'];
-      if (variant === 'original') {
-        role = 'logo';
-        context = ['web', 'desktop'];
-      } else if (variant === 'plain') {
-        role = 'symbol';
-        context = ['general', 'web'];
-      } else if (variant === 'line') {
-        role = 'symbol';
-        context = ['general'];
-      } else if (variant.includes('wordmark')) {
+      if (variant.includes('wordmark')) {
         role = 'wordmark-horizontal';
-        context = ['web', 'desktop'];
+      } else if (variant === 'original') {
+        role = 'logo';
+      } else if (variant === 'plain' || variant === 'line') {
+        role = 'symbol';
       }
 
       assets.push({
@@ -185,17 +178,17 @@ export class DeviconAdapter {
         sourceId: match.name,
         sourceVersion: this.version,
         role,
-        context,
-        contextOrigin: 'source-confirmed',
+        context: ['general'],
+        contextOrigin: 'unknown',
         graphicVariant: variant,
         file: `${identityId}-devicon-${variant}.svg`,
         rawSha256: '',
         license: match.license,
         sourceUrl: match.sourceUrl,
         colorType: variant.includes('plain') || variant.includes('line') ? 'monochrome' : 'multi-color',
-        xmlValid: true,
-        renderable: true,
-        integrityVerified: true,
+        xmlValid: false,
+        renderable: false,
+        integrityVerified: false,
         isCanonical: false,
         _svgFetcher: () => this.getRawSvg(match.name, variant)
       });

@@ -1,7 +1,7 @@
 import { IconCategory, IconItem } from '../types';
-import { CURATED_ICONS, CANONICAL_CATALOG, ICON_MAP } from './catalog';
+import { CURATED_ICONS, REGISTRY_ITEMS, CANONICAL_CATALOG, ICON_MAP } from './catalog';
 
-export { CURATED_ICONS, CANONICAL_CATALOG, ICON_MAP };
+export { CURATED_ICONS, REGISTRY_ITEMS, CANONICAL_CATALOG, ICON_MAP };
 
 export const CATEGORIES: { id: IconCategory; label: string; count?: number }[] = [
   { id: 'all', label: '全部图标' },

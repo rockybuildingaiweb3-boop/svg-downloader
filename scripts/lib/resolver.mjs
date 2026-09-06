@@ -199,14 +199,15 @@ export class IconResolver {
       const { sourcePlatform, trustState } = this.getSourcePlatformAndTrust(asset.sourceProvider, asset.sourceCollection);
       asset.sourcePlatform = sourcePlatform;
       asset.trustState = trustState;
-      asset.xmlValid = asset.xmlValid ?? true;
-      asset.svgRenderable = asset.renderable ?? true;
-      asset.renderable = asset.renderable ?? true;
+      // Principle 11: Verification MUST NEVER default to true before actual SVG parsing & hashing
+      asset.xmlValid = false;
+      asset.svgRenderable = false;
+      asset.renderable = false;
       asset.sourceTrusted = trustState === 'verified' || trustState === 'trusted';
-      asset.canonicalResolved = true;
-      asset.integrityVerified = asset.integrityVerified ?? true;
-      asset.variantVerified = true;
-      asset.verificationStatus = 'verified';
+      asset.canonicalResolved = false;
+      asset.integrityVerified = false;
+      asset.variantVerified = false;
+      asset.verificationStatus = 'unresolved';
     }
 
     // Build Source Records (Requirement 22: Distinguish source evidence from canonical asset)
@@ -244,79 +245,142 @@ export class IconResolver {
   }
 
   /**
-   * Resolves specific asset in family based on context, role, variant, and source policy
+   * Evaluates and scores an asset candidate deterministically according to semantic source policy
+   * Score = sourceScore + trustScore + roleScore + contextScore + variantScore + identityOverrideScore + evidenceScore
+   * @param {import('./types.mjs').BrandAsset} asset
+   * @param {Object} criteria
+   * @param {Object} activePolicy
+   * @param {Object} override
+   * @returns {{ score: number, reasons: string[] }}
+   */
+  scoreCandidate(asset, criteria, activePolicy, override) {
+    let score = 0;
+    const reasons = [];
+
+    // 1. Explicit Identity Override Match (+150 / +50)
+    if (override?.preferredSource && asset.sourceProvider === override.preferredSource) {
+      score += 150;
+      reasons.push(`Explicit override for source (${asset.sourceProvider})`);
+    }
+    if (override?.preferredVariant && (asset.graphicVariant === override.preferredVariant || asset.role === override.preferredVariant)) {
+      score += 50;
+      reasons.push(`Explicit override for variant (${asset.graphicVariant})`);
+    }
+
+    // 2. User Requested Preferred Source (+100)
+    if (criteria.preferredSource && (asset.sourceProvider === criteria.preferredSource || (criteria.preferredSource === 'svg-logos' && asset.sourceProvider === 'iconify'))) {
+      score += 100;
+      reasons.push(`Requested source matched (${asset.sourceProvider})`);
+    }
+
+    // 3. Source Policy Priority Ranking (0-50 based on activePolicy.priority list)
+    const priorityList = activePolicy.priority || ['official', 'wikimedia', 'iconify', 'svg-logos', 'simple-icons', 'devicon'];
+    const providerKey = asset.sourceProvider === 'iconify' ? 'svg-logos' : asset.sourceProvider;
+    const pIndex = priorityList.indexOf(providerKey) !== -1 ? priorityList.indexOf(providerKey) : priorityList.indexOf(asset.sourceProvider);
+    if (pIndex !== -1) {
+      const pScore = Math.max(0, (priorityList.length - pIndex) * 10);
+      score += pScore;
+      reasons.push(`Source priority #${pIndex + 1} (+${pScore})`);
+    }
+
+    // 4. Trust State Score
+    if (asset.trustState === 'trusted') { score += 40; }
+    else if (asset.trustState === 'verified') { score += 30; }
+    else if (asset.trustState === 'community') { score += 15; }
+
+    // 5. Role Match
+    if (criteria.role && criteria.role !== 'all') {
+      if (asset.role === criteria.role) {
+        score += 60;
+        reasons.push(`Exact role match (${asset.role})`);
+      } else {
+        score -= 30;
+      }
+    } else {
+      if (asset.role === 'symbol') score += 20;
+      else if (asset.role === 'logo') score += 15;
+    }
+
+    // 6. Context Match
+    if (criteria.context && criteria.context !== 'all') {
+      if (asset.context?.includes(criteria.context)) {
+        score += 50;
+        reasons.push(`Exact context match (${criteria.context})`);
+      } else {
+        score -= 20;
+      }
+    }
+
+    // 7. Graphic Variant / Color Match
+    if (criteria.variant && criteria.variant !== 'all') {
+      if (asset.graphicVariant === criteria.variant ||
+         (criteria.variant === 'color' && asset.colorType === 'multi-color') ||
+         (criteria.variant === 'monochrome' && asset.colorType === 'monochrome')) {
+        score += 50;
+        reasons.push(`Variant match (${criteria.variant})`);
+      } else {
+        score -= 20;
+      }
+    }
+
+    // 8. Evidence Score
+    if (asset.contextOrigin === 'source-confirmed') score += 25;
+    else if (asset.contextOrigin === 'inferred') score += 10;
+
+    return { score, reasons };
+  }
+
+  /**
+   * Resolves specific asset in family with strict, preferred, or fallback semantics
    * @param {string} canonicalId
    * @param {Object} [criteria]
+   * @param {string} [criteria.mode='preferred'] - 'strict' | 'preferred' | 'fallback'
    * @param {import('./types.mjs').BrandAsset[]} allFamilyAssets
    * @returns {import('./types.mjs').BrandAsset | null}
    */
   resolveAsset(canonicalId, criteria = {}, allFamilyAssets = []) {
     if (!allFamilyAssets || allFamilyAssets.length === 0) return null;
 
+    const mode = criteria.mode || 'preferred';
     const policyKey = criteria.policy || this.sourcePolicies.defaultPolicy || 'brand';
     const activePolicy = this.sourcePolicies.policies[policyKey] || this.sourcePolicies.policies['brand'];
-    const priority = activePolicy.priority || ['official', 'wikimedia', 'iconify', 'svg-logos', 'simple-icons', 'devicon'];
-
     const override = this.sourcePolicies.identityOverrides?.[canonicalId];
-    const preferredSource = criteria.preferredSource || override?.preferredSource;
-    const preferredVariant = criteria.preferredVariant || override?.preferredVariant;
 
-    let candidate = null;
-
-    // 1. Explicit Preferred Source / Variant
-    if (preferredSource) {
-      candidate = allFamilyAssets.find(a =>
-        a.sourceProvider === preferredSource ||
-        (preferredSource === 'svg-logos' && a.sourceProvider === 'iconify') ||
-        (preferredSource === 'wikimedia' && a.sourceProvider === 'wikimedia')
-      );
-    }
-
-    if (preferredVariant && candidate) {
-      const variantMatch = allFamilyAssets.find(a =>
-        a.sourceProvider === candidate.sourceProvider &&
-        (a.graphicVariant === preferredVariant || a.role === preferredVariant)
-      );
-      if (variantMatch) candidate = variantMatch;
-    }
-
-    // 2. Role / Context matching if criteria specified
-    if (!candidate && (criteria.role || criteria.context || criteria.variant)) {
-      const filtered = allFamilyAssets.filter(a => {
-        let ok = true;
-        if (criteria.role && criteria.role !== 'all' && a.role !== criteria.role) ok = false;
-        if (criteria.context && criteria.context !== 'all' && !a.context?.includes(criteria.context)) ok = false;
-        if (criteria.variant && criteria.variant !== 'all' && a.graphicVariant !== criteria.variant) ok = false;
-        return ok;
+    // In STRICT mode, check hard constraints: if an asset fails any required filter, disqualify it
+    if (mode === 'strict') {
+      const candidates = allFamilyAssets.filter(a => {
+        if (criteria.role && criteria.role !== 'all' && a.role !== criteria.role) return false;
+        if (criteria.context && criteria.context !== 'all' && !a.context?.includes(criteria.context)) return false;
+        if (criteria.variant && criteria.variant !== 'all' && a.graphicVariant !== criteria.variant && a.colorType !== criteria.variant) return false;
+        if (criteria.sourceProvider && criteria.sourceProvider !== 'all' && a.sourceProvider !== criteria.sourceProvider) return false;
+        return true;
       });
-      if (filtered.length > 0) candidate = filtered[0];
-    }
 
-    // 3. Policy priority fall-through
-    if (!candidate) {
-      for (const p of priority) {
-        let match = null;
-        if (p === 'official' || p === 'wikimedia') {
-          match = allFamilyAssets.find(a => a.sourceProvider === 'official' || a.sourceProvider === 'wikimedia');
-        } else if (p === 'svg-logos' || p === 'iconify') {
-          match = allFamilyAssets.find(a => a.sourceProvider === 'iconify' && a.role === 'symbol') ||
-                  allFamilyAssets.find(a => a.sourceProvider === 'iconify');
-        } else if (p === 'devicon') {
-          match = allFamilyAssets.find(a => a.sourceProvider === 'devicon' && a.graphicVariant === 'original') ||
-                  allFamilyAssets.find(a => a.sourceProvider === 'devicon' && a.graphicVariant === 'plain') ||
-                  allFamilyAssets.find(a => a.sourceProvider === 'devicon');
-        } else if (p === 'simple-icons') {
-          match = allFamilyAssets.find(a => a.sourceProvider === 'simple-icons');
-        }
-
-        if (match) {
-          candidate = match;
-          break;
-        }
+      if (candidates.length === 0) {
+        // Principle 9 & 10: Strict constraints must return null if not matched (no silent generic logo fallback)
+        return null;
       }
+
+      // Rank remaining candidates by score
+      const scored = candidates.map(a => ({
+        asset: a,
+        ...this.scoreCandidate(a, criteria, activePolicy, override)
+      }));
+      scored.sort((a, b) => b.score - a.score);
+      return scored[0].asset;
     }
 
-    return candidate || allFamilyAssets[0];
+    // In PREFERRED / FALLBACK mode: score all assets and select highest score
+    const scored = allFamilyAssets.map(a => {
+      const { score, reasons } = this.scoreCandidate(a, criteria, activePolicy, override);
+      return { asset: a, score, reasons };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+
+    const winner = scored[0].asset;
+    winner.canonicalResolved = true;
+    return winner;
   }
 
   /**
@@ -460,17 +524,17 @@ export class IconResolver {
       sourceUrl: canonicalAsset.sourceUrl,
       brandColor,
       category: offMatch?.category || this.getCategory(canonicalId),
-      // Granular verification fields
-      xmlValid: true,
-      svgRenderable: true,
+      // Granular verification fields: Must NOT default to true before actual SVG parsing & hashing
+      xmlValid: false,
+      svgRenderable: false,
       sourceTrusted: trustState === 'verified' || trustState === 'trusted',
       canonicalResolved: true,
-      integrityVerified: true,
-      variantVerified: true,
-      renderable: true,
-      verificationStatus: 'verified',
+      integrityVerified: false,
+      variantVerified: false,
+      renderable: false,
+      verificationStatus: 'unresolved',
       trustState,
-      verified: true,
+      verified: false,
       sourceRecords,
       alternativeSources: alternativeSources.length > 0 ? alternativeSources : undefined,
       notes: canonicalAsset.notes || undefined,
@@ -487,6 +551,7 @@ export class IconResolver {
 
   /**
    * Discover all unique canonical identities across all adapters
+   * Preserves distinct source IDs and clusters them into semantic identities
    * @returns {string[]}
    */
   discoverAllIdentities() {
@@ -507,11 +572,18 @@ export class IconResolver {
       idSet.add(this.applyAlias(item.name));
     }
 
-    // 4. Add all SVG Logos items
+    // 4. Add all SVG Logos items: only group -icon if the base name is a recognized identity
     for (const item of this.svgLogos.getAll()) {
-      // Clean -icon suffix
-      const clean = item.name.endsWith('-icon') ? item.name.slice(0, -5) : item.name;
-      idSet.add(this.applyAlias(clean));
+      if (item.name.endsWith('-icon')) {
+        const base = item.name.slice(0, -5);
+        if (this.simpleIcons.get(base) || this.devicon.get(base) || this.svgLogos.get(base) || this.aliases.has(base)) {
+          idSet.add(this.applyAlias(base));
+        } else {
+          idSet.add(this.applyAlias(item.name));
+        }
+      } else {
+        idSet.add(this.applyAlias(item.name));
+      }
     }
 
     // 5. Add all Simple Icons items

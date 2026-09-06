@@ -15,7 +15,11 @@ import {
   RotateCcw,
   Palette,
   Compass,
-  Tag
+  Tag,
+  Heart,
+  Clock,
+  Bookmark,
+  FileCheck
 } from 'lucide-react';
 import {
   IconCategory,
@@ -24,6 +28,7 @@ import {
   AssetRole,
   UsageContext,
   TrustState,
+  DownloadReceipt,
   getSemanticSourceLabel,
   getTrustStateBadge
 } from './types';
@@ -36,12 +41,31 @@ import { ScriptPanel } from './components/ScriptPanel';
 import { AiVsOfficialSection } from './components/AiVsOfficialModal';
 import { ConflictsSection } from './components/ConflictsSection';
 import { downloadZip, downloadEngineeringZip } from './utils/svgHelpers';
-import { searchCatalogAssetAware } from './utils/assetResolver';
+import { searchCatalogAssetAware, parseSearchIntent } from './utils/assetResolver';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'icons' | 'conflicts' | 'script' | 'comparison'>('icons');
   const [searchTerm, setSearchTerm] = useState<string>('');
   
+  // Local Collections: Favorites and Recent Downloads
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('svg_registry_favorites') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const [recents, setRecents] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('svg_registry_recents') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const [selectedCollection, setSelectedCollection] = useState<'all' | 'favorites' | 'recents' | 'selected'>('all');
+
   // Standard & Advanced Filters (Requirement 24)
   const [selectedCategory, setSelectedCategory] = useState<IconCategory>('all');
   const [selectedSource, setSelectedSource] = useState<IconSource>('all');
@@ -68,11 +92,35 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  // Reset page when filters change
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem('svg_registry_favorites', JSON.stringify(next));
+      } catch {}
+      showToast(next.includes(id) ? `已将 ${id} 加入收藏` : `已将 ${id} 移出收藏`);
+      return next;
+    });
+  };
+
+  const handleDownloadReceipt = (receipt: DownloadReceipt) => {
+    setRecents(prev => {
+      const filtered = prev.filter(x => x !== receipt.identityId);
+      const next = [receipt.identityId, ...filtered].slice(0, 30);
+      try {
+        localStorage.setItem('svg_registry_recents', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    showToast(`已下载 ${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)`);
+  };
+
+  // Reset page when filters or collection change
   useEffect(() => {
     setCurrentPage(1);
   }, [
     searchTerm,
+    selectedCollection,
     selectedCategory,
     selectedSource,
     selectedStatus,
@@ -82,6 +130,12 @@ export default function App() {
     selectedTrustState,
     pageSize
   ]);
+
+  // Parse natural-language search intent
+  const parsedIntent = useMemo(() => {
+    if (!searchTerm.trim()) return null;
+    return parseSearchIntent(searchTerm);
+  }, [searchTerm]);
 
   // Active filters count for badge
   const activeFiltersCount = useMemo(() => {
@@ -119,6 +173,15 @@ export default function App() {
       }
       return icon;
     }).filter(icon => {
+      // 0. Local Collection filter (Favorites / Recents / Selected)
+      if (selectedCollection === 'favorites') {
+        if (!favorites.includes(icon.id)) return false;
+      } else if (selectedCollection === 'recents') {
+        if (!recents.includes(icon.id)) return false;
+      } else if (selectedCollection === 'selected') {
+        if (!selectedSlugs.includes(icon.slug)) return false;
+      }
+
       // 1. Category filter
       if (selectedCategory !== 'all') {
         if (selectedCategory === 'mainstream') {
@@ -194,8 +257,9 @@ export default function App() {
 
     const searchResults = searchCatalogAssetAware(searchTerm, baseFiltered);
     return searchResults.map(res => {
+      let iconToReturn = res.icon;
       if (res.matchedAsset && res.matchedAsset.assetId !== res.icon.canonicalAssetId) {
-        return {
+        iconToReturn = {
           ...res.icon,
           fileName: res.matchedAsset.file,
           sha256: res.matchedAsset.rawSha256,
@@ -210,10 +274,19 @@ export default function App() {
           sourcePlatform: getSemanticSourceLabel(res.matchedAsset.sourceProvider, res.matchedAsset.sourceCollection)
         };
       }
-      return res.icon;
+      return {
+        ...iconToReturn,
+        matchScore: res.matchScore,
+        matchChecklist: res.matchChecklist,
+        matchReason: res.matchReason
+      };
     });
   }, [
     searchTerm,
+    selectedCollection,
+    favorites,
+    recents,
+    selectedSlugs,
     selectedCategory,
     selectedSource,
     selectedStatus,
@@ -454,6 +527,97 @@ export default function App() {
 
               </div>
 
+              {/* Explainable Search Intent Bar (Requirement 24) */}
+              {parsedIntent && (
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl text-xs text-indigo-950 font-mono flex-wrap animate-in fade-in duration-150">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-indigo-700 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      意图分析:
+                    </span>
+                    <span>目标品牌: <strong>{parsedIntent.targetIdentity || '通用搜索'}</strong></span>
+                    {parsedIntent.roleConstraint && (
+                      <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
+                        形态: {parsedIntent.roleConstraint}
+                      </span>
+                    )}
+                    {parsedIntent.contextConstraint && (
+                      <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
+                        场景: {parsedIntent.contextConstraint}
+                      </span>
+                    )}
+                    {parsedIntent.variantPreference && (
+                      <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
+                        偏好: {parsedIntent.variantPreference}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-slate-500 font-sans">
+                      ({parsedIntent.mode === 'strict' ? '严格命中' : '智能优选'})
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-sans text-indigo-700 font-medium">
+                    精准命中 {filteredIcons.length} 项
+                  </span>
+                </div>
+              )}
+
+              {/* Local Collections Tabs: All, Favorites, Recents, Selected */}
+              <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1 no-scrollbar pt-1 border-t border-slate-100">
+                <button
+                  id="tab-collection-all"
+                  onClick={() => setSelectedCollection('all')}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    selectedCollection === 'all'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>全部标识 ({CURATED_ICONS.length})</span>
+                </button>
+
+                <button
+                  id="tab-collection-favorites"
+                  onClick={() => setSelectedCollection('favorites')}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    selectedCollection === 'favorites'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                  }`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${selectedCollection === 'favorites' ? 'fill-current' : ''}`} />
+                  <span>我的收藏 ({favorites.length})</span>
+                </button>
+
+                <button
+                  id="tab-collection-recents"
+                  onClick={() => setSelectedCollection('recents')}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    selectedCollection === 'recents'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>最近下载 ({recents.length})</span>
+                </button>
+
+                {selectedSlugs.length > 0 && (
+                  <button
+                    id="tab-collection-selected"
+                    onClick={() => setSelectedCollection('selected')}
+                    className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      selectedCollection === 'selected'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                    }`}
+                  >
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    <span>已选中项 ({selectedSlugs.length})</span>
+                  </button>
+                )}
+              </div>
+
               {/* Row 2: Category Chips */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
                 {CATEGORIES.map(cat => {
@@ -637,6 +801,9 @@ export default function App() {
                       isSelected={selectedSlugs.includes(icon.slug)}
                       onToggleSelect={handleToggleSelect}
                       onInspect={setInspectedIcon}
+                      isFavorite={favorites.includes(icon.id)}
+                      onToggleFavorite={toggleFavorite}
+                      onDownloadReceipt={handleDownloadReceipt}
                     />
                   ))}
                 </div>

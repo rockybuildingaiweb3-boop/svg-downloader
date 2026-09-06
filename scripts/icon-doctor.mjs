@@ -90,6 +90,9 @@ async function runDoctor() {
   let hashMismatchCount = 0;
   let staleFilesCount = 0;
   let duplicateAssetsCount = 0;
+  let structuralMetricsCount = 0;
+  let geometryAnomalyCount = 0;
+  const contextOriginCounts = { 'source-confirmed': 0, 'inferred': 0, 'unknown': 0 };
   const shaMap = new Map();
 
   // Audit on-disk SVGs in public/icons
@@ -116,6 +119,22 @@ async function runDoctor() {
     for (const asset of assets) {
       referencedFiles.add(asset.file);
       const filePath = path.join(publicIconsDir, asset.file);
+
+      // Audit context origin
+      const origin = asset.contextOrigin || 'unknown';
+      if (contextOriginCounts[origin] !== undefined) {
+        contextOriginCounts[origin]++;
+      } else {
+        contextOriginCounts[origin] = 1;
+      }
+
+      // Audit AST structural metrics
+      if (asset.structuralMetrics) {
+        structuralMetricsCount++;
+        if (asset.structuralMetrics.aspectRatio && (asset.structuralMetrics.aspectRatio <= 0 || isNaN(asset.structuralMetrics.aspectRatio))) {
+          geometryAnomalyCount++;
+        }
+      }
 
       let content = '';
       try {
@@ -180,12 +199,15 @@ async function runDoctor() {
   console.log(`   Unresolved identities:  ${unresolvedCount}`);
   console.log(`   Duplicate content assets: ${duplicateAssetsCount}`);
   console.log(`   Stale files on disk:    ${staleFilesCount}`);
+  console.log(`   Context Origin breakdown: source-confirmed=${contextOriginCounts['source-confirmed']}, inferred=${contextOriginCounts['inferred']}, unknown=${contextOriginCounts['unknown']}`);
+  console.log(`   AST Structural Metrics: ${structuralMetricsCount} assets analyzed`);
+  console.log(`   Geometry Anomalies:     ${geometryAnomalyCount}`);
   console.log(`   UI Catalog in sync:     ${!uiCatalogStale}`);
 
   // Write audit report
   const auditReport = {
     generatedAt: new Date().toISOString(),
-    doctorStatus: (hashMismatchCount === 0 && warningCount === 0) ? 'HEALTHY' : 'WARNINGS_DETECTED',
+    doctorStatus: (hashMismatchCount === 0 && warningCount === 0 && geometryAnomalyCount === 0) ? 'HEALTHY' : 'WARNINGS_DETECTED',
     sourceCoverage: {
       simpleIcons: { count: simpleCount, version: simpleIcons.version },
       devicon: { count: deviconCount, version: devicon.version },
@@ -205,6 +227,9 @@ async function runDoctor() {
       hashMismatches: hashMismatchCount,
       duplicateAssets: duplicateAssetsCount,
       staleFiles: staleFilesCount,
+      contextOriginDistribution: contextOriginCounts,
+      structuralMetricsCoverage: structuralMetricsCount,
+      geometryAnomalies: geometryAnomalyCount,
       uiCatalogFresh: !uiCatalogStale
     }
   };
