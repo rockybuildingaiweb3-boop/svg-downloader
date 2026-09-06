@@ -3,6 +3,7 @@ import path from 'node:path';
 
 /**
  * Adapter for Devicon npm package
+ * Developer & tech vectors with rich multi-color variant hierarchy
  */
 export class DeviconAdapter {
   constructor(rootDir = process.cwd()) {
@@ -73,7 +74,6 @@ export class DeviconAdapter {
       const availableVariants = Object.keys(variantMap);
       if (availableVariants.length === 0) continue;
 
-      // Select default primary variant: prefer 'original', then 'plain', then first
       let primaryVariant = 'original';
       if (!variantMap[primaryVariant]) {
         primaryVariant = variantMap['plain'] ? 'plain' : availableVariants[0];
@@ -85,7 +85,8 @@ export class DeviconAdapter {
         name,
         title: item.name,
         hex: item.color ? (item.color.startsWith('#') ? item.color : `#${item.color}`) : undefined,
-        license: 'Devicon (MIT License) with brand trademark guidelines',
+        license: 'MIT License (Devicon)',
+        licenseStatus: 'known',
         sourceUrl: `https://devicon.dev/`,
         variants: variantMap,
         variantList: availableVariants,
@@ -141,7 +142,6 @@ export class DeviconAdapter {
     try {
       return await fs.readFile(p, 'utf8');
     } catch {
-      // If specific variant file doesn't exist, fallback to another variant
       for (const fallbackPath of Object.values(entry.variants)) {
         try {
           return await fs.readFile(fallbackPath, 'utf8');
@@ -152,7 +152,7 @@ export class DeviconAdapter {
   }
 
   /**
-   * Enumerate assets for a given identity across all its variants
+   * Enumerate assets for a given identity
    * @param {string} identityId
    * @returns {Array<import('../types.mjs').BrandAsset>}
    */
@@ -178,14 +178,17 @@ export class DeviconAdapter {
         sourceId: match.name,
         sourceVersion: this.version,
         role,
+        roleOrigin: 'inferred',
         context: ['general'],
         contextOrigin: 'unknown',
         graphicVariant: variant,
         file: `${identityId}-devicon-${variant}.svg`,
         rawSha256: '',
         license: match.license,
+        licenseStatus: match.licenseStatus,
         sourceUrl: match.sourceUrl,
         colorType: variant.includes('plain') || variant.includes('line') ? 'monochrome' : 'multi-color',
+        sourceTrust: 'community',
         xmlValid: false,
         renderable: false,
         integrityVerified: false,
@@ -194,6 +197,57 @@ export class DeviconAdapter {
       });
     }
     return assets;
+  }
+
+  /**
+   * Full source inventory enumeration across all 578 devicons and their variants (2,167 assets)
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  listAllAssets() {
+    const assets = [];
+    for (const item of this.icons.values()) {
+      for (const variant of item.variantList) {
+        let role = 'symbol';
+        if (variant.includes('wordmark')) {
+          role = 'wordmark-horizontal';
+        } else if (variant === 'original') {
+          role = 'logo';
+        } else if (variant === 'plain' || variant === 'line') {
+          role = 'symbol';
+        }
+
+        assets.push({
+          assetId: `${item.name}-devicon-${variant}`,
+          identityId: item.name,
+          sourceProvider: 'devicon',
+          sourceCollection: 'devicon',
+          sourceId: item.name,
+          sourceVersion: this.version,
+          role,
+          roleOrigin: 'inferred',
+          context: ['general'],
+          contextOrigin: 'unknown',
+          graphicVariant: variant,
+          file: `${item.name}-devicon-${variant}.svg`,
+          rawSha256: '',
+          license: item.license,
+          licenseStatus: item.licenseStatus,
+          sourceUrl: item.sourceUrl,
+          colorType: variant.includes('plain') || variant.includes('line') ? 'monochrome' : 'multi-color',
+          sourceTrust: 'community',
+          xmlValid: false,
+          renderable: false,
+          integrityVerified: false,
+          isCanonical: false,
+          _svgFetcher: () => this.getRawSvg(item.name, variant)
+        });
+      }
+    }
+    return assets;
+  }
+
+  getAllAssets() {
+    return this.listAllAssets();
   }
 
   getAll() {

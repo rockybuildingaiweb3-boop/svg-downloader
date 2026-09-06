@@ -366,8 +366,16 @@ export class IconResolver {
         asset: a,
         ...this.scoreCandidate(a, criteria, activePolicy, override)
       }));
-      scored.sort((a, b) => b.score - a.score);
-      return scored[0].asset;
+      const winner = scored[0].asset;
+      winner.canonicalResolved = true;
+      winner.canonicalDecision = {
+        selectedAssetId: winner.assetId,
+        score: scored[0].score,
+        reasons: scored[0].reasons,
+        policy: policyKey,
+        mode: 'strict'
+      };
+      return winner;
     }
 
     // In PREFERRED / FALLBACK mode: score all assets and select highest score
@@ -380,6 +388,13 @@ export class IconResolver {
 
     const winner = scored[0].asset;
     winner.canonicalResolved = true;
+    winner.canonicalDecision = {
+      selectedAssetId: winner.assetId,
+      score: scored[0].score,
+      reasons: scored[0].reasons,
+      policy: policyKey,
+      mode
+    };
     return winner;
   }
 
@@ -540,6 +555,13 @@ export class IconResolver {
       notes: canonicalAsset.notes || undefined,
       // Full Asset Family Modeling
       canonicalAssetId: canonicalAsset.assetId,
+      canonicalDecision: canonicalAsset.canonicalDecision || {
+        selectedAssetId: canonicalAsset.assetId,
+        score: 0,
+        reasons: ['Selected by policy default'],
+        policy: policyKey,
+        mode: 'preferred'
+      },
       canonicalAsset,
       assets: allFamilyAssets,
       totalAssets: allFamilyAssets.length,

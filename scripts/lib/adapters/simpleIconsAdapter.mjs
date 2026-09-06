@@ -3,6 +3,7 @@ import path from 'node:path';
 
 /**
  * Adapter for Simple Icons npm package
+ * Canonical single-path monochrome vector library
  */
 export class SimpleIconsAdapter {
   constructor(rootDir = process.cwd()) {
@@ -23,7 +24,7 @@ export class SimpleIconsAdapter {
     try {
       const pkgContent = await fs.readFile(pkgJsonPath, 'utf8');
       const pkg = JSON.parse(pkgContent);
-      this.version = pkg.version || '16.29.0';
+      this.version = pkg.version || '16.30.0';
     } catch (err) {
       throw new Error(`Failed to read Simple Icons package at ${pkgJsonPath}: ${err.message}`);
     }
@@ -54,6 +55,16 @@ export class SimpleIconsAdapter {
       const slug = item.slug.toLowerCase();
       const svgPath = path.join(this.pkgDir, 'icons', `${slug}.svg`);
 
+      let license = null;
+      let licenseStatus = 'unknown';
+      if (item.license) {
+        license = `${item.license.type || 'License'}${item.license.url ? ': ' + item.license.url : ''}`;
+        licenseStatus = 'known';
+      } else {
+        license = 'CC0 1.0 Universal';
+        licenseStatus = 'known';
+      }
+
       const entry = {
         source: 'simple-icons',
         sourceId: slug,
@@ -61,7 +72,8 @@ export class SimpleIconsAdapter {
         title: item.title,
         hex: item.hex ? (item.hex.startsWith('#') ? item.hex : `#${item.hex}`) : undefined,
         sourceUrl: item.source || null,
-        license: item.license ? `${item.license.type || 'License'}: ${item.license.url || ''}` : 'Simple Icons (CC0 1.0 Universal)',
+        license,
+        licenseStatus,
         guidelines: item.guidelines || null,
         svgPath,
         variant: 'default',
@@ -69,6 +81,13 @@ export class SimpleIconsAdapter {
       };
 
       this.icons.set(slug, entry);
+      const strippedSlug = slug.replace(/[^a-z0-9]/g, '');
+      if (strippedSlug && !this.icons.has(strippedSlug)) {
+        this.icons.set(strippedSlug, entry);
+      }
+      if (slug.includes('_')) {
+        this.icons.set(slug.replace(/_/g, '-'), entry);
+      }
 
       // Map title
       const normTitle = item.title.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -141,20 +160,63 @@ export class SimpleIconsAdapter {
       sourceId: match.slug,
       sourceVersion: this.version,
       role: 'symbol',
+      roleOrigin: 'inferred',
       context: ['general'],
       contextOrigin: 'unknown',
       graphicVariant: 'monochrome',
-      file: `${identityId}.svg`,
+      file: `${identityId}-simpleicons-symbol.svg`,
       rawSha256: '',
       license: match.license,
+      licenseStatus: match.licenseStatus,
       sourceUrl: match.sourceUrl,
       colorType: 'monochrome',
+      sourceTrust: 'trusted',
       xmlValid: false,
       renderable: false,
       integrityVerified: false,
       isCanonical: false,
       _svgFetcher: () => this.getRawSvg(match.slug)
     }];
+  }
+
+  /**
+   * Full source inventory enumeration
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  listAllAssets() {
+    const assets = [];
+    for (const item of this.icons.values()) {
+      assets.push({
+        assetId: `${item.slug}-simpleicons-symbol`,
+        identityId: item.slug,
+        sourceProvider: 'simple-icons',
+        sourceCollection: 'simple-icons',
+        sourceId: item.slug,
+        sourceVersion: this.version,
+        role: 'symbol',
+        roleOrigin: 'inferred',
+        context: ['general'],
+        contextOrigin: 'unknown',
+        graphicVariant: 'monochrome',
+        file: `${item.slug}-simpleicons-symbol.svg`,
+        rawSha256: '',
+        license: item.license,
+        licenseStatus: item.licenseStatus,
+        sourceUrl: item.sourceUrl,
+        colorType: 'monochrome',
+        sourceTrust: 'trusted',
+        xmlValid: false,
+        renderable: false,
+        integrityVerified: false,
+        isCanonical: false,
+        _svgFetcher: () => this.getRawSvg(item.slug)
+      });
+    }
+    return assets;
+  }
+
+  getAllAssets() {
+    return this.listAllAssets();
   }
 
   getAll() {

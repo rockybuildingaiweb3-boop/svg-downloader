@@ -27,11 +27,15 @@ import {
   UsageContext,
   TrustState,
   DownloadReceipt,
+  BrowseLevel,
+  ConcreteAssetItem,
   getSemanticSourceLabel
 } from './types';
-import { CURATED_ICONS, CATEGORIES } from './data/curatedIcons';
+import { REGISTRY_ITEMS, REGISTRY_ASSETS, REGISTRY_STATS, ASSET_MAP, CURATED_ICONS, ICON_MAP } from './data/catalog';
+import { CATEGORIES } from './data/curatedIcons';
 import { Header, ActiveTabType } from './components/Header';
 import { IconCard } from './components/IconCard';
+import { ConcreteAssetCard } from './components/ConcreteAssetCard';
 import { IconInspectorModal } from './components/IconInspectorModal';
 import { BatchActionBar } from './components/BatchActionBar';
 import { ScriptPanel } from './components/ScriptPanel';
@@ -40,7 +44,7 @@ import { ConflictsSection } from './components/ConflictsSection';
 import { SourcesSection } from './components/SourcesSection';
 import { CoverageSection } from './components/CoverageSection';
 import { CommandPalette } from './components/CommandPalette';
-import { downloadZip, downloadEngineeringZip } from './utils/svgHelpers';
+import { downloadZip, downloadEngineeringZip, downloadConcreteAssetsZip } from './utils/svgHelpers';
 import { searchCatalogAssetAware, parseSearchIntent } from './utils/assetResolver';
 import { useTranslation } from './i18n/context';
 
@@ -82,6 +86,10 @@ export default function App() {
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(36);
+
+  // Dual Browsing Level: 'identities' (4,654) vs 'assets' (8,052)
+  const [browseLevel, setBrowseLevel] = useState<BrowseLevel>('identities');
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
 
   // Identity active asset overrides
   const [activeAssetOverrides, setActiveAssetOverrides] = useState<Record<string, string>>({});
@@ -310,12 +318,91 @@ export default function App() {
     activeAssetOverrides
   ]);
 
-  // Paginated Icons
+  // Paginated Icons (Identities Mode)
   const totalPages = Math.max(1, Math.ceil(filteredIcons.length / pageSize));
   const paginatedIcons = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     return filteredIcons.slice(startIndex, startIndex + pageSize);
   }, [filteredIcons, currentPage, pageSize]);
+
+  // Filtered concrete assets for "Browse by Assets" mode
+  const filteredAssets = useMemo(() => {
+    return REGISTRY_ASSETS.filter(asset => {
+      // 0. Selected collection filter
+      if (selectedCollection === 'favorites') {
+        if (!favorites.includes(asset.identityId)) return false;
+      } else if (selectedCollection === 'recents') {
+        if (!recents.includes(asset.identityId)) return false;
+      } else if (selectedCollection === 'selected') {
+        if (!selectedAssetIds.includes(asset.assetId)) return false;
+      }
+
+      // 1. Category filter
+      if (selectedCategory !== 'all' && asset.category !== selectedCategory) {
+        return false;
+      }
+
+      // 2. Source filter
+      if (selectedSource !== 'all') {
+        const src: string = asset.sourceProvider;
+        if (selectedSource === 'svg-logos') {
+          if (src !== 'iconify' && src !== 'svg-logos' && asset.sourceCollection !== 'logos') return false;
+        } else if (selectedSource === 'official') {
+          if (src !== 'official') return false;
+        } else if (selectedSource === 'wikimedia') {
+          if (src !== 'wikimedia') return false;
+        } else if (src !== selectedSource) {
+          return false;
+        }
+      }
+
+      // 3. Status filter
+      if (selectedStatus === 'verified' && asset.verificationStatus !== 'verified') return false;
+
+      // 4. Role filter
+      if (selectedRole !== 'all' && asset.role !== selectedRole) return false;
+
+      // 5. Context filter
+      if (selectedContext !== 'all' && (!asset.context || !asset.context.includes(selectedContext))) return false;
+
+      // 6. Variant filter
+      if (selectedVariant !== 'all' && asset.graphicVariant?.toLowerCase() !== selectedVariant.toLowerCase()) return false;
+
+      // 7. Trust state filter
+      if (selectedTrustState !== 'all' && asset.trustState !== selectedTrustState) return false;
+
+      // 8. Search query
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase().trim();
+        const matchesTitle = asset.identityTitle?.toLowerCase().includes(q);
+        const matchesSlug = asset.identitySlug?.toLowerCase().includes(q);
+        const matchesFile = asset.file.toLowerCase().includes(q);
+        const matchesId = asset.assetId.toLowerCase().includes(q);
+        return matchesTitle || matchesSlug || matchesFile || matchesId;
+      }
+
+      return true;
+    });
+  }, [
+    selectedCollection,
+    favorites,
+    recents,
+    selectedAssetIds,
+    selectedCategory,
+    selectedSource,
+    selectedStatus,
+    selectedRole,
+    selectedContext,
+    selectedVariant,
+    selectedTrustState,
+    searchTerm
+  ]);
+
+  const totalAssetPages = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
+  const paginatedAssets = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredAssets.slice(startIndex, startIndex + pageSize);
+  }, [filteredAssets, currentPage, pageSize]);
 
   const handleUseAsset = (identityId: string, assetId: string) => {
     setActiveAssetOverrides(prev => ({
@@ -340,21 +427,64 @@ export default function App() {
   };
 
   const handleToggleSelect = (slug: string) => {
-    setSelectedSlugs(prev =>
-      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
-    );
+    const icon = ICON_MAP[slug];
+    const assetId = icon?.canonicalAssetId;
+    setSelectedSlugs(prev => {
+      const isSel = prev.includes(slug);
+      return isSel ? prev.filter(s => s !== slug) : [...prev, slug];
+    });
+    if (assetId) {
+      setSelectedAssetIds(prev => {
+        const isSel = prev.includes(assetId);
+        return isSel ? prev.filter(id => id !== assetId) : [...prev, assetId];
+      });
+    }
+  };
+
+  const handleToggleSelectAsset = (assetId: string) => {
+    setSelectedAssetIds(prev => {
+      const isSel = prev.includes(assetId);
+      const next = isSel ? prev.filter(id => id !== assetId) : [...prev, assetId];
+      const asset = ASSET_MAP[assetId];
+      if (asset?.identitySlug) {
+        setSelectedSlugs(sPrev => {
+          if (isSel) {
+            const hasOther = next.some(id => ASSET_MAP[id]?.identitySlug === asset.identitySlug);
+            return hasOther ? sPrev : sPrev.filter(s => s !== asset.identitySlug);
+          } else {
+            return sPrev.includes(asset.identitySlug!) ? sPrev : [...sPrev, asset.identitySlug!];
+          }
+        });
+      }
+      return next;
+    });
   };
 
   const handleSelectAllFiltered = () => {
-    const filteredSlugs = filteredIcons
-      .filter(i => i.verificationStatus !== 'unresolved')
-      .map(i => i.slug);
-    setSelectedSlugs(prev => Array.from(new Set([...prev, ...filteredSlugs])));
-    showToast(`Selected all ${filteredSlugs.length} filtered assets`);
+    if (browseLevel === 'identities') {
+      const filteredSlugs = filteredIcons
+        .filter(i => i.verificationStatus !== 'unresolved')
+        .map(i => i.slug);
+      const filteredAssetIds = filteredIcons
+        .filter(i => i.verificationStatus !== 'unresolved')
+        .map(i => i.canonicalAssetId)
+        .filter(Boolean);
+      setSelectedSlugs(prev => Array.from(new Set([...prev, ...filteredSlugs])));
+      setSelectedAssetIds(prev => Array.from(new Set([...prev, ...filteredAssetIds])));
+      showToast(`Selected all ${filteredSlugs.length} filtered identities`);
+    } else {
+      const filteredIds = filteredAssets
+        .filter(a => a.verificationStatus !== 'unresolved')
+        .map(a => a.assetId);
+      setSelectedAssetIds(prev => Array.from(new Set([...prev, ...filteredIds])));
+      showToast(`Selected all ${filteredIds.length} filtered assets`);
+    }
   };
 
   const handleClearSelection = () => {
     setSelectedSlugs([]);
+    setSelectedAssetIds([]);
+    showToast('Cleared selection');
   };
 
   const handleResetFilters = () => {
@@ -371,10 +501,19 @@ export default function App() {
   };
 
   const handleDownloadSelectedZip = async () => {
-    const itemsToDownload = CURATED_ICONS.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
-    if (itemsToDownload.length === 0) return;
-    await downloadZip(itemsToDownload, `brand-icons-${itemsToDownload.length}.zip`);
-    showToast(`Downloading ${itemsToDownload.length} verified SVG assets...`);
+    if (browseLevel === 'identities') {
+      const itemsToDownload = CURATED_ICONS.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
+      if (itemsToDownload.length === 0) return;
+      await downloadZip(itemsToDownload, `brand-icons-${itemsToDownload.length}.zip`);
+      showToast(`Downloading ${itemsToDownload.length} verified SVG assets...`);
+    } else {
+      const assetsToDownload = selectedAssetIds
+        .map(id => ASSET_MAP[id] || REGISTRY_ASSETS.find(a => a.assetId === id))
+        .filter(Boolean);
+      if (assetsToDownload.length === 0) return;
+      await downloadConcreteAssetsZip(assetsToDownload as any[], `selected-svg-assets-${assetsToDownload.length}.zip`);
+      showToast(`Downloading ${assetsToDownload.length} verified concrete SVG assets...`);
+    }
   };
 
   const handleDownloadSelectedBundle = async () => {
@@ -437,35 +576,39 @@ export default function App() {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        totalIcons={CURATED_ICONS.length}
-        selectedCount={selectedSlugs.length}
+        totalIcons={REGISTRY_ITEMS.length}
+        selectedCount={browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length}
         onDownloadMainstreamZip={handleDownloadMainstreamZip}
         onDownloadMainstreamBundle={handleDownloadMainstreamBundle}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
-      {/* System Verification & Architecture Banner */}
-      <div className="bg-slate-900 text-white border-b border-slate-800 py-2 px-4 sm:px-6 lg:px-8 text-xs">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{t.systemBanner.registryTitle}</span>
+      {/* System Verification & Live Registry Statistics Banner */}
+      <div className="bg-slate-900 text-white border-b border-slate-800 py-2.5 px-4 sm:px-6 lg:px-8 text-xs">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Multi-Source SVG Registry</span>
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
-            <span className="text-slate-300">
-              {t.systemBanner.dataModel}
+            <span className="text-slate-200 font-medium">
+              <strong className="text-white">{REGISTRY_STATS.totalIdentities.toLocaleString()}</strong> Identities · <strong className="text-white">{REGISTRY_STATS.totalAssets.toLocaleString()}</strong> Authentic Assets
+            </span>
+            <span className="hidden sm:inline text-slate-600">•</span>
+            <span className="text-slate-400 font-mono text-2xs">
+              Simple Icons ({REGISTRY_STATS.sourceCounts['simple-icons']?.toLocaleString()}) · Devicon ({REGISTRY_STATS.sourceCounts['devicon']?.toLocaleString()}) · SVG Logos ({(REGISTRY_STATS.sourceCounts['iconify'] || REGISTRY_STATS.sourceCounts['svg-logos'])?.toLocaleString()}) · Official ({REGISTRY_STATS.sourceCounts['wikimedia'] || 6})
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-2xs text-slate-400">
-            <span className="text-emerald-300 flex items-center gap-1">
-              <Check className="w-3 h-3 text-emerald-400" /> {t.systemBanner.rawBytesImmutable}
+            <span className="text-emerald-300 flex items-center gap-1 font-semibold">
+              <Check className="w-3.5 h-3.5 text-emerald-400" /> Zero Fake SVGs
             </span>
             <span>•</span>
-            <span>{t.systemBanner.noFakePlaceholders}</span>
-            <span>•</span>
-            <span className="font-mono text-indigo-300">{t.systemBanner.astValidated}</span>
+            <span className="text-indigo-300 font-mono">
+              {REGISTRY_STATS.conflictsCount} Collisions Resolved by Policy
+            </span>
           </div>
         </div>
       </div>
@@ -476,6 +619,54 @@ export default function App() {
         {activeTab === 'icons' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
             
+            {/* Dual Browsing Mode Switcher Toolbar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-md border border-indigo-900/50">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-indigo-400" />
+                    <span>Registry Browsing Level</span>
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-3xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Source Inventory First
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  {browseLevel === 'identities'
+                    ? `Browsing ${REGISTRY_ITEMS.length.toLocaleString()} verified brand & tech identities across 4 upstream sources`
+                    : `Browsing ${REGISTRY_ASSETS.length.toLocaleString()} individual authentic vector assets across all variants & providers`}
+                </p>
+              </div>
+
+              {/* Toggle Switch */}
+              <div className="flex items-center p-1 bg-slate-800/90 rounded-xl border border-slate-700 shadow-inner shrink-0">
+                <button
+                  id="btn-browse-identities"
+                  onClick={() => { setBrowseLevel('identities'); setCurrentPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    browseLevel === 'identities'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Browse Identities ({REGISTRY_ITEMS.length.toLocaleString()})</span>
+                </button>
+                <button
+                  id="btn-browse-assets"
+                  onClick={() => { setBrowseLevel('assets'); setCurrentPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    browseLevel === 'assets'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Browse Assets ({REGISTRY_ASSETS.length.toLocaleString()})</span>
+                </button>
+              </div>
+            </div>
+
             {/* Filter & Control Bar */}
             <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3.5">
               
@@ -773,11 +964,19 @@ export default function App() {
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 flex-wrap gap-2">
                 <div className="flex items-center gap-3">
                   <span>
-                    {t.filters.showingCount} <strong>{filteredIcons.length}</strong> / {CURATED_ICONS.length}
+                    {browseLevel === 'identities' ? (
+                      <>
+                        {t.filters.showingCount} <strong>{filteredIcons.length}</strong> / {REGISTRY_STATS.totalIdentities.toLocaleString()}
+                      </>
+                    ) : (
+                      <>
+                        {t.filters.showingCount} <strong>{filteredAssets.length}</strong> / {REGISTRY_STATS.totalAssets.toLocaleString()}
+                      </>
+                    )}
                   </span>
-                  {selectedSlugs.length > 0 && (
+                  {(browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length) > 0 && (
                     <span className="text-indigo-600 font-semibold">
-                      {selectedSlugs.length} {t.filters.selectedCount}
+                      {browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length} {t.filters.selectedCount}
                     </span>
                   )}
                 </div>
@@ -802,7 +1001,7 @@ export default function App() {
                     <span>{t.filters.selectAll}</span>
                   </button>
 
-                  {selectedSlugs.length > 0 && (
+                  {(browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length) > 0 && (
                     <button
                       onClick={handleClearSelection}
                       className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -816,28 +1015,45 @@ export default function App() {
             </div>
 
             {/* Icons Grid with Full Catalog Pagination */}
-            {paginatedIcons.length > 0 ? (
+            {(browseLevel === 'identities' ? paginatedIcons.length : paginatedAssets.length) > 0 ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {paginatedIcons.map(icon => (
-                    <IconCard
-                      key={icon.slug}
-                      icon={icon}
-                      isSelected={selectedSlugs.includes(icon.slug)}
-                      onToggleSelect={handleToggleSelect}
-                      onInspect={setInspectedIcon}
-                      isFavorite={favorites.includes(icon.id)}
-                      onToggleFavorite={toggleFavorite}
-                      onDownloadReceipt={handleDownloadReceipt}
-                    />
-                  ))}
+                  {browseLevel === 'identities'
+                    ? paginatedIcons.map(icon => (
+                        <IconCard
+                          key={icon.slug}
+                          icon={icon}
+                          isSelected={selectedSlugs.includes(icon.slug)}
+                          onToggleSelect={handleToggleSelect}
+                          onInspect={setInspectedIcon}
+                          isFavorite={favorites.includes(icon.id)}
+                          onToggleFavorite={toggleFavorite}
+                          onDownloadReceipt={handleDownloadReceipt}
+                        />
+                      ))
+                    : paginatedAssets.map(asset => (
+                        <ConcreteAssetCard
+                          key={asset.assetId}
+                          asset={asset}
+                          isSelected={selectedAssetIds.includes(asset.assetId)}
+                          onToggleSelect={handleToggleSelectAsset}
+                          onInspectIdentity={(slug) => {
+                            const icon = ICON_MAP[slug];
+                            if (icon) setInspectedIcon(icon);
+                          }}
+                          isFavorite={favorites.includes(asset.identityId)}
+                          onToggleFavorite={toggleFavorite}
+                          onDownloadReceipt={handleDownloadReceipt}
+                        />
+                      ))
+                  }
                 </div>
 
                 {/* Pagination Controls Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl px-4 py-3 border border-slate-200 gap-3 text-xs">
                   <div className="flex items-center gap-2 text-slate-500">
                     <span>
-                      {t.pagination.showing} <strong>{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredIcons.length)}</strong> / <strong>{filteredIcons.length}</strong>
+                      {t.pagination.showing} <strong>{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, browseLevel === 'identities' ? filteredIcons.length : filteredAssets.length)}</strong> / <strong>{browseLevel === 'identities' ? filteredIcons.length : filteredAssets.length}</strong>
                     </span>
                     <span className="text-slate-300">•</span>
                     <label className="flex items-center gap-1">
@@ -857,45 +1073,52 @@ export default function App() {
 
                   {/* Page Navigation */}
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>{t.pagination.prev}</span>
-                    </button>
-
-                    <div className="flex items-center gap-1 px-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum = i + 1;
-                        if (totalPages > 5 && currentPage > 3) {
-                          pageNum = Math.min(totalPages - 4 + i, currentPage - 2 + i);
-                        }
-                        return (
+                    {(() => {
+                      const activeTotalPages = browseLevel === 'identities' ? totalPages : totalAssetPages;
+                      return (
+                        <>
                           <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                              currentPage === pageNum
-                                ? 'bg-slate-900 text-white shadow-2xs'
-                                : 'text-slate-600 hover:bg-slate-100'
-                            }`}
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
                           >
-                            {pageNum}
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                            <span>{t.pagination.prev}</span>
                           </button>
-                        );
-                      })}
-                    </div>
 
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <span>{t.pagination.next}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                          <div className="flex items-center gap-1 px-1">
+                            {Array.from({ length: Math.min(5, activeTotalPages) }, (_, i) => {
+                              let pageNum = i + 1;
+                              if (activeTotalPages > 5 && currentPage > 3) {
+                                pageNum = Math.min(activeTotalPages - 4 + i, currentPage - 2 + i);
+                              }
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setCurrentPage(pageNum)}
+                                  className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                    currentPage === pageNum
+                                      ? 'bg-slate-900 text-white shadow-2xs'
+                                      : 'text-slate-600 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            onClick={() => setCurrentPage(p => Math.min(activeTotalPages, p + 1))}
+                            disabled={currentPage === activeTotalPages}
+                            className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <span>{t.pagination.next}</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -949,8 +1172,8 @@ export default function App() {
 
       {/* Floating Batch Action Bar */}
       <BatchActionBar
-        selectedCount={selectedSlugs.length}
-        totalFilteredCount={filteredIcons.length}
+        selectedCount={browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length}
+        totalFilteredCount={browseLevel === 'identities' ? filteredIcons.length : filteredAssets.length}
         onSelectAllFiltered={handleSelectAllFiltered}
         onClearSelection={handleClearSelection}
         onDownloadSelectedZip={handleDownloadSelectedZip}

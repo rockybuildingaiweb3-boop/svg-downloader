@@ -13,6 +13,7 @@
     "doctor": "node scripts/icon-doctor.mjs",
     "verify": "node scripts/icon-sync.mjs verify",
     "audit": "node scripts/icon-sync.mjs audit",
+    "test": "node scripts/test-registry.mjs",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

@@ -14,6 +14,8 @@ import {
 import { useTranslation } from '../i18n/context';
 import { CURATED_ICONS, CATEGORIES } from '../data/curatedIcons';
 
+import conflictsData from '../../generated/conflicts.json';
+
 export const CoverageSection: React.FC = () => {
   const { t } = useTranslation();
 
@@ -54,7 +56,7 @@ export const CoverageSection: React.FC = () => {
       totalIdentities: CURATED_ICONS.length,
       totalAssets,
       multiColorCount,
-      conflictsCount: 16,
+      conflictsCount: (conflictsData as any).totalConflictsDetected || (conflictsData as any).conflicts?.length || 1215,
       categoryCounts,
       roleCounts,
       variantCounts,

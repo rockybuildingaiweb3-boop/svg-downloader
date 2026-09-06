@@ -656,6 +656,53 @@ export async function downloadEngineeringZip(
   triggerBlobDownload(blob, filename);
 }
 
+/**
+ * Download arbitrary collection of selected concrete assets
+ */
+export async function downloadConcreteAssetsZip(
+  assets: (BrandAsset | any)[],
+  zipName: string = 'selected-svg-assets.zip'
+): Promise<void> {
+  const zip = new JSZip();
+  const manifestItems: any[] = [];
+
+  for (const asset of assets) {
+    const content = asset.rawSvg || (await fetchRawSvg(asset.file));
+    if (!content) continue;
+
+    const sha256 = asset.rawSha256 || (await computeClientSha256(content));
+    zip.file(asset.file, content);
+
+    manifestItems.push({
+      assetId: asset.assetId,
+      identityId: asset.identityId,
+      file: asset.file,
+      sourceProvider: asset.sourceProvider,
+      sourcePlatform: asset.sourcePlatform,
+      role: asset.role,
+      graphicVariant: asset.graphicVariant,
+      license: asset.license,
+      sha256
+    });
+  }
+
+  zip.file(
+    'manifest.json',
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        totalAssets: manifestItems.length,
+        assets: manifestItems
+      },
+      null,
+      2
+    )
+  );
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  triggerBlobDownload(blob, zipName);
+}
+
 export function triggerBlobDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

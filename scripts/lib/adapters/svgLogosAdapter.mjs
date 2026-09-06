@@ -9,21 +9,22 @@ export class SvgLogosAdapter {
   constructor(rootDir = process.cwd()) {
     this.rootDir = rootDir;
     this.pkgDir = path.join(rootDir, 'node_modules', '@iconify-json', 'logos');
-    this.version = '1.2.9';
+    this.version = '1.2.13';
     this.icons = new Map(); // name -> metadata
     this.aliasMap = new Map(); // altname -> name
+    this.identityToAssetsMap = new Map(); // base identity -> list of asset entries
     this.loaded = false;
   }
 
   async load() {
     if (this.loaded) return this;
 
-    // 1. Read package.json
+    // 1. Read package.json for pinned version
     const pkgJsonPath = path.join(this.pkgDir, 'package.json');
     try {
       const text = await fs.readFile(pkgJsonPath, 'utf8');
       const pkg = JSON.parse(text);
-      this.version = pkg.version || '1.2.9';
+      this.version = pkg.version || '1.2.13';
     } catch {}
 
     // 2. Read icons.json
@@ -58,28 +59,62 @@ export class SvgLogosAdapter {
         .map(w => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
 
+      // Derive base identity ID and role from geometry & name structure
+      let baseIdentity = cleanName;
+      let suffix = '';
+      let role = 'logo';
+
+      if (cleanName.endsWith('-icon')) {
+        baseIdentity = cleanName.slice(0, -5);
+        suffix = 'icon';
+        role = 'symbol';
+      } else if (cleanName.endsWith('-wordmark')) {
+        baseIdentity = cleanName.slice(0, -9);
+        suffix = 'wordmark';
+        role = 'wordmark-horizontal';
+      } else if (cleanName.endsWith('-tile')) {
+        baseIdentity = cleanName.slice(0, -5);
+        suffix = 'tile';
+        role = 'symbol';
+      } else {
+        const ratio = width && height ? Number((width / height).toFixed(2)) : 1.0;
+        if (ratio >= 2.0) {
+          role = 'wordmark-horizontal';
+        } else if (ratio <= 1.25) {
+          role = 'symbol';
+        }
+      }
+
       const entry = {
         source: 'svg-logos',
         sourceId: name,
         name: cleanName,
+        baseIdentity,
+        suffix,
+        role,
+        roleOrigin: 'inferred',
         title,
         width,
         height,
         rawSvg,
         license: 'CC0 1.0 Universal / Gil Barbara SVG Logos Archive',
+        licenseStatus: 'known',
         sourceUrl: `https://github.com/gilbarbara/logos`,
-        variant: 'default',
+        variant: 'color',
         variants: { default: `${cleanName}.svg` }
       };
 
       this.icons.set(cleanName, entry);
 
-      // Register without -icon suffix as alias if it ends with -icon
-      if (cleanName.endsWith('-icon')) {
-        const withoutIcon = cleanName.slice(0, -5);
-        if (!this.aliasMap.has(withoutIcon)) {
-          this.aliasMap.set(withoutIcon, cleanName);
-        }
+      // Inverted index: add to identityToAssetsMap
+      if (!this.identityToAssetsMap.has(baseIdentity)) {
+        this.identityToAssetsMap.set(baseIdentity, []);
+      }
+      this.identityToAssetsMap.get(baseIdentity).push(entry);
+
+      // Register without suffix as alias if not present
+      if (baseIdentity !== cleanName && !this.aliasMap.has(baseIdentity)) {
+        this.aliasMap.set(baseIdentity, cleanName);
       }
 
       // Register stripped alphanumeric
@@ -116,7 +151,6 @@ export class SvgLogosAdapter {
     const clean = query.toLowerCase().trim();
     if (this.icons.has(clean)) return this.icons.get(clean);
 
-    // Try with -icon suffix (e.g. google -> google-icon, docker -> docker-icon, cloudflare -> cloudflare-icon)
     const withIcon = `${clean}-icon`;
     if (this.icons.has(withIcon)) return this.icons.get(withIcon);
 
@@ -145,46 +179,41 @@ export class SvgLogosAdapter {
 
   /**
    * Enumerate assets for a given identity from Iconify Logos
+   * Uses complete inverted index instead of probing fixed suffixes
    * @param {string} identityId
    * @returns {Array<import('../types.mjs').BrandAsset>}
    */
   getAssetsForIdentity(identityId) {
-    const assets = [];
     const cleanId = (identityId || '').toLowerCase().trim();
-    // Enumerate actual source assets for cleanId and known variant suffixes
-    const candidateSuffixes = ['', '-icon', '-wordmark', '-tile'];
-    const seenNames = new Set();
+    const matches = this.identityToAssetsMap.get(cleanId) || [];
+    
+    // Also check direct match if identityId itself was a specific entry
+    const direct = this.icons.get(cleanId);
+    const combined = new Map();
+    for (const m of matches) combined.set(m.name, m);
+    if (direct) combined.set(direct.name, direct);
 
-    for (const suffix of candidateSuffixes) {
-      const candidateName = `${cleanId}${suffix}`;
-      const match = this.icons.get(candidateName);
-      if (!match || seenNames.has(match.name)) continue;
-      seenNames.add(match.name);
-
-      const ratio = match.width && match.height ? Number((match.width / match.height).toFixed(2)) : 1.0;
-      let role = 'logo';
-      if (suffix === '-icon' || ratio <= 1.25) {
-        role = 'symbol';
-      } else if (suffix === '-wordmark' || ratio >= 2.0) {
-        role = 'wordmark-horizontal';
-      }
-
+    const assets = [];
+    for (const match of combined.values()) {
       assets.push({
-        assetId: `${identityId}-iconify-logos-${role}${suffix ? '-' + suffix.slice(1) : ''}`,
-        identityId,
+        assetId: `${match.name}-iconify-logos`,
+        identityId: cleanId,
         sourceProvider: 'iconify',
         sourceCollection: 'logos',
         sourceId: match.sourceId,
         sourceVersion: this.version,
-        role,
+        role: match.role,
+        roleOrigin: match.roleOrigin,
         context: ['general'],
         contextOrigin: 'unknown',
         graphicVariant: 'color',
-        file: `${identityId}-iconify-${role}${suffix ? '-' + suffix.slice(1) : ''}.svg`,
+        file: `${match.name}.svg`,
         rawSha256: '',
         license: match.license,
+        licenseStatus: match.licenseStatus,
         sourceUrl: match.sourceUrl,
         colorType: 'multi-color',
+        sourceTrust: 'trusted',
         xmlValid: false,
         renderable: false,
         integrityVerified: false,
@@ -194,6 +223,46 @@ export class SvgLogosAdapter {
     }
 
     return assets;
+  }
+
+  /**
+   * Full source inventory enumeration across all 2,110 SVG Logos entries
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  listAllAssets() {
+    const assets = [];
+    for (const match of this.icons.values()) {
+      assets.push({
+        assetId: `${match.name}-iconify-logos`,
+        identityId: match.baseIdentity,
+        sourceProvider: 'iconify',
+        sourceCollection: 'logos',
+        sourceId: match.sourceId,
+        sourceVersion: this.version,
+        role: match.role,
+        roleOrigin: match.roleOrigin,
+        context: ['general'],
+        contextOrigin: 'unknown',
+        graphicVariant: 'color',
+        file: `${match.name}.svg`,
+        rawSha256: '',
+        license: match.license,
+        licenseStatus: match.licenseStatus,
+        sourceUrl: match.sourceUrl,
+        colorType: 'multi-color',
+        sourceTrust: 'trusted',
+        xmlValid: false,
+        renderable: false,
+        integrityVerified: false,
+        isCanonical: false,
+        _svgFetcher: () => this.getRawSvg(match.name)
+      });
+    }
+    return assets;
+  }
+
+  getAllAssets() {
+    return this.listAllAssets();
   }
 
   getAll() {

@@ -16,6 +16,7 @@ export class RegistryGenerator {
     await fs.mkdir(this.outDir, { recursive: true });
 
     await Promise.all([
+      this.generateRegistryJson(),
       this.generateCatalogJson(),
       this.generateManifestJson(),
       this.generateConflictsJson(),
@@ -40,6 +41,50 @@ export class RegistryGenerator {
       rest.canonicalAsset = cRest;
     }
     return rest;
+  }
+
+  async generateRegistryJson() {
+    const cleanRecords = this.records.map(r => this.cleanRecord(r));
+    const allAssets = [];
+    for (const r of cleanRecords) {
+      if (r.assets && Array.isArray(r.assets)) {
+        for (const a of r.assets) {
+          allAssets.push(a);
+        }
+      } else if (r.canonicalAsset) {
+        allAssets.push(r.canonicalAsset);
+      }
+    }
+
+    const sourceCounts = {};
+    for (const a of allAssets) {
+      const src = a.sourceProvider || 'simple-icons';
+      sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+    }
+
+    const stats = {
+      generatedAt: new Date().toISOString(),
+      totalIdentities: cleanRecords.length,
+      totalAssets: allAssets.length,
+      sourceCounts,
+      canonicalCount: cleanRecords.length,
+      variantCount: Math.max(0, allAssets.length - cleanRecords.length),
+      verifiedIdentities: cleanRecords.filter(r => r.verified || r.verificationStatus === 'verified').length,
+      conflictsCount: (this.metadata.conflicts || []).length,
+      sourceVersions: this.metadata.sourceVersions || {}
+    };
+
+    const registryPayload = {
+      version: '2.0.0',
+      stats,
+      identities: cleanRecords,
+      assets: allAssets,
+      sources: this.metadata.sources || [],
+      collections: this.metadata.collections || {}
+    };
+
+    const filePath = path.join(this.outDir, 'registry.json');
+    await fs.writeFile(filePath, JSON.stringify(registryPayload, null, 2), 'utf8');
   }
 
   async generateCatalogJson() {
@@ -143,12 +188,12 @@ export class RegistryGenerator {
   async generateTypeScriptIndex() {
     const sorted = [...this.records].sort((a, b) => a.id.localeCompare(b.id));
     const iconNamesUnion = sorted.map(r => `  | '${r.id}'`).join('\n');
-    const iconNamesArray = JSON.stringify(sorted.map(r => r.id), null, 2);
 
     const tsContent = `/**
  * Canonical SVG Icon Registry (Auto-generated)
  * Total canonical identities: ${sorted.length}
  */
+import rawCatalog from './catalog.json';
 
 export type IconName =
 ${iconNamesUnion};
@@ -215,17 +260,12 @@ export interface IconRecord {
   notes?: string;
 }
 
-export const ICON_NAMES: IconName[] = ${iconNamesArray};
+export const ICON_NAMES: IconName[] = (rawCatalog as any[]).map(r => r.id as IconName);
 
-export const ICONS: Record<IconName, IconRecord> = ${JSON.stringify(
-      sorted.reduce((acc, r) => {
-        const { _svgFetcher, ...rest } = r;
-        acc[r.id] = rest;
-        return acc;
-      }, {}),
-      null,
-      2
-    )};
+export const ICONS: Record<IconName, IconRecord> = (rawCatalog as any[]).reduce((acc, r) => {
+  acc[r.id as IconName] = r;
+  return acc;
+}, {} as Record<IconName, IconRecord>);
 `;
 
     const filePath = path.join(this.outDir, 'index.ts');

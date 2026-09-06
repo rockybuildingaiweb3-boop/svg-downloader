@@ -37,8 +37,9 @@ export class OfficialAdapter {
           title: spec.title || slug,
           hex: spec.brandColor || '#111827',
           sourceUrl: spec.sourceUrl,
-          license: spec.license || 'Public Domain / Trademark',
-          category: spec.category || 'bigtech',
+          license: spec.license || 'Public Domain / Corporate Trademark',
+          licenseStatus: 'known',
+          category: spec.category || 'brands',
           notes: spec.notes || '',
           variant: 'official',
           localPath: hasLocal ? localPath : null
@@ -61,7 +62,6 @@ export class OfficialAdapter {
     const entry = this.get(slug);
     if (!entry) return null;
 
-    // First try local cached asset
     const localAssetPath = path.join(this.assetsDir, `${entry.slug}.svg`);
     try {
       const content = await fs.readFile(localAssetPath, 'utf8');
@@ -69,7 +69,6 @@ export class OfficialAdapter {
       return content;
     } catch {}
 
-    // Fallback to fetch from sourceUrl
     if (entry.sourceUrl) {
       try {
         const controller = new AbortController();
@@ -113,14 +112,17 @@ export class OfficialAdapter {
       sourceId: match.sourceId,
       sourceVersion: match.sourceVersion || 'official',
       role,
+      roleOrigin: 'source-confirmed',
       context: ['general'],
       contextOrigin: isWiki ? 'unknown' : 'inferred',
       graphicVariant: 'official',
       file: `${identityId}.svg`,
       rawSha256: '',
       license: match.license,
+      licenseStatus: match.licenseStatus,
       sourceUrl: match.sourceUrl,
       colorType: 'multi-color',
+      sourceTrust: isWiki ? 'community' : 'official',
       xmlValid: false,
       renderable: false,
       integrityVerified: false,
@@ -128,6 +130,49 @@ export class OfficialAdapter {
       notes: match.notes,
       _svgFetcher: () => this.getRawSvg(match.slug)
     }];
+  }
+
+  /**
+   * Full source inventory enumeration for official vendor assets
+   * @returns {Array<import('../types.mjs').BrandAsset>}
+   */
+  listAllAssets() {
+    const assets = [];
+    for (const match of this.icons.values()) {
+      const isWiki = match.source === 'wikimedia';
+      const role = match.notes?.toLowerCase().includes('mark') ? 'mark' : 'logo';
+      assets.push({
+        assetId: `${match.slug}-${isWiki ? 'wikimedia' : 'official'}-${role}`,
+        identityId: match.slug,
+        sourceProvider: isWiki ? 'wikimedia' : 'official',
+        sourceCollection: isWiki ? 'commons-controlled' : 'vendor-archive',
+        sourceId: match.sourceId,
+        sourceVersion: match.sourceVersion || 'official',
+        role,
+        roleOrigin: 'source-confirmed',
+        context: ['general'],
+        contextOrigin: isWiki ? 'unknown' : 'inferred',
+        graphicVariant: 'official',
+        file: `${match.slug}.svg`,
+        rawSha256: '',
+        license: match.license,
+        licenseStatus: match.licenseStatus,
+        sourceUrl: match.sourceUrl,
+        colorType: 'multi-color',
+        sourceTrust: isWiki ? 'community' : 'official',
+        xmlValid: false,
+        renderable: false,
+        integrityVerified: false,
+        isCanonical: false,
+        notes: match.notes,
+        _svgFetcher: () => this.getRawSvg(match.slug)
+      });
+    }
+    return assets;
+  }
+
+  getAllAssets() {
+    return this.listAllAssets();
   }
 
   getAll() {

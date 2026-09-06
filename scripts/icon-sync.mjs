@@ -43,11 +43,12 @@ async function main() {
     try {
       const generatedCat = await fs.readFile(path.join(GENERATED_DIR, 'catalog.json'), 'utf8');
       const publicCat = await fs.readFile(path.join(ROOT, 'public', 'catalog.json'), 'utf8');
-      if (!publicCat || publicCat.length !== generatedCat.length) {
-        console.error('❌ Build check failed: generated catalog is stale or missing. Run "npm run sync" first.');
+      const parsedCat = JSON.parse(generatedCat);
+      if (!publicCat || publicCat.length !== generatedCat.length || !Array.isArray(parsedCat) || parsedCat.length < 4000) {
+        console.error(`❌ Build check failed: generated catalog is stale, missing, or shrunk (${parsedCat?.length || 0} < 4000). Run "npm run sync" first.`);
         process.exit(1);
       }
-      console.log('✅ Verified catalog is fresh.');
+      console.log(`✅ Verified catalog is fresh (${parsedCat.length} identities).`);
       return;
     } catch (err) {
       console.error(`❌ Build check failed: ${err.message}. Run "npm run sync" first.`);
@@ -110,16 +111,12 @@ async function main() {
   let iconsToResolve = [];
   let isFullScope = false;
 
-  if (isAllMode || scopeArg === 'all') {
-    console.log('📦 Execution Scope: ALL DISCOVERED IDENTITIES across all adapters');
-    iconsToResolve = resolver.discoverAllIdentities();
-    isFullScope = true;
-  } else if (scopeArg === 'mainstream') {
+  if (scopeArg === 'mainstream') {
     console.log('📦 Execution Scope: MAINSTREAM (Curated high-priority industry collection)');
     iconsToResolve = resolver.collections.mainstream || [];
     isFullScope = false;
-  } else if (scopeArg === 'catalog' || command === 'update' || (args.filter(a => !a.startsWith('-') && a !== 'sync').length === 0)) {
-    console.log('📦 Execution Scope: FULL CATALOG (All category collections)');
+  } else if (scopeArg === 'categories' || scopeArg === 'curated') {
+    console.log('📦 Execution Scope: CATEGORY COLLECTIONS');
     const allCatIds = new Set(resolver.collections.mainstream || []);
     if (resolver.collections.categories) {
       for (const list of Object.values(resolver.collections.categories)) {
@@ -129,23 +126,21 @@ async function main() {
       }
     }
     iconsToResolve = Array.from(allCatIds);
-    isFullScope = true;
-  } else {
-    // Custom positional icons
+    isFullScope = false;
+  } else if (customListSpecified(args)) {
     const customList = args
-      .filter(a => !a.startsWith('-') && a !== 'sync')
+      .filter(a => !a.startsWith('-') && a !== 'sync' && a !== 'update')
       .flatMap(a => a.split(','))
       .map(s => s.trim())
       .filter(Boolean);
-
-    if (customList.length > 0) {
-      console.log(`📦 Execution Scope: CUSTOM (${customList.length} specified icon identifiers)`);
-      iconsToResolve = customList;
-      isFullScope = false;
-    } else {
-      iconsToResolve = resolver.collections.mainstream || [];
-      isFullScope = false;
-    }
+    console.log(`📦 Execution Scope: CUSTOM (${customList.length} specified icon identifiers)`);
+    iconsToResolve = customList;
+    isFullScope = false;
+  } else {
+    // DEFAULT SCOPE: ALL DISCOVERED IDENTITIES (>= 4,600)
+    console.log('📦 Execution Scope: ALL DISCOVERED IDENTITIES across all source adapters (Default Scope)');
+    iconsToResolve = resolver.discoverAllIdentities();
+    isFullScope = true;
   }
 
   console.log(`\n🚀 Starting Canonical SVG Sync Pipeline...`);
@@ -175,111 +170,135 @@ async function main() {
   console.log('STATUS   CANONICAL ID      SOURCE         FILE           INFO');
   console.log('-----------------------------------------------------------------------');
 
-  for (const query of iconsToResolve) {
-    const record = await resolver.resolveIcon(query, { policy });
+  const BATCH_SIZE = 25;
+  const isLargeRun = iconsToResolve.length > 500;
+  let processedCount = 0;
 
-    if (!record) {
-      console.log(`FAILED   ${query.padEnd(17)} [UNRESOLVED]  -              No trusted canonical SVG source found`);
-      failures.push({ id: query, error: 'Unresolved in all trusted catalogs' });
-      continue;
-    }
+  for (let b = 0; b < iconsToResolve.length; b += BATCH_SIZE) {
+    const chunk = iconsToResolve.slice(b, b + BATCH_SIZE);
+    await Promise.all(chunk.map(async (query) => {
+      const record = await resolver.resolveIcon(query, { policy });
 
-    if (processedIdentities.has(record.id)) {
-      continue;
-    }
-    processedIdentities.add(record.id);
-
-    try {
-      const rawSvg = await record._svgFetcher();
-      if (!rawSvg) {
-        throw new Error('Could not retrieve authentic raw SVG content from adapter');
+      if (!record) {
+        if (!isLargeRun) {
+          console.log(`FAILED   ${query.padEnd(17)} [UNRESOLVED]  -              No trusted canonical SVG source found`);
+        }
+        failures.push({ id: query, error: 'Unresolved in all trusted catalogs' });
+        return;
       }
 
-      // XML & Vector Validation
-      const valResult = validateSvg(rawSvg, record.id);
-      if (valResult.status === 'FAILED') {
-        console.log(`FAILED   ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${valResult.message}`);
-        failures.push({ id: record.id, error: valResult.message });
-        continue;
+      if (processedIdentities.has(record.id)) {
+        return;
       }
+      processedIdentities.add(record.id);
 
-      record.rawSha256 = valResult.sha256;
-      record.xmlValid = valResult.xmlValid;
-      record.renderable = valResult.renderable;
-      record.svgRenderable = valResult.svgRenderable;
-      record.integrityVerified = true;
-      record.variantVerified = true;
-      record.verificationStatus = valResult.status === 'WARNING' ? 'warning' : 'verified';
-      record.verified = true;
-      record.colorType = valResult.colorType;
-      record.structuralMetrics = valResult.structuralMetrics;
+      try {
+        const rawSvg = await record._svgFetcher();
+        if (!rawSvg) {
+          throw new Error('Could not retrieve authentic raw SVG content from adapter');
+        }
 
-      // Synchronize canonical asset object
-      if (record.canonicalAsset) {
-        record.canonicalAsset.rawSha256 = valResult.sha256;
-        record.canonicalAsset.xmlValid = valResult.xmlValid;
-        record.canonicalAsset.renderable = valResult.renderable;
-        record.canonicalAsset.svgRenderable = valResult.svgRenderable;
-        record.canonicalAsset.integrityVerified = true;
-        record.canonicalAsset.variantVerified = true;
-        record.canonicalAsset.verificationStatus = record.verificationStatus;
-        record.canonicalAsset.colorType = valResult.colorType;
-        record.canonicalAsset.structuralMetrics = valResult.structuralMetrics;
-      }
+        // XML & Vector Validation
+        const valResult = validateSvg(rawSvg, record.id);
+        if (valResult.status === 'FAILED') {
+          if (!isLargeRun) {
+            console.log(`FAILED   ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${valResult.message}`);
+          }
+          failures.push({ id: record.id, error: valResult.message });
+          return;
+        }
 
-      if (valResult.status === 'WARNING') {
-        console.log(`WARNING  ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${valResult.message}`);
-        warnings.push({ id: record.id, message: valResult.message });
-      } else {
-        console.log(`VALID    ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${record.title} (${record.assets?.length || 1} family assets)`);
-      }
+        record.rawSha256 = valResult.sha256;
+        record.xmlValid = valResult.xmlValid;
+        record.renderable = valResult.renderable;
+        record.svgRenderable = valResult.svgRenderable;
+        record.integrityVerified = true;
+        record.variantVerified = true;
+        record.verificationStatus = valResult.status === 'WARNING' ? 'warning' : 'verified';
+        record.verified = true;
+        record.colorType = valResult.colorType;
+        record.structuralMetrics = valResult.structuralMetrics;
 
-      downloadedCount++;
+        // Synchronize canonical asset object
+        if (record.canonicalAsset) {
+          record.canonicalAsset.rawSha256 = valResult.sha256;
+          record.canonicalAsset.xmlValid = valResult.xmlValid;
+          record.canonicalAsset.renderable = valResult.renderable;
+          record.canonicalAsset.svgRenderable = valResult.svgRenderable;
+          record.canonicalAsset.integrityVerified = true;
+          record.canonicalAsset.variantVerified = true;
+          record.canonicalAsset.verificationStatus = record.verificationStatus;
+          record.canonicalAsset.colorType = valResult.colorType;
+          record.canonicalAsset.structuralMetrics = valResult.structuralMetrics;
+        }
 
-      const cleanRawSvg = rawSvg.trim();
-      if (!dryRun) {
-        const genPath = path.join(GENERATED_ICONS_DIR, record.file);
-        const pubPath = path.join(PUBLIC_ICONS_DIR, record.file);
-        await fs.writeFile(genPath, cleanRawSvg, 'utf8');
-        await fs.writeFile(pubPath, cleanRawSvg, 'utf8');
+        if (valResult.status === 'WARNING') {
+          warnings.push({ id: record.id, message: valResult.message });
+        }
 
-        // Also validate and write authentic subsidiary family assets
-        if (record.assets && Array.isArray(record.assets)) {
-          for (const asset of record.assets) {
-            if (asset === record.canonicalAsset) continue;
-            try {
-              if (asset._svgFetcher) {
-                const aSvg = await asset._svgFetcher();
-                if (aSvg) {
-                  const aVal = validateSvg(aSvg, asset.assetId);
-                  asset.rawSha256 = aVal.sha256;
-                  asset.xmlValid = aVal.xmlValid;
-                  asset.renderable = aVal.renderable;
-                  asset.svgRenderable = aVal.svgRenderable;
-                  asset.integrityVerified = true;
-                  asset.variantVerified = true;
-                  asset.verificationStatus = aVal.status === 'WARNING' ? 'warning' : 'verified';
-                  asset.colorType = aVal.colorType;
-                  asset.structuralMetrics = aVal.structuralMetrics;
+        downloadedCount++;
 
-                  const aGenPath = path.join(GENERATED_ICONS_DIR, asset.file);
-                  const aPubPath = path.join(PUBLIC_ICONS_DIR, asset.file);
-                  await fs.writeFile(aGenPath, aSvg.trim(), 'utf8');
-                  await fs.writeFile(aPubPath, aSvg.trim(), 'utf8');
+        const cleanRawSvg = rawSvg.trim();
+        if (!dryRun) {
+          const genPath = path.join(GENERATED_ICONS_DIR, record.file);
+          const pubPath = path.join(PUBLIC_ICONS_DIR, record.file);
+          await fs.writeFile(genPath, cleanRawSvg, 'utf8');
+          await fs.writeFile(pubPath, cleanRawSvg, 'utf8');
+
+          // Also validate and write authentic subsidiary family assets
+          if (record.assets && Array.isArray(record.assets)) {
+            for (const asset of record.assets) {
+              if (asset === record.canonicalAsset) continue;
+              try {
+                if (asset._svgFetcher) {
+                  const aSvg = await asset._svgFetcher();
+                  if (aSvg) {
+                    const aVal = validateSvg(aSvg, asset.assetId);
+                    asset.rawSha256 = aVal.sha256;
+                    asset.xmlValid = aVal.xmlValid;
+                    asset.renderable = aVal.renderable;
+                    asset.svgRenderable = aVal.svgRenderable;
+                    asset.integrityVerified = true;
+                    asset.variantVerified = true;
+                    asset.verificationStatus = aVal.status === 'WARNING' ? 'warning' : 'verified';
+                    asset.colorType = aVal.colorType;
+                    asset.structuralMetrics = aVal.structuralMetrics;
+
+                    const aGenPath = path.join(GENERATED_ICONS_DIR, asset.file);
+                    const aPubPath = path.join(PUBLIC_ICONS_DIR, asset.file);
+                    await fs.writeFile(aGenPath, aSvg.trim(), 'utf8');
+                    await fs.writeFile(aPubPath, aSvg.trim(), 'utf8');
+                  }
                 }
+              } catch (errSub) {
+                // Non-fatal for alternative variant
               }
-            } catch (errSub) {
-              // Non-fatal for alternative variant
             }
           }
         }
-      }
 
-      resolvedRecords.push(record);
-    } catch (err) {
-      console.log(`FAILED   ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${err.message}`);
-      failures.push({ id: record.id, error: err.message });
+        resolvedRecords.push(record);
+        if (!isLargeRun) {
+          console.log(`VALID    ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${record.title}`);
+        }
+      } catch (err) {
+        if (!isLargeRun) {
+          console.log(`FAILED   ${record.id.padEnd(17)} ${record.source.padEnd(14)} ${record.file.padEnd(14)} ${err.message}`);
+        }
+        failures.push({ id: record.id, error: err.message });
+      }
+    }));
+
+    processedCount = Math.min(b + BATCH_SIZE, iconsToResolve.length);
+    if (isLargeRun && (processedCount % 500 === 0 || processedCount === iconsToResolve.length)) {
+      console.log(`[Sync Progress] Processed ${processedCount} / ${iconsToResolve.length} identities (${resolvedRecords.length} resolved)...`);
     }
+  }
+
+  // Catastrophic shrinkage detection (Requirement: fail build if < 4,000)
+  if (isFullScope && resolvedRecords.length < 4000) {
+    console.error(`\n❌ CATASTROPHIC SHRINKAGE DETECTED: Expected >= 4000 identities, but resolved only ${resolvedRecords.length}. Halting sync.`);
+    process.exit(1);
   }
 
   // Manifest-driven stale asset cleanup
@@ -314,26 +333,29 @@ async function main() {
         'official': 'official-vendor'
       },
       policy,
-      conflicts: resolver.conflicts
+      conflicts: resolver.conflicts,
+      collections: resolver.collections
     };
 
     const generator = new RegistryGenerator(GENERATED_DIR, recordsToPersist, metadata);
     await generator.generateAll();
 
-    // Copy catalog.json and manifest.json to public/ and src/data/
+    // Copy catalog.json, registry.json, manifest.json, conflicts.json, sources.json to public/ and src/data/
     const catalogPath = path.join(GENERATED_DIR, 'catalog.json');
+    const registryPath = path.join(GENERATED_DIR, 'registry.json');
     const manifestPath = path.join(GENERATED_DIR, 'manifest.json');
     const conflictsPath = path.join(GENERATED_DIR, 'conflicts.json');
-
     const sourcesPath = path.join(GENERATED_DIR, 'sources.json');
 
     await fs.copyFile(catalogPath, path.join(PUBLIC_ICONS_DIR, '..', 'catalog.json'));
+    await fs.copyFile(registryPath, path.join(PUBLIC_ICONS_DIR, '..', 'registry.json'));
     await fs.copyFile(manifestPath, path.join(PUBLIC_ICONS_DIR, '..', 'manifest.json'));
     await fs.copyFile(conflictsPath, path.join(PUBLIC_ICONS_DIR, '..', 'conflicts.json'));
     await fs.copyFile(sourcesPath, path.join(PUBLIC_ICONS_DIR, '..', 'sources.json'));
 
-    // Also copy to src/data/catalog.json for compile-time bundle access
+    // Also copy to src/data/catalog.json and src/data/registry.json for compile-time bundle access
     await fs.copyFile(catalogPath, path.join(SRC_DATA_DIR, 'catalog.json'));
+    await fs.copyFile(registryPath, path.join(SRC_DATA_DIR, 'registry.json'));
   }
 
   // Output Standard Statistics Breakdown
@@ -388,16 +410,19 @@ async function cleanStaleAssets(dir, activeRecords, isFullScope = false, dryRun 
     const entries = await fs.readdir(dir);
     for (const f of entries) {
       if (!f.endsWith('.svg')) continue;
+      // Active managed assets must NEVER be deleted
+      if (activeFiles.has(f)) continue;
+
       // Stale condition 1: legacy -2.svg or numeric suffixes
       const isLegacySuffix = Boolean(f.match(/-\d+\.svg$/));
       
       // Stale condition 2: unmanaged file
       let isUnmanaged = false;
       if (isFullScope) {
-        isUnmanaged = !activeFiles.has(f);
+        isUnmanaged = true;
       } else {
         const prefix = f.split(/[-.]/)[0];
-        if (activeIdentities.has(prefix) && !activeFiles.has(f)) {
+        if (activeIdentities.has(prefix)) {
           isUnmanaged = true;
         }
       }

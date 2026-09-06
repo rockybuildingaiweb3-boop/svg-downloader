@@ -58,9 +58,31 @@ export type TrustState = 'trusted' | 'verified' | 'community' | 'unverified';
 
 export type VerificationStatus = 'all' | 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
 
+export type BrowseLevel = 'identities' | 'assets';
+
 export type SourcePolicy = 'brand' | 'technology' | 'monochrome' | 'official';
 
 export type PresentationMode = 'raw' | 'preview-dark' | 'preview-light' | 'derived-currentColor';
+
+export interface CanonicalDecision {
+  selectedAssetId: string;
+  score: number;
+  reasons: string[];
+  policy: string;
+  mode?: string;
+}
+
+export interface RegistryStats {
+  generatedAt: string;
+  totalIdentities: number;
+  totalAssets: number;
+  sourceCounts: Record<string, number>;
+  canonicalCount: number;
+  variantCount: number;
+  verifiedIdentities: number;
+  conflictsCount: number;
+  sourceVersions: Record<string, string>;
+}
 
 /**
  * Granular verification metrics
@@ -175,6 +197,18 @@ export interface BrandAsset {
   structuralMetrics?: SvgStructuralMetrics;
   notes?: string;
   rawSvg?: string;
+  canonicalDecision?: CanonicalDecision;
+  licenseStatus?: string;
+}
+
+export interface ConcreteAssetItem extends BrandAsset {
+  identityTitle?: string;
+  identitySlug?: string;
+  brandColor?: string;
+  category?: string;
+  matchScore?: number;
+  matchChecklist?: string[];
+  matchReason?: string;
 }
 
 export interface AlternativeSource {
@@ -325,6 +359,8 @@ export interface IconItem {
   matchChecklist?: string[];
   matchReason?: string;
   aliases?: string[];
+  canonicalDecision?: CanonicalDecision;
+  licenseStatus?: string;
 }
 
 export type ScriptType = 'sync' | 'nodejs' | 'python' | 'bash';
