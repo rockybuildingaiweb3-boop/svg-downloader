@@ -1,12 +1,8 @@
 import { defineComponent, h, type PropType } from 'vue';
-import type { IconName } from './index';
+import { ICONS, type IconName } from './index';
 
-/**
- * Universal Production Vue 3 Icon Component
- * Loads authentic canonical raw SVG assets
- */
 export const Icon = defineComponent({
-  name: 'Icon',
+  name: 'CanonicalIcon',
   props: {
     name: {
       type: String as PropType<IconName>,
@@ -16,32 +12,29 @@ export const Icon = defineComponent({
       type: [Number, String],
       default: 24
     },
-    className: {
+    title: {
       type: String,
       default: ''
-    },
-    basePath: {
-      type: String,
-      default: '/icons'
     }
   },
   setup(props, { attrs }) {
-    return () =>
-      h('img', {
-        src: `${props.basePath}/${props.name}.svg`,
-        alt: `${props.name} icon`,
+    return () => {
+      const icon = ICONS[props.name];
+      if (!icon) {
+        console.warn(`[IconRegistry] Icon "${props.name}" not found in canonical registry`);
+        return null;
+      }
+
+      return h('img', {
+        src: `/icons/${icon.file}`,
+        alt: props.title || icon.title || props.name,
         width: props.size,
         height: props.size,
-        class: props.className,
-        style: {
-          display: 'inline-block',
-          verticalAlign: 'middle',
-          flexShrink: 0
-        },
         loading: 'lazy',
         decoding: 'async',
         ...attrs
       });
+    };
   }
 });
 

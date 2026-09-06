@@ -1,15 +1,19 @@
-# Canonical SVG Asset Engineering Bundle
+# Canonical SVG Icon Registry
 
-This bundle contains production-ready, authoritative brand and technology vector assets.
+This directory contains the authoritative, auto-generated code and metadata outputs of the Canonical SVG Sync Pipeline.
 
-## Files
-- `icons/`: Canonical raw SVG files with deterministic byte preservation.
-- `manifest.json`: Manifest of all synchronized icons with cryptographic SHA-256 integrity hashes.
-- `catalog.json`: Normalized catalog records with provenance, licenses, and variants.
-- `conflicts.json`: Traceability report of multi-source candidate resolutions.
-- `index.ts`: Type-safe TypeScript registry.
-- `react.tsx`: Zero-dependency React component.
-- `vue.ts`: Zero-dependency Vue 3 component.
+## Source Versions Pinned:
+- **Simple Icons**: 16.29.0
+- **Devicon**: 2.17.0
+- **Iconify SVG Logos**: 1.2.13
+- **Official Vendor / Wikimedia**: Verified Brand Archives
 
-## Integrity Guarantee
-All SVGs are 100% byte-faithful to official sources with XML validation and verified SHA-256 hashes.
+## Artifacts:
+- `catalog.json`: Full canonical icon catalog with asset families and provenance.
+- `manifest.json`: Source counts, version pins, and checksum registry.
+- `conflicts.json`: Record of multi-source candidate collisions resolved by policy.
+- `sources.json`: Complete provenance records for every individual asset.
+- `audit-report.json`: Full registry health check from `npm run doctor`.
+- `index.ts`: Zero-dependency TypeScript type definitions and registry map.
+- `react.tsx`: Universal React component.
+- `vue.ts`: Universal Vue 3 component.

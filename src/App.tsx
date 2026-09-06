@@ -36,6 +36,7 @@ import { ScriptPanel } from './components/ScriptPanel';
 import { AiVsOfficialSection } from './components/AiVsOfficialModal';
 import { ConflictsSection } from './components/ConflictsSection';
 import { downloadZip, downloadEngineeringZip } from './utils/svgHelpers';
+import { searchCatalogAssetAware } from './utils/assetResolver';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'icons' | 'conflicts' | 'script' | 'comparison'>('icons');
@@ -94,7 +95,7 @@ export default function App() {
 
   // Filtered icons by category, source, verification status, role, context, variant, and search query
   const filteredIcons = useMemo(() => {
-    return CURATED_ICONS.map(icon => {
+    const baseFiltered = CURATED_ICONS.map(icon => {
       // If user selected a specific asset for this identity, apply override
       const overrideAssetId = activeAssetOverrides[icon.id];
       if (overrideAssetId && icon.assets) {
@@ -183,18 +184,33 @@ export default function App() {
         if (icon.trustState !== selectedTrustState) return false;
       }
 
-      // 8. Search query filter
-      if (searchTerm.trim()) {
-        const query = searchTerm.toLowerCase().trim();
-        const matchesTitle = icon.title.toLowerCase().includes(query);
-        const matchesSlug = icon.slug.toLowerCase().includes(query);
-        const matchesId = icon.id.toLowerCase().includes(query);
-        const matchesSource = (icon.sourcePlatform || icon.source).toLowerCase().includes(query);
-        const matchesRole = (icon.role || '').toLowerCase().includes(query);
-        return matchesTitle || matchesSlug || matchesId || matchesSource || matchesRole;
-      }
-
       return true;
+    });
+
+    // 8. Asset-Aware Search (Requirement: search understands title, identity, slug, aliases, source, role, context, variant)
+    if (!searchTerm.trim()) {
+      return baseFiltered;
+    }
+
+    const searchResults = searchCatalogAssetAware(searchTerm, baseFiltered);
+    return searchResults.map(res => {
+      if (res.matchedAsset && res.matchedAsset.assetId !== res.icon.canonicalAssetId) {
+        return {
+          ...res.icon,
+          fileName: res.matchedAsset.file,
+          sha256: res.matchedAsset.rawSha256,
+          role: res.matchedAsset.role,
+          graphicVariant: res.matchedAsset.graphicVariant,
+          context: res.matchedAsset.context,
+          sourceProvider: res.matchedAsset.sourceProvider,
+          sourceCollection: res.matchedAsset.sourceCollection,
+          canonicalAssetId: res.matchedAsset.assetId,
+          canonicalAsset: res.matchedAsset,
+          trustState: res.matchedAsset.trustState || res.icon.trustState,
+          sourcePlatform: getSemanticSourceLabel(res.matchedAsset.sourceProvider, res.matchedAsset.sourceCollection)
+        };
+      }
+      return res.icon;
     });
   }, [
     searchTerm,

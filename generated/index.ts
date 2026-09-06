@@ -140,7 +140,7 @@ export type IconName =
   | 'youtube'
   | 'zoom';
 
-export type IconSource = 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos';
+export type IconSource = 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos' | 'iconify';
 export type VerificationStatus = 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
 
 export interface AlternativeSource {
@@ -152,18 +152,39 @@ export interface AlternativeSource {
   sourceUrl?: string;
 }
 
+export interface BrandAsset {
+  assetId: string;
+  identityId: string;
+  sourceProvider: IconSource;
+  sourceCollection: string;
+  sourceId: string;
+  sourceVersion: string;
+  role: string;
+  context: string[];
+  graphicVariant: string;
+  file: string;
+  rawSha256: string;
+  license: string;
+  sourceUrl?: string;
+  isCanonical: boolean;
+  xmlValid: boolean;
+  renderable: boolean;
+  verificationStatus: VerificationStatus;
+}
+
 export interface IconRecord {
   id: IconName;
   title: string;
   canonicalName: string;
   source: IconSource;
+  sourceProvider?: IconSource;
+  sourceCollection?: string;
   sourceId: string;
   sourceVersion: string;
   variant: string;
   variants?: Record<string, string>;
   file: string;
   rawSha256: string;
-  derivedSha256?: string;
   license?: string;
   sourceUrl?: string;
   brandColor?: string;
@@ -175,7 +196,8 @@ export interface IconRecord {
   renderable: boolean;
   verificationStatus: VerificationStatus;
   verified: boolean;
-  alternativeSources?: AlternativeSource[];
+  assets?: BrandAsset[];
+  totalAssets?: number;
   conflicts?: string[];
   notes?: string;
 }
@@ -347,7 +369,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "adobe-iconify-logos-wordmark-horizontal": "adobe-iconify-wordmark-horizontal-color.svg"
     },
     "file": "adobe.svg",
-    "rawSha256": "0cdb65cc22e0ed0ab3c5d6599c75ca1b7c5ba99f9c8e6748b6b5c5aeecc8b3e9",
+    "rawSha256": "4b1b764807a51c338755d39bd67675d8938444d669fe663497ae1b3c52f3aee6",
     "license": "Public Domain / Trademark of Adobe Inc.",
     "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_and_wordmark.svg",
     "brandColor": "#FF0000",
@@ -429,7 +451,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "contextOrigin": "source-confirmed",
       "graphicVariant": "official",
       "file": "adobe.svg",
-      "rawSha256": "0cdb65cc22e0ed0ab3c5d6599c75ca1b7c5ba99f9c8e6748b6b5c5aeecc8b3e9",
+      "rawSha256": "4b1b764807a51c338755d39bd67675d8938444d669fe663497ae1b3c52f3aee6",
       "license": "Public Domain / Trademark of Adobe Inc.",
       "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_and_wordmark.svg",
       "colorType": "multi-color",
@@ -463,7 +485,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "contextOrigin": "source-confirmed",
         "graphicVariant": "official",
         "file": "adobe.svg",
-        "rawSha256": "0cdb65cc22e0ed0ab3c5d6599c75ca1b7c5ba99f9c8e6748b6b5c5aeecc8b3e9",
+        "rawSha256": "4b1b764807a51c338755d39bd67675d8938444d669fe663497ae1b3c52f3aee6",
         "license": "Public Domain / Trademark of Adobe Inc.",
         "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_and_wordmark.svg",
         "colorType": "multi-color",
@@ -613,7 +635,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "airbnb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.airbnb.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -630,7 +652,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "airbnb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -741,7 +763,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "airbnb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -1262,7 +1284,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "amd",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.amd.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -1279,7 +1301,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "amd",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -1357,7 +1379,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "amd",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -1484,7 +1506,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "angular",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://angular.dev/press-kit",
         "license": "CC-BY-4.0: ",
         "trustState": "verified",
@@ -1511,7 +1533,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "angular",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -1746,7 +1768,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "angular",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -1843,7 +1865,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "anthropic",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.anthropic.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -1860,7 +1882,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "anthropic",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -1971,7 +1993,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "anthropic",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -2101,7 +2123,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "apache",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.apache.org/foundation/press/kit",
         "license": "Apache-2.0: ",
         "trustState": "verified",
@@ -2128,7 +2150,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "apache",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -2391,7 +2413,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "apache",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -2508,7 +2530,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "apple",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.apple.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -2535,7 +2557,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "apple",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -2675,7 +2697,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "apple",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -2802,7 +2824,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "astro",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://astro.build/press",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -2829,7 +2851,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "astro",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -3064,7 +3086,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "astro",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -3188,7 +3210,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "behance",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.behance.net",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -3215,7 +3237,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "behance",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -3417,7 +3439,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "behance",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -3456,7 +3478,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "bilibili",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -3494,7 +3516,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "bilibili",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.bilibili.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -3514,7 +3536,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "bilibili",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -3548,7 +3570,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "bilibili",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -3587,7 +3609,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "binance",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -3625,7 +3647,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "binance",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://binance.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -3645,7 +3667,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "binance",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -3679,7 +3701,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "binance",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -3773,7 +3795,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "bitcoin",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://bitcoin.org",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -3790,7 +3812,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "bitcoin",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -3868,7 +3890,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "bitcoin",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -3985,7 +4007,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "blender",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.blender.org/about/logo",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -4012,7 +4034,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "blender",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -4152,7 +4174,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "blender",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -4276,7 +4298,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "bootstrap",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://getbootstrap.com/docs/5.3/about/brand",
         "license": "MIT: ",
         "trustState": "verified",
@@ -4303,7 +4325,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "bootstrap",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -4505,7 +4527,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "bootstrap",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -4995,7 +5017,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "chainlink",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -5033,7 +5055,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "chainlink",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://chain.link/brand-assets",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -5053,7 +5075,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "chainlink",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -5087,7 +5109,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "chainlink",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -5214,7 +5236,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "cloudflare",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.cloudflare.com/logo/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -5241,7 +5263,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "cloudflare",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -5476,7 +5498,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "cloudflare",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -5603,7 +5625,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "cplusplus",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/isocpp/logos/tree/64ef037049f87ac74875dbe72695e59118b52186",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -5630,7 +5652,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "cplusplus",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -5862,7 +5884,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "cplusplus",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -6601,7 +6623,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "dart",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/dart-lang/site-shared/tree/18458ff440afd3d06f04e5cb871c4c5eda29c9d5/src/_assets/image/dart/logo",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -6628,7 +6650,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "dart",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -6830,7 +6852,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "dart",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -6927,7 +6949,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "deepseek",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.deepseek.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -6944,7 +6966,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "deepseek",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -7055,7 +7077,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "deepseek",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -7179,7 +7201,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "digitalocean",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.digitalocean.com/press/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -7206,7 +7228,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "digitalocean",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -7408,7 +7430,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "digitalocean",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -7505,7 +7527,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "discord",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://discord.com/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -7522,7 +7544,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "discord",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -7633,7 +7655,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "discord",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -7759,7 +7781,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "docker",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.docker.com/company/newsroom/media-resources",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -7786,7 +7808,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "docker",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -8020,7 +8042,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "docker",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -8117,7 +8139,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "dribbble",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://dribbble.com/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -8134,7 +8156,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "dribbble",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -8245,7 +8267,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "dribbble",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -8339,7 +8361,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "dropbox",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.dropbox.com/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -8356,7 +8378,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "dropbox",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -8434,7 +8456,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "dropbox",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -8558,7 +8580,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "elasticsearch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.elastic.co/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -8585,7 +8607,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "elasticsearch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -8787,7 +8809,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "elasticsearch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -8826,7 +8848,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "epicgames",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -8864,7 +8886,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "epicgames",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://dev.epicgames.com/docs/services/en-US/EpicAccountServices/DesignGuidelines/index.html#epicgamesbrandguidelines",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -8884,7 +8906,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "epicgames",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -8918,7 +8940,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "epicgames",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -9012,7 +9034,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "ethereum",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://ethereum.org/en/assets/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -9029,7 +9051,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "ethereum",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -9107,7 +9129,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "ethereum",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -9224,7 +9246,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "figma",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.figma.com/using-the-figma-brand/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -9251,7 +9273,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "figma",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -9391,7 +9413,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "figma",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -9524,7 +9546,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "firebase",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://firebase.google.com/brand-guidelines",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -9551,7 +9573,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "firebase",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -9847,7 +9869,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "firebase",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -9964,7 +9986,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "flutter",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://flutter.dev/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -9991,7 +10013,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "flutter",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -10131,7 +10153,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "flutter",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -10255,7 +10277,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "framer",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://framer.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -10282,7 +10304,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "framer",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -10484,7 +10506,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "framer",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -10611,7 +10633,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "git",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://git-scm.com/community/logos",
         "license": "CC-BY-3.0: ",
         "trustState": "verified",
@@ -10638,7 +10660,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "git",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -10873,7 +10895,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "git",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -10996,7 +11018,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "github",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/logos",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -11023,7 +11045,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "github",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -11226,7 +11248,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "github",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -11353,7 +11375,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "gitlab",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://about.gitlab.com/press/press-kit/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -11380,7 +11402,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "gitlab",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -11615,7 +11637,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "gitlab",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -11742,7 +11764,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "go",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://blog.golang.org/go-brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -11769,7 +11791,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "go",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -12001,7 +12023,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "go",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -12128,7 +12150,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "google",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://partnermarketinghub.withgoogle.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -12155,7 +12177,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "google",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -12390,7 +12412,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "google",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -12514,7 +12536,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "googlecloud",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://cloud.google.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -12541,7 +12563,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "googlecloud",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -12743,7 +12765,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "googlecloud",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -13261,7 +13283,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "html5",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.w3.org/html/logo/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -13288,7 +13310,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "html5",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -13490,7 +13512,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "html5",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -13584,7 +13606,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "huggingface",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://huggingface.co/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -13601,7 +13623,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "huggingface",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -13679,7 +13701,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "huggingface",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -13736,7 +13758,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "ibm-iconify-logos-logo": "ibm-iconify-logo-color.svg"
     },
     "file": "ibm.svg",
-    "rawSha256": "fa0533173efb901776eaaf288a55547457482336809552bb965bcbc44cecd51b",
+    "rawSha256": "2cb1d31bcdf74a8812117493f39b4110fa20eff0b78d1d8c6e7b3128d42fcea0",
     "license": "Public Domain / Trademark of IBM Corp.",
     "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
     "brandColor": "#052FAD",
@@ -13817,7 +13839,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "contextOrigin": "source-confirmed",
       "graphicVariant": "official",
       "file": "ibm.svg",
-      "rawSha256": "fa0533173efb901776eaaf288a55547457482336809552bb965bcbc44cecd51b",
+      "rawSha256": "2cb1d31bcdf74a8812117493f39b4110fa20eff0b78d1d8c6e7b3128d42fcea0",
       "license": "Public Domain / Trademark of IBM Corp.",
       "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
       "colorType": "multi-color",
@@ -13851,7 +13873,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "contextOrigin": "source-confirmed",
         "graphicVariant": "official",
         "file": "ibm.svg",
-        "rawSha256": "fa0533173efb901776eaaf288a55547457482336809552bb965bcbc44cecd51b",
+        "rawSha256": "2cb1d31bcdf74a8812117493f39b4110fa20eff0b78d1d8c6e7b3128d42fcea0",
         "license": "Public Domain / Trademark of IBM Corp.",
         "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
         "colorType": "multi-color",
@@ -13911,7 +13933,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "inkscape",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -13979,7 +14001,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "inkscape",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://inkscape.org/gallery/=inkscape-branding/inkscape-brand-assets/",
         "license": "CC-BY-SA-3.0: ",
         "trustState": "verified",
@@ -14011,7 +14033,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "inkscape",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -14169,7 +14191,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "inkscape",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -14266,7 +14288,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "instagram",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://about.meta.com/brand/resources/instagram",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -14283,7 +14305,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "instagram",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -14394,7 +14416,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "instagram",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -14488,7 +14510,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "intel",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.intel.com/content/www/us/en/newsroom/resources/press-kits-intel-overview.html",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -14505,7 +14527,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "intel",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -14583,7 +14605,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "intel",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -14991,7 +15013,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "javascript",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/voodootikigod/logo.js/blob/1544bdeed6d618a6cfe4f0650d04ab8d9cfa76d9/js.svg",
         "license": "MIT: ",
         "trustState": "verified",
@@ -15018,7 +15040,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "javascript",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -15158,7 +15180,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "javascript",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -15282,7 +15304,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "jira",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://atlassian.design/resources/logo-library",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -15309,7 +15331,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "jira",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -15511,7 +15533,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "jira",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -15638,7 +15660,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "kotlin",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.jetbrains.com/company/brand/logos/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -15665,7 +15687,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "kotlin",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -15900,7 +15922,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "kotlin",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -16030,7 +16052,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "kubernetes",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/kubernetes/kubernetes/tree/cac53883f4714452f3084a22e4be20d042a9df33/logo",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -16057,7 +16079,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "kubernetes",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -16320,7 +16342,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "kubernetes",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -16417,7 +16439,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "linear",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://linear.app",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -16434,7 +16456,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "linear",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -16545,7 +16567,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "linear",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -16911,7 +16933,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "linux",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -16972,7 +16994,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "linux",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.linuxfoundation.org/the-linux-mark/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -17004,7 +17026,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "linux",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -17100,7 +17122,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "linux",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -17227,7 +17249,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mariadb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://mariadb.com/about-us/logos/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -17254,7 +17276,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "mariadb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -17489,7 +17511,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mariadb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -17586,7 +17608,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "meta",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.meta.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -17603,7 +17625,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "meta",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -17714,7 +17736,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "meta",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -18487,7 +18509,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mistralai",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://chat.mistral.ai",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -18504,7 +18526,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "mistralai",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -18582,7 +18604,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mistralai",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -18709,7 +18731,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mongodb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.mongodb.com/pressroom",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -18736,7 +18758,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "mongodb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -18971,7 +18993,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mongodb",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -19098,7 +19120,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mysql",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.mysql.com/about/legal/logos.html",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -19125,7 +19147,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "mysql",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -19360,7 +19382,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "mysql",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -19484,7 +19506,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "neo4j",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://neo4j.com/brand/#logo",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -19511,7 +19533,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "neo4j",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -19713,7 +19735,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "neo4j",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -19843,7 +19865,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "neovim",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://neovim.io",
         "license": "CC-BY-SA-3.0: ",
         "trustState": "verified",
@@ -19870,7 +19892,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "neovim",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -20133,7 +20155,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "neovim",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -20230,7 +20252,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "netflix",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://brand.netflix.com/en/assets/logos",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -20247,7 +20269,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "netflix",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -20358,7 +20380,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "netflix",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -20485,7 +20507,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "netlify",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.netlify.com/press/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -20512,7 +20534,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "netlify",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -20747,7 +20769,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "netlify",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -20786,7 +20808,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "nextdotjs",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -20824,7 +20846,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nextdotjs",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://vercel.com/design/brands#next-js",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -20844,7 +20866,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "nextdotjs",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -20878,7 +20900,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nextdotjs",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -21002,7 +21024,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nginx",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.nginx.com/press/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -21029,7 +21051,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "nginx",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -21231,7 +21253,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nginx",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -21270,7 +21292,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "nodedotjs",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -21308,7 +21330,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nodedotjs",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://nodejs.org/en/about/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -21328,7 +21350,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "nodedotjs",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -21362,7 +21384,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nodedotjs",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -21485,7 +21507,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "notion",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.notion.so",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -21512,7 +21534,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "notion",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -21715,7 +21737,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "notion",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -21839,7 +21861,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "npm",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.npmjs.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -21866,7 +21888,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "npm",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -22070,7 +22092,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "npm",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -22197,7 +22219,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nuxt",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://nuxt.com/design-kit",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -22224,7 +22246,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "nuxt",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -22459,7 +22481,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nuxt",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -22553,7 +22575,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nvidia",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.nvidia.com/en-us",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -22570,7 +22592,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "nvidia",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -22648,7 +22670,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "nvidia",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -22745,7 +22767,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "obsidian",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://obsidian.md",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -22762,7 +22784,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "obsidian",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -22873,7 +22895,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "obsidian",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -23482,7 +23504,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "paypal",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.paypal.com/us",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -23499,7 +23521,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "paypal",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -23577,7 +23599,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "paypal",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -23694,7 +23716,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "php",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://php.net/download-logos.php",
         "license": "CC-BY-SA-4.0: ",
         "trustState": "verified",
@@ -23721,7 +23743,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "php",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -23861,7 +23883,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "php",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -23955,7 +23977,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "pinterest",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://business.pinterest.com/en/brand-guidelines",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -23972,7 +23994,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "pinterest",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -24050,7 +24072,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "pinterest",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -24089,7 +24111,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "playstation",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -24127,7 +24149,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "playstation",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.playstation.com/en-us/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -24147,7 +24169,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "playstation",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -24181,7 +24203,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "playstation",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -24305,7 +24327,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "pnpm",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://pnpm.io/logos",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -24332,7 +24354,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "pnpm",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -24534,7 +24556,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "pnpm",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -24573,7 +24595,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "polygon",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -24641,7 +24663,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "polygon",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.polygon.technology",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -24673,7 +24695,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "polygon",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -24831,7 +24853,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "polygon",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -24955,7 +24977,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "postgresql",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://wiki.postgresql.org/wiki/Logo",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -24982,7 +25004,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "postgresql",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -25184,7 +25206,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "postgresql",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -25311,7 +25333,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "postman",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.getpostman.com/resources/media-assets/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -25338,7 +25360,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "postman",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -25573,7 +25595,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "postman",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -25697,7 +25719,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "python",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.python.org/community/logos/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -25724,7 +25746,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "python",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -25926,7 +25948,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "python",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -26050,7 +26072,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "react",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/facebook/create-react-app/blob/282c03f9525fdf8061ffa1ec50dce89296d916bd/test/fixtures/relative-paths/src/logo.svg",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -26077,7 +26099,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "react",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -26279,7 +26301,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "react",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -26376,7 +26398,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "reddit",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.redditinc.com/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -26393,7 +26415,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "reddit",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -26504,7 +26526,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "reddit",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -26628,7 +26650,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "redis",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://redis.io/brand-guidelines",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -26655,7 +26677,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "redis",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -26857,7 +26879,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "redis",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -26990,7 +27012,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "remix",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://drive.google.com/drive/u/0/folders/1pbHnJqg8Y1ATs0Oi8gARH7wccJGv4I2c",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -27017,7 +27039,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "remix",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -27313,7 +27335,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "remix",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -27352,7 +27374,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "riotgames",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -27390,7 +27412,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "riotgames",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.riotgames.com/en/press",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -27410,7 +27432,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "riotgames",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -27444,7 +27466,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "riotgames",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -27568,7 +27590,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "ruby",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.ruby-lang.org/en/about/logo/",
         "license": "CC-BY-SA-2.5: ",
         "trustState": "verified",
@@ -27595,7 +27617,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "ruby",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -27797,7 +27819,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "ruby",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -27917,7 +27939,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "rust",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.rust-lang.org",
         "license": "CC-BY-SA-4.0: ",
         "trustState": "verified",
@@ -27944,7 +27966,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "rust",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -28114,7 +28136,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "rust",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -28430,7 +28452,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "samsung",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.samsung.com/us/about-us/brand-identity/logo/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -28447,7 +28469,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "samsung",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -28525,7 +28547,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "samsung",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -28642,7 +28664,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sass",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://sass-lang.com/styleguide/brand",
         "license": "CC-BY-NC-SA-3.0: ",
         "trustState": "verified",
@@ -28669,7 +28691,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "sass",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -28809,7 +28831,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sass",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -28903,7 +28925,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "signal",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://signal.org/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -28920,7 +28942,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "signal",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -28998,7 +29020,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "signal",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -29128,7 +29150,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sketch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.sketch.com/about-us/#press",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -29155,7 +29177,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "sketch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -29418,7 +29440,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sketch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -29784,7 +29806,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "solana",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -29822,7 +29844,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "solana",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://solana.com/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -29842,7 +29864,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "solana",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -29876,7 +29898,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "solana",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -29915,7 +29937,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "sony",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -29953,7 +29975,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sony",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.sony.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -29973,7 +29995,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "sony",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -30007,7 +30029,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sony",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -30104,7 +30126,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "spotify",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://developer.spotify.com/documentation/general/design-and-branding/#using-our-logo",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -30121,7 +30143,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "spotify",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -30232,7 +30254,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "spotify",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -30356,7 +30378,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sqlite",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/sqlite/sqlite/blob/43e862723ec680542ca6f608f9963c0993dd7324/art/sqlite370.eps",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -30383,7 +30405,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "sqlite",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -30585,7 +30607,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "sqlite",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -30679,7 +30701,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "steam",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://partner.steamgames.com/doc/marketing/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -30696,7 +30718,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "steam",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -30774,7 +30796,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "steam",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -30868,7 +30890,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "stripe",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://stripe.com/newsroom/information",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -30885,7 +30907,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "stripe",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -30963,7 +30985,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "stripe",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -31090,7 +31112,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "supabase",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/supabase/supabase/blob/4031a7549f5d46da7bc79c01d56be4177dc7c114/packages/common/assets/images/supabase-logo-wordmark--light.svg",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -31117,7 +31139,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "supabase",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -31352,7 +31374,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "supabase",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -31479,7 +31501,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "svelte",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/sveltejs/branding/blob/c4dfca6743572087a6aef0e109ffe3d95596e86a/svelte-logo.svg",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -31506,7 +31528,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "svelte",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -31741,7 +31763,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "svelte",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -31865,7 +31887,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "swift",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://developer.apple.com/swift/resources/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -31892,7 +31914,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "swift",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -32094,7 +32116,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "swift",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -32221,7 +32243,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "tailwindcss",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://tailwindcss.com/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -32248,7 +32270,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "tailwindcss",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -32483,7 +32505,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "tailwindcss",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -32577,7 +32599,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "telegram",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://telegram.org/tour/screenshots",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -32594,7 +32616,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "telegram",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -32672,7 +32694,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "telegram",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -32799,7 +32821,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "terraform",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.hashicorp.com/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -32826,7 +32848,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "terraform",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -33061,7 +33083,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "terraform",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -33100,7 +33122,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "tesla",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -33138,7 +33160,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "tesla",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.tesla.com/tesla-gallery",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -33158,7 +33180,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "tesla",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -33192,7 +33214,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "tesla",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -33289,7 +33311,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "tiktok",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://tiktok.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -33306,7 +33328,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "tiktok",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -33417,7 +33439,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "tiktok",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -33547,7 +33569,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "trello",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://atlassian.design/resources/logo-library",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -33574,7 +33596,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "trello",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -33837,7 +33859,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "trello",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -33931,7 +33953,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "twitch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://brand.twitch.tv",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -33948,7 +33970,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "twitch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -34026,7 +34048,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "twitch",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -34146,7 +34168,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "typescript",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.typescriptlang.org/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -34173,7 +34195,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "typescript",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -34346,7 +34368,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "typescript",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -34385,7 +34407,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "uber",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -34423,7 +34445,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "uber",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://assets.uber.com/d/k4nuxdZ8MC7E/logos/collection/151",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -34443,7 +34465,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "uber",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -34477,7 +34499,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "uber",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -34601,7 +34623,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "ubuntu",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://design.ubuntu.com/resources",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -34628,7 +34650,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "ubuntu",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -34830,7 +34852,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "ubuntu",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -34960,7 +34982,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "unity",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://brand.unity.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -34987,7 +35009,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "unity",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -35250,7 +35272,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "unity",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -35377,7 +35399,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "unrealengine",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.unrealengine.com/en-US/branding",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -35404,7 +35426,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "unrealengine",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -35639,7 +35661,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "unrealengine",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -35772,7 +35794,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vercel",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://vercel.com/geist/brands",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -35799,7 +35821,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "vercel",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -36095,7 +36117,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vercel",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -36212,7 +36234,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vim",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vimlogo.svg",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -36239,7 +36261,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "vim",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -36379,7 +36401,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vim",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -36797,7 +36819,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vite",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/voidzero-dev/community-design-resources/blob/55902097229cf01cf2a4ceb376f992f5cf306756/brand-assets/vite/vite-icon-color-bracketless.svg",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -36824,7 +36846,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "vite",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -37059,7 +37081,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vite",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -37098,7 +37120,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "vuedotjs",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -37136,7 +37158,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vuedotjs",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/vuejs/art/blob/a1c78b74569b70a25300925b4eacfefcc143b8f6/logo.svg",
         "license": "CC-BY-NC-SA-4.0: ",
         "trustState": "verified",
@@ -37156,7 +37178,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "vuedotjs",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -37190,7 +37212,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "vuedotjs",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -37314,7 +37336,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "webpack",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://webpack.js.org/branding",
         "license": "custom: https://js.foundation/about/governance/trademark-policy",
         "trustState": "verified",
@@ -37341,7 +37363,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "webpack",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -37543,7 +37565,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "webpack",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -37582,7 +37604,7 @@ export const ICONS: Record<IconName, IconRecord> = {
     "sourcePlatform": "Simple Icons",
     "sourceCollection": "simple-icons",
     "sourceId": "wechat",
-    "sourceVersion": "16.29.0",
+    "sourceVersion": "16.30.0",
     "variant": "monochrome",
     "role": "symbol",
     "context": [
@@ -37620,7 +37642,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "wechat",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://wechat.design/tool/brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -37640,7 +37662,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       "sourceProvider": "simple-icons",
       "sourceCollection": "simple-icons",
       "sourceId": "wechat",
-      "sourceVersion": "16.29.0",
+      "sourceVersion": "16.30.0",
       "role": "symbol",
       "context": [
         "general",
@@ -37674,7 +37696,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "wechat",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -37771,7 +37793,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "whatsapp",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://about.meta.com/brand/resources/whatsapp/whatsapp-brand",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -37788,7 +37810,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "whatsapp",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -37899,7 +37921,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "whatsapp",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -38016,7 +38038,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "x",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://x.com",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -38043,7 +38065,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "x",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -38183,7 +38205,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "x",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -38313,7 +38335,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "yarn",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://github.com/yarnpkg/assets/blob/76d30ca2aebed5b73ea8131d972218fb860bd32d/yarn-kitten-circle.svg",
         "license": "CC-BY-4.0: ",
         "trustState": "verified",
@@ -38340,7 +38362,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "yarn",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -38603,7 +38625,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "yarn",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -38700,7 +38722,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "youtube",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/#logos-icons-and-colors",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -38717,7 +38739,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "youtube",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -38828,7 +38850,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "youtube",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",
@@ -38925,7 +38947,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourcePlatform": "Simple Icons",
         "sourceCollection": "simple-icons",
         "sourceId": "zoom",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "sourceUrl": "https://brand.zoom.us/media-library/",
         "license": "Simple Icons (CC0 1.0 Universal)",
         "trustState": "verified",
@@ -38942,7 +38964,7 @@ export const ICONS: Record<IconName, IconRecord> = {
       {
         "source": "simple-icons",
         "sourceId": "zoom",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "variants": [
           "monochrome"
         ],
@@ -39053,7 +39075,7 @@ export const ICONS: Record<IconName, IconRecord> = {
         "sourceProvider": "simple-icons",
         "sourceCollection": "simple-icons",
         "sourceId": "zoom",
-        "sourceVersion": "16.29.0",
+        "sourceVersion": "16.30.0",
         "role": "symbol",
         "context": [
           "general",

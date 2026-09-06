@@ -59,6 +59,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const [isAssetUsed, setIsAssetUsed] = useState(false);
   const [isPackDownloading, setIsPackDownloading] = useState(false);
   const [isFamilyDownloading, setIsFamilyDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [liveSha256, setLiveSha256] = useState<string>('');
   const [integrityStatus, setIntegrityStatus] = useState<{ verified: boolean; message: string }>({
     verified: true,
@@ -186,16 +187,11 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const handleDownloadAsset = async () => {
     if (!currentAsset) return;
     try {
+      setDownloadError(null);
       await downloadSingleSvg(icon, currentAsset);
-    } catch (err) {
-      if (currentFileName) {
-        const link = document.createElement('a');
-        link.href = `/icons/${currentFileName}`;
-        link.download = currentFileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+    } catch (err: any) {
+      setDownloadError(err.message || '无法下载未解析的资产');
+      setTimeout(() => setDownloadError(null), 4000);
     }
   };
 
@@ -403,6 +399,13 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             </button>
           </div>
         </div>
+
+        {downloadError && (
+          <div className="px-6 py-2 bg-rose-50 border-b border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>{downloadError}</span>
+          </div>
+        )}
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6">

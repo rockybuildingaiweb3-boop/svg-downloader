@@ -108,13 +108,16 @@ async function main() {
   const scopeArg = getArgValue(args, '--scope');
 
   let iconsToResolve = [];
+  let isFullScope = false;
 
   if (isAllMode || scopeArg === 'all') {
     console.log('📦 Execution Scope: ALL DISCOVERED IDENTITIES across all adapters');
     iconsToResolve = resolver.discoverAllIdentities();
+    isFullScope = true;
   } else if (scopeArg === 'mainstream') {
     console.log('📦 Execution Scope: MAINSTREAM (Curated high-priority industry collection)');
     iconsToResolve = resolver.collections.mainstream || [];
+    isFullScope = false;
   } else if (scopeArg === 'catalog' || command === 'update' || (args.filter(a => !a.startsWith('-') && a !== 'sync').length === 0)) {
     console.log('📦 Execution Scope: FULL CATALOG (All category collections)');
     const allCatIds = new Set(resolver.collections.mainstream || []);
@@ -126,6 +129,7 @@ async function main() {
       }
     }
     iconsToResolve = Array.from(allCatIds);
+    isFullScope = true;
   } else {
     // Custom positional icons
     const customList = args
@@ -137,8 +141,10 @@ async function main() {
     if (customList.length > 0) {
       console.log(`📦 Execution Scope: CUSTOM (${customList.length} specified icon identifiers)`);
       iconsToResolve = customList;
+      isFullScope = false;
     } else {
       iconsToResolve = resolver.collections.mainstream || [];
+      isFullScope = false;
     }
   }
 
@@ -265,14 +271,27 @@ async function main() {
   // Manifest-driven stale asset cleanup
   let staleRemovedCount = 0;
   if (!dryRun) {
-    staleRemovedCount += await cleanStaleAssets(PUBLIC_ICONS_DIR, resolvedRecords, dryRun);
-    await cleanStaleAssets(GENERATED_ICONS_DIR, resolvedRecords, dryRun);
+    staleRemovedCount += await cleanStaleAssets(PUBLIC_ICONS_DIR, resolvedRecords, isFullScope, dryRun);
+    await cleanStaleAssets(GENERATED_ICONS_DIR, resolvedRecords, isFullScope, dryRun);
   } else {
-    staleRemovedCount += await cleanStaleAssets(PUBLIC_ICONS_DIR, resolvedRecords, true);
+    staleRemovedCount += await cleanStaleAssets(PUBLIC_ICONS_DIR, resolvedRecords, isFullScope, true);
   }
 
   // Generate Registries & Manifest
   if (!dryRun && resolvedRecords.length > 0) {
+    let recordsToPersist = resolvedRecords;
+    if (!isFullScope) {
+      try {
+        const existingCatText = await fs.readFile(path.join(GENERATED_DIR, 'catalog.json'), 'utf8');
+        const existingCat = JSON.parse(existingCatText);
+        const recordMap = new Map(existingCat.map(r => [r.id, r]));
+        for (const r of resolvedRecords) {
+          recordMap.set(r.id, r);
+        }
+        recordsToPersist = Array.from(recordMap.values());
+      } catch {}
+    }
+
     const metadata = {
       sourceVersions: {
         'simple-icons': resolver.simpleIcons.version,
@@ -284,7 +303,7 @@ async function main() {
       conflicts: resolver.conflicts
     };
 
-    const generator = new RegistryGenerator(GENERATED_DIR, resolvedRecords, metadata);
+    const generator = new RegistryGenerator(GENERATED_DIR, recordsToPersist, metadata);
     await generator.generateAll();
 
     // Copy catalog.json and manifest.json to public/ and src/data/
@@ -338,11 +357,13 @@ function customListSpecified(args) {
   return custom.length > 0;
 }
 
-async function cleanStaleAssets(dir, activeRecords, dryRun = false) {
+async function cleanStaleAssets(dir, activeRecords, isFullScope = false, dryRun = false) {
   let count = 0;
   try {
     const activeFiles = new Set();
+    const activeIdentities = new Set();
     for (const r of activeRecords) {
+      activeIdentities.add(r.id);
       if (r.file) activeFiles.add(r.file);
       if (r.assets && Array.isArray(r.assets)) {
         for (const a of r.assets) {
@@ -353,9 +374,19 @@ async function cleanStaleAssets(dir, activeRecords, dryRun = false) {
     const entries = await fs.readdir(dir);
     for (const f of entries) {
       if (!f.endsWith('.svg')) continue;
-      // Stale condition: legacy -2.svg or not in active records
+      // Stale condition 1: legacy -2.svg or numeric suffixes
       const isLegacySuffix = Boolean(f.match(/-\d+\.svg$/));
-      const isUnmanaged = !activeFiles.has(f);
+      
+      // Stale condition 2: unmanaged file
+      let isUnmanaged = false;
+      if (isFullScope) {
+        isUnmanaged = !activeFiles.has(f);
+      } else {
+        const prefix = f.split(/[-.]/)[0];
+        if (activeIdentities.has(prefix) && !activeFiles.has(f)) {
+          isUnmanaged = true;
+        }
+      }
 
       if (isLegacySuffix || isUnmanaged) {
         if (!dryRun) {
@@ -502,7 +533,8 @@ async function handleAudit() {
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
 
     console.log(`Manifest Generated: ${manifest.generatedAt}`);
-    console.log(`Total Icons:        ${manifest.totalIcons}`);
+    console.log(`Total Identities:   ${manifest.totalIdentities || (manifest.icons || []).length}`);
+    console.log(`Total Assets:       ${manifest.totalAssets || (manifest.icons || []).length}`);
     console.log('\nCounts by Source:');
     for (const [src, count] of Object.entries(manifest.countsBySource || {})) {
       console.log(`- ${src.padEnd(16)}: ${count}`);

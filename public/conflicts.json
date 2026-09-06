@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-05T09:39:22.135Z",
+  "generatedAt": "2026-09-06T11:19:16.855Z",
   "totalConflictsDetected": 120,
   "policy": "brand",
   "note": "All source collisions are deterministically resolved according to the active source policy without numerical suffix collisions (-2.svg).",

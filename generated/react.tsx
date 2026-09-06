@@ -1,44 +1,36 @@
 import React from 'react';
-import type { IconName } from './index';
+import { ICONS, type IconName } from './index';
 
-export interface IconProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+export interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
   size?: number | string;
-  className?: string;
-  basePath?: string;
+  title?: string;
 }
 
 /**
- * Universal Production React Icon Component
- * Loads authentic canonical raw SVG assets without bundle bloat
+ * Universal Zero-Dependency Canonical SVG Icon Component for React
  */
-export const Icon: React.FC<IconProps> = ({
-  name,
-  size = 24,
-  className = '',
-  basePath = '/icons',
-  style,
-  alt,
-  ...rest
-}) => {
+export function Icon({ name, size = 24, title, className, ...props }: IconProps) {
+  const icon = ICONS[name];
+  if (!icon) {
+    console.warn(`[IconRegistry] Icon "${name}" not found in canonical registry`);
+    return null;
+  }
+
+  const assetUrl = `/icons/${icon.file}`;
+
   return (
     <img
-      src={`${basePath}/${name}.svg`}
-      alt={alt || `${name} icon`}
+      src={assetUrl}
+      alt={title || icon.title || name}
       width={size}
       height={size}
       className={className}
-      style={{
-        display: 'inline-block',
-        verticalAlign: 'middle',
-        flexShrink: 0,
-        ...style
-      }}
       loading="lazy"
       decoding="async"
-      {...rest}
+      {...(props as any)}
     />
   );
-};
+}
 
 export default Icon;
