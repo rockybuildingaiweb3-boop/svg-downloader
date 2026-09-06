@@ -44,16 +44,12 @@ async function main() {
       const generatedCat = await fs.readFile(path.join(GENERATED_DIR, 'catalog.json'), 'utf8');
       const publicCat = await fs.readFile(path.join(ROOT, 'public', 'catalog.json'), 'utf8');
       const parsedCat = JSON.parse(generatedCat);
-      if (!publicCat || publicCat.length !== generatedCat.length || !Array.isArray(parsedCat) || parsedCat.length < 4000) {
-        console.error(`❌ Build check failed: generated catalog is stale, missing, or shrunk (${parsedCat?.length || 0} < 4000). Run "npm run sync" first.`);
-        process.exit(1);
+      if (publicCat && publicCat.length === generatedCat.length && Array.isArray(parsedCat) && parsedCat.length >= 4000) {
+        console.log(`✅ Verified catalog is fresh (${parsedCat.length} identities).`);
+        return;
       }
-      console.log(`✅ Verified catalog is fresh (${parsedCat.length} identities).`);
-      return;
-    } catch (err) {
-      console.error(`❌ Build check failed: ${err.message}. Run "npm run sync" first.`);
-      process.exit(1);
-    }
+    } catch {}
+    console.log('🔄 Catalog missing or stale. Running authoritative sync pipeline...');
   }
 
   const resolver = new IconResolver(ROOT);
@@ -353,9 +349,8 @@ async function main() {
     await fs.copyFile(conflictsPath, path.join(PUBLIC_ICONS_DIR, '..', 'conflicts.json'));
     await fs.copyFile(sourcesPath, path.join(PUBLIC_ICONS_DIR, '..', 'sources.json'));
 
-    // Also copy to src/data/catalog.json and src/data/registry.json for compile-time bundle access
+    // Also copy to src/data/catalog.json for compile-time bundle access
     await fs.copyFile(catalogPath, path.join(SRC_DATA_DIR, 'catalog.json'));
-    await fs.copyFile(registryPath, path.join(SRC_DATA_DIR, 'registry.json'));
   }
 
   // Output Standard Statistics Breakdown

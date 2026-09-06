@@ -84,13 +84,13 @@ export class RegistryGenerator {
     };
 
     const filePath = path.join(this.outDir, 'registry.json');
-    await fs.writeFile(filePath, JSON.stringify(registryPayload, null, 2), 'utf8');
+    await fs.writeFile(filePath, JSON.stringify(registryPayload), 'utf8');
   }
 
   async generateCatalogJson() {
     const cleanRecords = this.records.map(r => this.cleanRecord(r));
     const filePath = path.join(this.outDir, 'catalog.json');
-    await fs.writeFile(filePath, JSON.stringify(cleanRecords, null, 2), 'utf8');
+    await fs.writeFile(filePath, JSON.stringify(cleanRecords), 'utf8');
   }
 
   async generateManifestJson() {
@@ -120,7 +120,7 @@ export class RegistryGenerator {
     };
 
     const filePath = path.join(this.outDir, 'manifest.json');
-    await fs.writeFile(filePath, JSON.stringify(manifest, null, 2), 'utf8');
+    await fs.writeFile(filePath, JSON.stringify(manifest), 'utf8');
   }
 
   async generateConflictsJson() {

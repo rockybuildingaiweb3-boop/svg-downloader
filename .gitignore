@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+generated/
+public/icons/
+public/registry.json
+public/catalog.json
+public/manifest.json
+public/conflicts.json
+public/sources.json
+src/data/registry.json
+src/data/catalog.json

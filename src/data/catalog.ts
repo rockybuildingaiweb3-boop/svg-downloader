@@ -1,15 +1,12 @@
-import rawCatalog from '../../generated/catalog.json';
-import type { IconRecord, IconItem, SourceRecord, BrandAsset } from '../types';
+import rawRegistry from '../../generated/registry.json';
+import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem } from '../types';
 import { getSemanticSourceLabel } from '../types';
 
-export const CANONICAL_CATALOG: IconRecord[] = rawCatalog as unknown as IconRecord[];
+export const REGISTRY_STATS: RegistryStats = (rawRegistry as any).stats;
+export const CANONICAL_CATALOG: IconRecord[] = (rawRegistry as any).identities as IconRecord[];
 
 /**
  * Maps canonical record to UI IconItem with full BrandIdentity and AssetFamily support
- */
-/**
- * Authoritative Canonical Registry Catalog Items
- * Full BrandIdentity and AssetFamily support
  */
 export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
   const sourceProvider = (rec.sourceProvider || (rec.source === 'svg-logos' ? 'iconify' : rec.source)) as any;
@@ -34,7 +31,8 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     graphicVariant,
     file: rec.file,
     rawSha256: rec.rawSha256,
-    license: rec.license || 'CC0 / Trademark',
+    license: rec.license || null as any,
+    licenseStatus: rec.license ? 'permissive' : 'unknown',
     sourceUrl: rec.sourceUrl,
     isCanonical: true,
     xmlValid: rec.xmlValid ?? false,
@@ -48,7 +46,8 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     trustState,
     colorType: rec.colorType || (rec.assets?.[0]?.colorType) || 'monochrome',
     structuralMetrics: rec.structuralMetrics || (rec.assets?.[0]?.structuralMetrics),
-    notes: rec.notes
+    notes: rec.notes,
+    canonicalDecision: (rec as any).canonicalDecision
   };
 
   const assets: BrandAsset[] = (rec.assets && rec.assets.length > 0)
@@ -96,6 +95,7 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     variant: rec.variant || 'default',
     variants: rec.variants || {},
     license: rec.license,
+    licenseStatus: rec.license ? 'permissive' : 'unknown',
     sourceUrl: rec.sourceUrl,
     alternativeSources: rec.alternativeSources,
     sourceRecords,
@@ -117,6 +117,7 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     structuralMetrics: canonicalAsset.structuralMetrics || rec.structuralMetrics,
     canonicalAssetId: canonicalAsset.assetId,
     canonicalAsset,
+    canonicalDecision: (rec as any).canonicalDecision,
     assets,
     totalAssets: assets.length
   };
@@ -129,3 +130,22 @@ export const ICON_MAP: Record<string, IconItem> = REGISTRY_ITEMS.reduce((acc, ic
   acc[icon.slug] = icon;
   return acc;
 }, {} as Record<string, IconItem>);
+
+// Flattened concrete assets list for "Browse by Assets" mode
+export const REGISTRY_ASSETS: ConcreteAssetItem[] = [];
+for (const icon of REGISTRY_ITEMS) {
+  for (const asset of icon.assets || []) {
+    REGISTRY_ASSETS.push({
+      ...asset,
+      identityTitle: icon.title,
+      identitySlug: icon.slug,
+      brandColor: icon.hex ? `#${icon.hex}` : undefined,
+      category: icon.category
+    });
+  }
+}
+
+export const ASSET_MAP: Record<string, ConcreteAssetItem> = REGISTRY_ASSETS.reduce((acc, asset) => {
+  acc[asset.assetId] = asset;
+  return acc;
+}, {} as Record<string, ConcreteAssetItem>);
