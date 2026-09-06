@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Layers,
   Sparkles,
-  AlertCircle,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -18,8 +17,7 @@ import {
   Tag,
   Heart,
   Clock,
-  Bookmark,
-  FileCheck
+  Command
 } from 'lucide-react';
 import {
   IconCategory,
@@ -29,22 +27,27 @@ import {
   UsageContext,
   TrustState,
   DownloadReceipt,
-  getSemanticSourceLabel,
-  getTrustStateBadge
+  getSemanticSourceLabel
 } from './types';
 import { CURATED_ICONS, CATEGORIES } from './data/curatedIcons';
-import { Header } from './components/Header';
+import { Header, ActiveTabType } from './components/Header';
 import { IconCard } from './components/IconCard';
 import { IconInspectorModal } from './components/IconInspectorModal';
 import { BatchActionBar } from './components/BatchActionBar';
 import { ScriptPanel } from './components/ScriptPanel';
 import { AiVsOfficialSection } from './components/AiVsOfficialModal';
 import { ConflictsSection } from './components/ConflictsSection';
+import { SourcesSection } from './components/SourcesSection';
+import { CoverageSection } from './components/CoverageSection';
+import { CommandPalette } from './components/CommandPalette';
 import { downloadZip, downloadEngineeringZip } from './utils/svgHelpers';
 import { searchCatalogAssetAware, parseSearchIntent } from './utils/assetResolver';
+import { useTranslation } from './i18n/context';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'icons' | 'conflicts' | 'script' | 'comparison'>('icons');
+  const { t, format } = useTranslation();
+  const [activeTab, setActiveTab] = useState<ActiveTabType>('icons');
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
   // Local Collections: Favorites and Recent Downloads
@@ -66,7 +69,7 @@ export default function App() {
 
   const [selectedCollection, setSelectedCollection] = useState<'all' | 'favorites' | 'recents' | 'selected'>('all');
 
-  // Standard & Advanced Filters (Requirement 24)
+  // Standard & Advanced Filters
   const [selectedCategory, setSelectedCategory] = useState<IconCategory>('all');
   const [selectedSource, setSelectedSource] = useState<IconSource>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'verified' | 'multi-source' | 'unresolved'>('all');
@@ -76,11 +79,11 @@ export default function App() {
   const [selectedTrustState, setSelectedTrustState] = useState<'all' | TrustState>('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  // Pagination (Requirement 18: Full catalog rendering without rendering thousands of DOM nodes)
+  // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(36);
 
-  // Identity active asset overrides (User chosen asset from "Use this asset" in Inspector)
+  // Identity active asset overrides
   const [activeAssetOverrides, setActiveAssetOverrides] = useState<Record<string, string>>({});
 
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
@@ -92,13 +95,25 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 2500);
   };
 
+  // Keyboard shortcut for Command Palette (Ctrl+K / Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const toggleFavorite = (id: string) => {
     setFavorites(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       try {
         localStorage.setItem('svg_registry_favorites', JSON.stringify(next));
       } catch {}
-      showToast(next.includes(id) ? `已将 ${id} 加入收藏` : `已将 ${id} 移出收藏`);
+      showToast(next.includes(id) ? `Added ${id} to favorites` : `Removed ${id} from favorites`);
       return next;
     });
   };
@@ -112,7 +127,7 @@ export default function App() {
       } catch {}
       return next;
     });
-    showToast(`已下载 ${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)`);
+    showToast(`Downloaded ${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)`);
   };
 
   // Reset page when filters or collection change
@@ -147,10 +162,9 @@ export default function App() {
     return count;
   }, [selectedRole, selectedContext, selectedVariant, selectedTrustState]);
 
-  // Filtered icons by category, source, verification status, role, context, variant, and search query
+  // Filtered icons
   const filteredIcons = useMemo(() => {
     const baseFiltered = CURATED_ICONS.map(icon => {
-      // If user selected a specific asset for this identity, apply override
       const overrideAssetId = activeAssetOverrides[icon.id];
       if (overrideAssetId && icon.assets) {
         const found = icon.assets.find(a => a.assetId === overrideAssetId);
@@ -173,7 +187,7 @@ export default function App() {
       }
       return icon;
     }).filter(icon => {
-      // 0. Local Collection filter (Favorites / Recents / Selected)
+      // 0. Local Collection filter
       if (selectedCollection === 'favorites') {
         if (!favorites.includes(icon.id)) return false;
       } else if (selectedCollection === 'recents') {
@@ -185,16 +199,15 @@ export default function App() {
       // 1. Category filter
       if (selectedCategory !== 'all') {
         if (selectedCategory === 'mainstream') {
-          // Curated high priority
           if (icon.category !== 'mainstream' && icon.category !== 'brands' && icon.category !== 'technologies') {
-            // Keep if in mainstream collection
+            // keep
           }
         } else if (icon.category !== selectedCategory) {
           return false;
         }
       }
 
-      // 2. Source filter (Requirement 16)
+      // 2. Source filter
       if (selectedSource !== 'all') {
         const iconSrc = icon.sourceProvider || icon.source || 'simple-icons';
         if (selectedSource === 'official') {
@@ -208,7 +221,7 @@ export default function App() {
         }
       }
 
-      // 3. Status filter (Requirement 17)
+      // 3. Status filter
       if (selectedStatus === 'verified') {
         if (icon.verificationStatus !== 'verified') return false;
       } else if (selectedStatus === 'multi-source') {
@@ -217,7 +230,7 @@ export default function App() {
         if (icon.verificationStatus !== 'unresolved') return false;
       }
 
-      // 4. Asset Role filter (Requirement 24)
+      // 4. Asset Role filter
       if (selectedRole !== 'all') {
         const hasMatchingRole =
           icon.role === selectedRole ||
@@ -225,7 +238,7 @@ export default function App() {
         if (!hasMatchingRole) return false;
       }
 
-      // 5. Context filter (Requirement 24)
+      // 5. Context filter
       if (selectedContext !== 'all') {
         const hasMatchingContext =
           (icon.context && icon.context.includes(selectedContext)) ||
@@ -233,7 +246,7 @@ export default function App() {
         if (!hasMatchingContext) return false;
       }
 
-      // 6. Variant filter (Requirement 24)
+      // 6. Variant filter
       if (selectedVariant !== 'all') {
         const hasMatchingVariant =
           icon.graphicVariant?.toLowerCase() === selectedVariant.toLowerCase() ||
@@ -242,7 +255,7 @@ export default function App() {
         if (!hasMatchingVariant) return false;
       }
 
-      // 7. Trust State filter (Requirement 16)
+      // 7. Trust State filter
       if (selectedTrustState !== 'all') {
         if (icon.trustState !== selectedTrustState) return false;
       }
@@ -250,7 +263,7 @@ export default function App() {
       return true;
     });
 
-    // 8. Asset-Aware Search (Requirement: search understands title, identity, slug, aliases, source, role, context, variant)
+    // 8. Asset-Aware Search
     if (!searchTerm.trim()) {
       return baseFiltered;
     }
@@ -297,20 +310,18 @@ export default function App() {
     activeAssetOverrides
   ]);
 
-  // Paginated Icons (Requirement 18)
+  // Paginated Icons
   const totalPages = Math.max(1, Math.ceil(filteredIcons.length / pageSize));
   const paginatedIcons = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     return filteredIcons.slice(startIndex, startIndex + pageSize);
   }, [filteredIcons, currentPage, pageSize]);
 
-  // Handle user switching active asset for an identity from modal (Requirement 23)
   const handleUseAsset = (identityId: string, assetId: string) => {
     setActiveAssetOverrides(prev => ({
       ...prev,
       [identityId]: assetId
     }));
-    // Also update inspectedIcon if currently open
     setInspectedIcon(prev => {
       if (!prev || prev.id !== identityId) return prev;
       const targetAsset = prev.assets?.find(a => a.assetId === assetId);
@@ -325,31 +336,27 @@ export default function App() {
         sourcePlatform: getSemanticSourceLabel(targetAsset.sourceProvider, targetAsset.sourceCollection)
       };
     });
-    showToast(`已将 ${identityId} 设为主资产形态`);
+    showToast(`Set ${identityId} primary asset variant`);
   };
 
-  // Toggle single icon selection
   const handleToggleSelect = (slug: string) => {
     setSelectedSlugs(prev =>
       prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
     );
   };
 
-  // Select all currently filtered
   const handleSelectAllFiltered = () => {
     const filteredSlugs = filteredIcons
       .filter(i => i.verificationStatus !== 'unresolved')
       .map(i => i.slug);
     setSelectedSlugs(prev => Array.from(new Set([...prev, ...filteredSlugs])));
-    showToast(`已全选当前筛选的 ${filteredSlugs.length} 个图标`);
+    showToast(`Selected all ${filteredSlugs.length} filtered assets`);
   };
 
-  // Clear selection
   const handleClearSelection = () => {
     setSelectedSlugs([]);
   };
 
-  // Reset all filters
   const handleResetFilters = () => {
     setSearchTerm('');
     setSelectedCategory('all');
@@ -360,18 +367,16 @@ export default function App() {
     setSelectedVariant('all');
     setSelectedTrustState('all');
     setCurrentPage(1);
-    showToast('已重置所有检索与筛选条件');
+    showToast('Filters reset to default');
   };
 
-  // Batch download selected (pure SVGs)
   const handleDownloadSelectedZip = async () => {
     const itemsToDownload = CURATED_ICONS.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
     if (itemsToDownload.length === 0) return;
     await downloadZip(itemsToDownload, `brand-icons-${itemsToDownload.length}.zip`);
-    showToast(`正在下载 ${itemsToDownload.length} 个 SVG 图标压缩包...`);
+    showToast(`Downloading ${itemsToDownload.length} verified SVG assets...`);
   };
 
-  // Batch download selected (Full Engineering Bundle)
   const handleDownloadSelectedBundle = async () => {
     const itemsToDownload = CURATED_ICONS.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
     if (itemsToDownload.length === 0) return;
@@ -379,24 +384,42 @@ export default function App() {
       itemsToDownload,
       `icons-bundle-${itemsToDownload.length}.zip`
     );
-    showToast(`已导出 ${itemsToDownload.length} 个图标的前端工程规范组件包!`);
+    showToast(`Exported ${itemsToDownload.length} assets with React/Vue definitions and manifest!`);
   };
 
-  // Batch download all mainstream icons (pure SVGs)
   const handleDownloadMainstreamZip = async () => {
     const validItems = CURATED_ICONS.filter(i => i.verificationStatus !== 'unresolved');
     await downloadZip(validItems, 'authoritative-brand-tech-svg-pack.zip');
-    showToast(`正在下载全套 ${validItems.length} 个权威品牌与技术 SVG 压缩包...`);
+    showToast(`Downloading full set of ${validItems.length} verified SVGs...`);
   };
 
-  // Batch download all mainstream icons (Full Engineering Bundle)
   const handleDownloadMainstreamBundle = async () => {
     const validItems = CURATED_ICONS.filter(i => i.verificationStatus !== 'unresolved');
     await downloadEngineeringZip(
       validItems,
       'authoritative-engineering-bundle.zip'
     );
-    showToast(`已成功导出 ${validItems.length} 个图标的完整工程包 (含 React/Vue 组件与 manifest.json)!`);
+    showToast(`Exported full engineering package with ${validItems.length} verified brand assets!`);
+  };
+
+  // Helper category label mapping
+  const getCategoryLabel = (catId: string) => {
+    const map: Record<string, string> = {
+      all: t.filters.categories.all,
+      mainstream: t.filters.categories.mainstream,
+      brands: t.filters.categories.brands,
+      technologies: t.filters.categories.technologies,
+      apps: t.filters.categories.apps,
+      cloud: t.filters.categories.cloud,
+      databases: t.filters.categories.databases,
+      'developer-tools': t.filters.categories.developerTools,
+      design: t.filters.categories.design,
+      social: t.filters.categories.social,
+      gaming: t.filters.categories.gaming,
+      web3: t.filters.categories.web3,
+      custom: t.filters.categories.custom,
+    };
+    return map[catId] || catId;
   };
 
   return (
@@ -418,6 +441,7 @@ export default function App() {
         selectedCount={selectedSlugs.length}
         onDownloadMainstreamZip={handleDownloadMainstreamZip}
         onDownloadMainstreamBundle={handleDownloadMainstreamBundle}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
       {/* System Verification & Architecture Banner */}
@@ -426,33 +450,34 @@ export default function App() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>多源权威资产注册表 (Verified Multi-Source Icon Asset Registry)</span>
+              <span>{t.systemBanner.registryTitle}</span>
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
             <span className="text-slate-300">
-              数据模型: 品牌概念 (Identity) → 资产家族 (Asset Family) → 权威资产 (Asset)
+              {t.systemBanner.dataModel}
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-2xs text-slate-400">
             <span className="text-emerald-300 flex items-center gap-1">
-              <Check className="w-3 h-3 text-emerald-400" /> 原始字节不可变
+              <Check className="w-3 h-3 text-emerald-400" /> {t.systemBanner.rawBytesImmutable}
             </span>
             <span>•</span>
-            <span>无伪造占位符</span>
+            <span>{t.systemBanner.noFakePlaceholders}</span>
             <span>•</span>
-            <span className="font-mono text-indigo-300">Fast-XML 规范验证</span>
+            <span className="font-mono text-indigo-300">{t.systemBanner.astValidated}</span>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
       <main className="flex-1 pb-24">
+        {/* Tab 1: Icons & Brands */}
         {activeTab === 'icons' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
             
             {/* Filter & Control Bar */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3.5">
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3.5">
               
               {/* Row 1: Search & Source Filter & Advanced Filter Toggle */}
               <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
@@ -465,7 +490,7 @@ export default function App() {
                     type="text"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="搜索品牌或技术，例如: Apple, React, OpenAI, Python, Docker..."
+                    placeholder={t.filters.searchPlaceholder}
                     className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 placeholder-slate-400"
                   />
                   {searchTerm && (
@@ -478,26 +503,26 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Center: Semantically Correct Source Filter (Requirement 16) */}
+                {/* Center: Source Filter */}
                 <div className="flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar">
-                  <span className="text-slate-400 text-[11px] flex items-center gap-1 shrink-0">
+                  <span className="text-slate-400 text-2xs flex items-center gap-1 shrink-0 font-medium">
                     <Filter className="w-3 h-3" />
-                    <span>源平台:</span>
+                    <span>{t.filters.sourcePlatform}:</span>
                   </span>
                   {[
-                    { id: 'all', label: '全部数据源' },
+                    { id: 'all', label: t.filters.allSources },
                     { id: 'simple-icons', label: 'Simple Icons' },
                     { id: 'devicon', label: 'Devicon' },
                     { id: 'svg-logos', label: 'SVG Logos' },
-                    { id: 'official', label: 'Official Vendor' },
-                    { id: 'wikimedia', label: 'Wikimedia Commons' }
+                    { id: 'official', label: 'Official' },
+                    { id: 'wikimedia', label: 'Wikimedia' }
                   ].map(src => (
                     <button
                       key={src.id}
                       onClick={() => setSelectedSource(src.id as any)}
                       className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-colors cursor-pointer ${
                         selectedSource === src.id
-                          ? 'bg-slate-900 text-white shadow-2xs'
+                          ? 'bg-slate-900 text-white shadow-2xs font-semibold'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
@@ -510,16 +535,16 @@ export default function App() {
                 <button
                   id="btn-toggle-advanced-filters"
                   onClick={() => setShowAdvancedFilters(prev => !prev)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
                     showAdvancedFilters || activeFiltersCount > 0
                       ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                   }`}
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>高级筛选 (角色/场景/变体)</span>
+                  <span>{t.filters.advancedFilters}</span>
                   {activeFiltersCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-bold">
+                    <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-2xs flex items-center justify-center font-bold">
                       {activeFiltersCount}
                     </span>
                   )}
@@ -527,36 +552,36 @@ export default function App() {
 
               </div>
 
-              {/* Explainable Search Intent Bar (Requirement 24) */}
+              {/* Explainable Search Intent Bar */}
               {parsedIntent && (
                 <div className="flex items-center justify-between gap-2 p-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl text-xs text-indigo-950 font-mono flex-wrap animate-in fade-in duration-150">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-indigo-700 flex items-center gap-1">
                       <Sparkles className="w-3.5 h-3.5" />
-                      意图分析:
+                      {t.filters.intentAnalysis}:
                     </span>
-                    <span>目标品牌: <strong>{parsedIntent.targetIdentity || '通用搜索'}</strong></span>
+                    <span>{t.filters.targetBrand}: <strong>{parsedIntent.targetIdentity || 'General Search'}</strong></span>
                     {parsedIntent.roleConstraint && (
                       <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
-                        形态: {parsedIntent.roleConstraint}
+                        {t.filters.roleConstraint}: {parsedIntent.roleConstraint}
                       </span>
                     )}
                     {parsedIntent.contextConstraint && (
                       <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
-                        场景: {parsedIntent.contextConstraint}
+                        {t.filters.contextConstraint}: {parsedIntent.contextConstraint}
                       </span>
                     )}
                     {parsedIntent.variantPreference && (
                       <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
-                        偏好: {parsedIntent.variantPreference}
+                        {t.filters.variantPreference}: {parsedIntent.variantPreference}
                       </span>
                     )}
-                    <span className="text-[11px] text-slate-500 font-sans">
-                      ({parsedIntent.mode === 'strict' ? '严格命中' : '智能优选'})
+                    <span className="text-2xs text-slate-500 font-sans">
+                      ({parsedIntent.mode === 'strict' ? t.filters.strictMatch : t.filters.preferredMatch})
                     </span>
                   </div>
-                  <span className="text-[11px] font-sans text-indigo-700 font-medium">
-                    精准命中 {filteredIcons.length} 项
+                  <span className="text-2xs font-sans text-indigo-700 font-semibold">
+                    {filteredIcons.length} {t.filters.matchedCount}
                   </span>
                 </div>
               )}
@@ -568,12 +593,12 @@ export default function App() {
                   onClick={() => setSelectedCollection('all')}
                   className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                     selectedCollection === 'all'
-                      ? 'bg-slate-900 text-white shadow-xs'
+                      ? 'bg-slate-900 text-white shadow-xs font-semibold'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>全部标识 ({CURATED_ICONS.length})</span>
+                  <span>{t.filters.collections.all} ({CURATED_ICONS.length})</span>
                 </button>
 
                 <button
@@ -581,12 +606,12 @@ export default function App() {
                   onClick={() => setSelectedCollection('favorites')}
                   className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                     selectedCollection === 'favorites'
-                      ? 'bg-rose-600 text-white shadow-xs'
+                      ? 'bg-rose-600 text-white shadow-xs font-semibold'
                       : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                   }`}
                 >
                   <Heart className={`w-3.5 h-3.5 ${selectedCollection === 'favorites' ? 'fill-current' : ''}`} />
-                  <span>我的收藏 ({favorites.length})</span>
+                  <span>{t.filters.collections.favorites} ({favorites.length})</span>
                 </button>
 
                 <button
@@ -594,26 +619,26 @@ export default function App() {
                   onClick={() => setSelectedCollection('recents')}
                   className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                     selectedCollection === 'recents'
-                      ? 'bg-indigo-600 text-white shadow-xs'
+                      ? 'bg-indigo-600 text-white shadow-xs font-semibold'
                       : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  <span>最近下载 ({recents.length})</span>
+                  <span>{t.filters.collections.recents} ({recents.length})</span>
                 </button>
 
                 {selectedSlugs.length > 0 && (
                   <button
                     id="tab-collection-selected"
                     onClick={() => setSelectedCollection('selected')}
-                    className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                       selectedCollection === 'selected'
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
                     }`}
                   >
                     <CheckSquare className="w-3.5 h-3.5" />
-                    <span>已选中项 ({selectedSlugs.length})</span>
+                    <span>{t.filters.collections.selected} ({selectedSlugs.length})</span>
                   </button>
                 )}
               </div>
@@ -633,13 +658,13 @@ export default function App() {
                       onClick={() => setSelectedCategory(cat.id)}
                       className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                         selectedCategory === cat.id
-                          ? 'bg-slate-900 text-white shadow-xs'
+                          ? 'bg-slate-900 text-white shadow-xs font-semibold'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
                       }`}
                     >
-                      <span>{cat.label}</span>
+                      <span>{getCategoryLabel(cat.id)}</span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        className={`text-2xs px-1.5 py-0.2 rounded-full font-mono ${
                           selectedCategory === cat.id
                             ? 'bg-slate-800 text-slate-200'
                             : 'bg-slate-200 text-slate-600'
@@ -652,15 +677,15 @@ export default function App() {
                 })}
               </div>
 
-              {/* Row 3: Requirement 24 - Context and Variant Filtering Drawer */}
+              {/* Row 3: Advanced Filtering Drawer */}
               {showAdvancedFilters && (
                 <div className="pt-3 pb-1 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-150">
                   
-                  {/* Filter 1: Asset Role (Requirement 24) */}
+                  {/* Filter 1: Asset Role */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-2xs font-bold text-slate-700 flex items-center gap-1">
                       <Tag className="w-3 h-3 text-indigo-600" />
-                      <span>资产角色 (Asset Role)</span>
+                      <span>{t.filters.assetRole}</span>
                     </label>
                     <select
                       id="filter-asset-role"
@@ -668,20 +693,20 @@ export default function App() {
                       onChange={e => setSelectedRole(e.target.value as any)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">全部角色 (All Roles)</option>
-                      <option value="symbol">Symbol (图标符号)</option>
-                      <option value="logo">Logo (完整标志)</option>
-                      <option value="wordmark">Wordmark (文字组合标)</option>
-                      <option value="app-icon">App Icon (应用图标)</option>
-                      <option value="favicon">Favicon (网站极简标)</option>
+                      <option value="all">{t.filters.allRoles}</option>
+                      <option value="symbol">Symbol (Single mark)</option>
+                      <option value="logo">Logo (Complete mark)</option>
+                      <option value="wordmark">Wordmark (Logotype)</option>
+                      <option value="app-icon">App Icon</option>
+                      <option value="favicon">Favicon</option>
                     </select>
                   </div>
 
-                  {/* Filter 2: Context (Requirement 24) */}
+                  {/* Filter 2: Context */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-2xs font-bold text-slate-700 flex items-center gap-1">
                       <Compass className="w-3 h-3 text-sky-600" />
-                      <span>使用上下文 (Context)</span>
+                      <span>{t.filters.usageContext}</span>
                     </label>
                     <select
                       id="filter-context"
@@ -689,21 +714,21 @@ export default function App() {
                       onChange={e => setSelectedContext(e.target.value as any)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">全部上下文 (All Contexts)</option>
-                      <option value="web">Web (网页与云平台)</option>
-                      <option value="desktop">Desktop (桌面端应用)</option>
-                      <option value="mobile">Mobile (移动端平台)</option>
-                      <option value="app-store">App Store (应用商店)</option>
-                      <option value="social">Social (社交与媒体头像)</option>
-                      <option value="general">General (通用展示)</option>
+                      <option value="all">{t.filters.allContexts}</option>
+                      <option value="web">Web & Cloud</option>
+                      <option value="desktop">Desktop</option>
+                      <option value="mobile">Mobile</option>
+                      <option value="app-store">App Store</option>
+                      <option value="social">Social & Avatar</option>
+                      <option value="general">General</option>
                     </select>
                   </div>
 
-                  {/* Filter 3: Variant (Requirement 24) */}
+                  {/* Filter 3: Variant */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-2xs font-bold text-slate-700 flex items-center gap-1">
                       <Palette className="w-3 h-3 text-pink-600" />
-                      <span>视觉形态 (Variant)</span>
+                      <span>{t.filters.graphicVariant}</span>
                     </label>
                     <select
                       id="filter-variant"
@@ -711,21 +736,21 @@ export default function App() {
                       onChange={e => setSelectedVariant(e.target.value)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">全部形态 (All Variants)</option>
-                      <option value="color">Color (多色标准彩标)</option>
-                      <option value="monochrome">Monochrome (单色矢量)</option>
-                      <option value="original">Original (品牌原生配色)</option>
-                      <option value="plain">Plain (纯净几何轮廓)</option>
-                      <option value="line">Line (描边与线框)</option>
-                      <option value="wordmark">Wordmark (横版组合字标)</option>
+                      <option value="all">{t.filters.allVariants}</option>
+                      <option value="color">Color (Standard multi-color)</option>
+                      <option value="monochrome">Monochrome (Single-tone)</option>
+                      <option value="original">Original (Native corporate)</option>
+                      <option value="plain">Plain (Clean geometry)</option>
+                      <option value="line">Line (Outlined)</option>
+                      <option value="wordmark">Wordmark (Horizontal)</option>
                     </select>
                   </div>
 
-                  {/* Filter 4: Trust State (Requirement 16) */}
+                  {/* Filter 4: Trust State */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-2xs font-bold text-slate-700 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      <span>独立信任状态 (Trust State)</span>
+                      <span>{t.filters.trustState}</span>
                     </label>
                     <select
                       id="filter-trust-state"
@@ -733,11 +758,11 @@ export default function App() {
                       onChange={e => setSelectedTrustState(e.target.value as any)}
                       className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
-                      <option value="all">全部信任状态 (All Trust)</option>
-                      <option value="trusted">Trusted (官方设计规范认证)</option>
-                      <option value="verified">Verified (上游密码学校验)</option>
-                      <option value="community">Community (开源社区维护)</option>
-                      <option value="unverified">Unverified (未认证资产)</option>
+                      <option value="all">{t.filters.allTrustStates}</option>
+                      <option value="trusted">Trusted (Vendor Design Guidelines)</option>
+                      <option value="verified">Verified (Cryptographic SHA-256)</option>
+                      <option value="community">Community (Open-source maintained)</option>
+                      <option value="unverified">Unverified</option>
                     </select>
                   </div>
 
@@ -748,11 +773,11 @@ export default function App() {
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 flex-wrap gap-2">
                 <div className="flex items-center gap-3">
                   <span>
-                    显示 <strong>{filteredIcons.length}</strong> / {CURATED_ICONS.length} 个权威品牌标识
+                    {t.filters.showingCount} <strong>{filteredIcons.length}</strong> / {CURATED_ICONS.length}
                   </span>
                   {selectedSlugs.length > 0 && (
                     <span className="text-indigo-600 font-semibold">
-                      已选中 {selectedSlugs.length} 项
+                      {selectedSlugs.length} {t.filters.selectedCount}
                     </span>
                   )}
                 </div>
@@ -764,7 +789,7 @@ export default function App() {
                       className="text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <RotateCcw className="w-3 h-3" />
-                      <span>重置筛选</span>
+                      <span>{t.filters.resetFilters}</span>
                     </button>
                   )}
 
@@ -774,7 +799,7 @@ export default function App() {
                     className="text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <CheckSquare className="w-3.5 h-3.5" />
-                    <span>全选当前筛选</span>
+                    <span>{t.filters.selectAll}</span>
                   </button>
 
                   {selectedSlugs.length > 0 && (
@@ -782,7 +807,7 @@ export default function App() {
                       onClick={handleClearSelection}
                       className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                     >
-                      清空选择
+                      {t.filters.clearSelection}
                     </button>
                   )}
                 </div>
@@ -790,7 +815,7 @@ export default function App() {
 
             </div>
 
-            {/* Icons Grid (Requirement 18: Full Catalog via Pagination) */}
+            {/* Icons Grid with Full Catalog Pagination */}
             {paginatedIcons.length > 0 ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
@@ -808,24 +833,24 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Pagination Controls Bar (Requirement 18) */}
-                <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-200 gap-3 text-xs">
+                {/* Pagination Controls Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl px-4 py-3 border border-slate-200 gap-3 text-xs">
                   <div className="flex items-center gap-2 text-slate-500">
                     <span>
-                      显示第 <strong>{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredIcons.length)}</strong> 项，共 <strong>{filteredIcons.length}</strong> 项
+                      {t.pagination.showing} <strong>{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredIcons.length)}</strong> / <strong>{filteredIcons.length}</strong>
                     </span>
                     <span className="text-slate-300">•</span>
                     <label className="flex items-center gap-1">
-                      <span>每页显示:</span>
+                      <span>{t.pagination.perPage}:</span>
                       <select
                         value={pageSize}
                         onChange={e => setPageSize(Number(e.target.value))}
                         className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none"
                       >
-                        <option value={24}>24 项</option>
-                        <option value={36}>36 项</option>
-                        <option value={72}>72 项</option>
-                        <option value={144}>144 项</option>
+                        <option value={24}>24</option>
+                        <option value={36}>36</option>
+                        <option value={72}>72</option>
+                        <option value={144}>144</option>
                       </select>
                     </label>
                   </div>
@@ -838,7 +863,7 @@ export default function App() {
                       className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>上一页</span>
+                      <span>{t.pagination.prev}</span>
                     </button>
 
                     <div className="flex items-center gap-1 px-1">
@@ -851,7 +876,7 @@ export default function App() {
                           <button
                             key={pageNum}
                             onClick={() => setCurrentPage(pageNum)}
-                            className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                               currentPage === pageNum
                                 ? 'bg-slate-900 text-white shadow-2xs'
                                 : 'text-slate-600 hover:bg-slate-100'
@@ -868,7 +893,7 @@ export default function App() {
                       disabled={currentPage === totalPages}
                       className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <span>下一页</span>
+                      <span>{t.pagination.next}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -880,16 +905,16 @@ export default function App() {
                   <Search className="w-6 h-6" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-800">
-                  未找到匹配当前筛选条件的品牌标识
+                  {t.pagination.emptyTitle}
                 </h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  可尝试清除关键词或重置角色、使用场景与变体筛选。
+                  {t.pagination.emptyDesc}
                 </p>
                 <button
                   onClick={handleResetFilters}
-                  className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
                 >
-                  重置筛选条件
+                  {t.filters.resetFilters}
                 </button>
               </div>
             )}
@@ -897,13 +922,27 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Multi-Source Conflicts & Policy Resolution */}
+        {/* Tab 2: Upstream Sources Section */}
+        {activeTab === 'sources' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <SourcesSection />
+          </div>
+        )}
+
+        {/* Tab 3: Coverage & Health Section */}
+        {activeTab === 'coverage' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <CoverageSection />
+          </div>
+        )}
+
+        {/* Tab 4: Multi-Source Conflicts & Policy Resolution */}
         {activeTab === 'conflicts' && <ConflictsSection onInspectIcon={setInspectedIcon} />}
 
-        {/* Tab 3: Asset Comparison Section */}
+        {/* Tab 5: Asset Comparison Section */}
         {activeTab === 'comparison' && <AiVsOfficialSection />}
 
-        {/* Tab 4: Pipeline CLI Scripts Panel */}
+        {/* Tab 6: Pipeline CLI Scripts Panel */}
         {activeTab === 'script' && <ScriptPanel selectedSlugs={selectedSlugs} />}
 
       </main>
@@ -919,7 +958,7 @@ export default function App() {
         selectedSlugs={selectedSlugs}
       />
 
-      {/* Full Asset Family Inspector Modal (Requirement 23) */}
+      {/* Full Asset Family Inspector Modal */}
       {inspectedIcon && (
         <IconInspectorModal
           icon={inspectedIcon}
@@ -928,14 +967,27 @@ export default function App() {
         />
       )}
 
+      {/* Global Command Palette (Ctrl+K / Cmd+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigateTab={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onInspectIcon={(icon) => {
+          setInspectedIcon(icon);
+        }}
+      />
+
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white py-6 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>
-            矢量数据源基于 Simple Icons、Devicon、SVG Logos 与官方特例品牌设计档案 · 100% 原始字节保真
+            {t.footer.attribution}
           </p>
           <p className="font-mono text-slate-500">
-            文件命名规范: <code className="text-slate-700">&lt;name&gt;.svg</code> · SHA-256 密码学溯源清单
+            {t.footer.namingNorm}
           </p>
         </div>
       </footer>

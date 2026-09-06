@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
-import { Download, Copy, Check, Code, Maximize2, ShieldCheck, Layers, AlertCircle, AlertTriangle, ExternalLink, Heart } from 'lucide-react';
-import { IconItem, DownloadReceipt, getSemanticSourceLabel, getTrustStateBadge } from '../types';
+import {
+  Download,
+  Copy,
+  Check,
+  Code,
+  Maximize2,
+  ShieldCheck,
+  Layers,
+  AlertTriangle,
+  Heart
+} from 'lucide-react';
+import { IconItem, DownloadReceipt } from '../types';
+import { useTranslation } from '../i18n/context';
 import {
   fetchRawSvg,
   downloadSingleSvg,
   generateReactJsx,
-  copyRawSvg,
-  AssetNotFoundError
+  copyRawSvg
 } from '../utils/svgHelpers';
 
 interface IconCardProps {
@@ -28,19 +38,13 @@ export const IconCard: React.FC<IconCardProps> = ({
   onToggleFavorite,
   onDownloadReceipt,
 }) => {
-  const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | 'hex' | null>(null);
+  const { t, format } = useTranslation();
+  const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  const cleanHex = icon.hex ? (icon.hex.startsWith('#') ? icon.hex : `#${icon.hex}`) : '#111827';
   const isUnresolved = icon.verificationStatus === 'unresolved';
-
-  // Total assets and sources count
   const totalAssetsCount = icon.totalAssets || icon.assets?.length || 1;
   const sourcesCount = icon.sourcesCount || icon.sourceRecords?.length || 1;
-
-  // Semantically correct source label & separate trust state
-  const semanticSourceLabel = getSemanticSourceLabel(icon.sourceProvider || icon.source, icon.sourceCollection);
-  const trustBadge = getTrustStateBadge(icon.trustState || 'verified');
 
   const handleCopySvg = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,15 +71,6 @@ export const IconCard: React.FC<IconCardProps> = ({
     }
   };
 
-  const handleCopyHex = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const ok = await copyRawSvg(cleanHex);
-    if (ok) {
-      setCopiedType('hex');
-      setTimeout(() => setCopiedType(null), 1500);
-    }
-  };
-
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isUnresolved) return;
@@ -86,7 +81,7 @@ export const IconCard: React.FC<IconCardProps> = ({
         onDownloadReceipt(receipt);
       }
     } catch (err: any) {
-      setDownloadError(err.message || '无法下载未解析的资产');
+      setDownloadError(err.message || 'Download failed');
       setTimeout(() => setDownloadError(null), 3000);
     }
   };
@@ -98,133 +93,72 @@ export const IconCard: React.FC<IconCardProps> = ({
     }
   };
 
+  const assetsAndSourcesText = format(t.card.assetsAndSources, {
+    assets: totalAssetsCount,
+    sources: sourcesCount,
+  });
+
   return (
     <div
       id={`icon-card-${icon.slug}`}
       role="button"
       tabIndex={0}
-      aria-label={`检视 ${icon.title} 品牌资产家族 (包含 ${totalAssetsCount} 个形态)`}
+      aria-label={`${icon.title} (${assetsAndSourcesText})`}
       onClick={() => onInspect(icon)}
       onKeyDown={handleKeyDown}
-      className={`group relative rounded-xl p-3.5 border transition-all duration-150 cursor-pointer flex flex-col justify-between focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
+      className={`group relative rounded-2xl p-4 border transition-all duration-200 cursor-pointer flex flex-col justify-between focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
         isSelected
-          ? 'bg-blue-50/50 border-blue-400 ring-1 ring-blue-400/40 shadow-xs'
-          : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-sm'
+          ? 'bg-indigo-50/40 border-indigo-400 ring-1 ring-indigo-400/30 shadow-xs'
+          : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5'
       }`}
     >
-      {/* Top Header: Select Checkbox, Source Label, Trust Badge & Favorite / Hex */}
+      {/* Top Header: Select Checkbox & Favorite Toggle */}
       <div className="flex items-center justify-between w-full mb-2" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <label className="flex items-center cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => onToggleSelect(icon.slug)}
-              disabled={isUnresolved}
-              aria-label={`多选 ${icon.title}`}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-40"
-            />
-          </label>
+        <label className="flex items-center cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(icon.slug)}
+            disabled={isUnresolved}
+            aria-label={`Select ${icon.title}`}
+            className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-30"
+          />
+        </label>
 
-          {/* Semantic Source Label */}
-          <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-0.5">
-            {semanticSourceLabel}
-          </span>
-
-          {/* Separate Trust State Badge */}
-          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium border flex items-center gap-0.5 ${trustBadge.bgClass} ${trustBadge.textClass} ${trustBadge.borderClass}`}>
-            {trustBadge.label}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {/* Favorite Toggle Button */}
-          {onToggleFavorite && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(icon.id);
-              }}
-              title={isFavorite ? '从收藏夹中移除' : '加入我的收藏'}
-              aria-label={isFavorite ? '取消收藏' : '添加收藏'}
-              className={`p-1 rounded-md text-xs transition-colors cursor-pointer ${
-                isFavorite
-                  ? 'text-rose-500 hover:text-rose-600 bg-rose-50'
-                  : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
-            </button>
-          )}
-
-          {/* Brand Hex Pill */}
+        {onToggleFavorite && (
           <button
-            onClick={handleCopyHex}
-            title={`点击复制官方品牌元数据色 ${cleanHex}`}
-            aria-label={`复制品牌色值 ${cleanHex}`}
-            className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors flex items-center gap-1 shrink-0 focus:ring-1 focus:ring-slate-400 focus:outline-none"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(icon.id);
+            }}
+            title={isFavorite ? t.card.removeFromFavorites : t.card.addToFavorites}
+            aria-label={isFavorite ? t.card.removeFromFavorites : t.card.addToFavorites}
+            className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+              isFavorite
+                ? 'text-rose-500 hover:text-rose-600 bg-rose-50'
+                : 'text-slate-300 hover:text-rose-500 hover:bg-slate-50'
+            }`}
           >
-            <span
-              className="w-2 h-2 rounded-full inline-block border border-black/10 shrink-0"
-              style={{ backgroundColor: cleanHex }}
-              aria-hidden="true"
-            />
-            <span className="truncate">{copiedType === 'hex' ? '已复制' : cleanHex}</span>
+            <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
-        </div>
-      </div>
-
-      {/* Search Match Explainability Badge */}
-      {icon.matchScore !== undefined && (
-        <div className="flex items-center justify-between gap-1 mb-1.5 px-2 py-0.5 bg-indigo-50/90 rounded-md border border-indigo-200 text-[10px] font-mono text-indigo-900">
-          <span className="font-semibold text-indigo-700">{icon.matchScore}% 匹配</span>
-          <span className="truncate text-[9px] text-indigo-600" title={icon.matchChecklist?.join(' · ')}>
-            {icon.matchReason || icon.matchChecklist?.[0]}
-          </span>
-        </div>
-      )}
-
-      {/* Asset Family Summary Badge: e.g. "4 assets · 3 sources" */}
-      <div className="flex items-center justify-between gap-1 mb-1">
-        <span
-          title={`品牌资产家族包含 ${totalAssetsCount} 个形态，来源横跨 ${sourcesCount} 个源平台`}
-          className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1"
-        >
-          <Layers className="w-2.5 h-2.5" />
-          <span>{totalAssetsCount} 资产 · {sourcesCount} 来源</span>
-        </span>
-
-        {/* Granular verification tags */}
-        <div className="flex items-center gap-1">
-          {icon.xmlValid && (
-            <span title="XML结构验证通过" className="text-[8px] px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
-              XML
-            </span>
-          )}
-          {icon.integrityVerified && (
-            <span title="SHA-256完整性校验通过" className="text-[8px] px-1 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 font-mono">
-              SHA
-            </span>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Center: Vector SVG Preview */}
-      <div className="flex items-center justify-center py-3 my-0.5 min-h-[48px]">
+      <div className="flex items-center justify-center py-4 my-1 min-h-[56px]">
         {isUnresolved ? (
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-rose-50 border border-rose-200 text-center">
-            <AlertTriangle className="w-5 h-5 text-rose-500 mb-0.5" />
-            <span className="text-[10px] font-medium text-rose-700">未解析 (Unresolved)</span>
-            <span className="text-[8px] text-rose-500">无官方真实资产</span>
+          <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50 border border-amber-200 text-center">
+            <AlertTriangle className="w-5 h-5 text-amber-500 mb-0.5" />
+            <span className="text-2xs font-semibold text-amber-700">{t.card.unresolved}</span>
           </div>
         ) : (
-          <div className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center w-10 h-10">
+          <div className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center w-11 h-11">
             <img
               src={`/icons/${icon.fileName}`}
-              alt={`${icon.title} 标志`}
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain"
+              alt={`${icon.title} logo`}
+              width={36}
+              height={36}
+              className="w-9 h-9 object-contain"
               loading="lazy"
               decoding="async"
               onError={(e) => {
@@ -233,8 +167,8 @@ export const IconCard: React.FC<IconCardProps> = ({
                 const parent = el.parentElement;
                 if (parent && !parent.querySelector('.err-badge')) {
                   const span = document.createElement('span');
-                  span.className = 'err-badge text-[9px] text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200';
-                  span.innerText = '未加载';
+                  span.className = 'err-badge text-2xs text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200';
+                  span.innerText = 'Error';
                   parent.appendChild(span);
                 }
               }}
@@ -243,49 +177,27 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Role, Context & Color Structure Tags */}
-      <div className="flex items-center justify-center gap-1 mb-1.5 flex-wrap">
-        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium capitalize">
-          {icon.role || 'logo'}
-        </span>
-        {icon.graphicVariant && icon.graphicVariant !== 'default' && (
-          <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-50 text-slate-500 font-mono">
-            {icon.graphicVariant}
-          </span>
-        )}
-        {icon.colorType && icon.colorType !== 'unknown' && (
-          <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 font-medium">
-            {icon.colorType === 'monochrome' ? '纯单色' : icon.colorType === 'gradient' ? '渐变色' : icon.colorType === 'multi-color' ? '多色系' : icon.colorType}
-          </span>
-        )}
-        {icon.context && icon.context.length > 0 && icon.context[0] !== 'general' && (
-          <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 font-mono">
-            {icon.context[0]}
-          </span>
-        )}
-      </div>
-
-      {/* Bottom Info: Title & Filename */}
-      <div className="text-center">
+      {/* Bottom Info: Title & Minimalist Badges */}
+      <div className="text-center space-y-1">
         <div className="flex items-center justify-center gap-1">
-          <h3 className="text-xs font-semibold text-slate-800 truncate" title={icon.title}>
+          <h3 className="text-xs font-bold text-slate-800 truncate" title={icon.title}>
             {icon.title}
           </h3>
           {icon.verificationStatus === 'verified' && (
-            <ShieldCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" title="XML语法与SHA-256完整性校验通过" />
-          )}
-          {icon.verificationStatus === 'warning' && (
-            <AlertCircle className="w-3 h-3 text-amber-500 flex-shrink-0" title="包含多色或特殊元数据" />
-          )}
-          {icon.verificationStatus === 'unresolved' && (
-            <AlertTriangle className="w-3 h-3 text-rose-500 flex-shrink-0" title="未解析 / 官方源不可用" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t.card.verified} />
           )}
         </div>
-        <p className="text-[10px] font-mono text-slate-400 mt-0.5 truncate" title={icon.fileName}>
-          {icon.fileName}
-        </p>
+
+        {/* Clean Pill: "N assets · M sources" */}
+        <div className="flex items-center justify-center">
+          <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80">
+            <Layers className="w-2.5 h-2.5 text-indigo-500" />
+            <span>{assetsAndSourcesText}</span>
+          </span>
+        </div>
+
         {downloadError && (
-          <p className="text-[9px] text-rose-600 font-medium mt-0.5 animate-pulse">
+          <p className="text-2xs text-rose-600 font-medium animate-pulse">
             {downloadError}
           </p>
         )}
@@ -300,9 +212,9 @@ export const IconCard: React.FC<IconCardProps> = ({
           id={`btn-copy-svg-${icon.slug}`}
           onClick={handleCopySvg}
           disabled={isUnresolved}
-          aria-label={`复制 ${icon.title} 原始 SVG 代码`}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus:ring-1 focus:ring-slate-400 focus:outline-none"
-          title={isUnresolved ? '未解析资产不可复制' : '复制原始原生 SVG 代码 (100% 原始字节)'}
+          aria-label={t.card.copySvg}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          title={t.card.copySvg}
         >
           {copiedType === 'svg' ? (
             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -315,9 +227,9 @@ export const IconCard: React.FC<IconCardProps> = ({
           id={`btn-copy-jsx-${icon.slug}`}
           onClick={handleCopyJsx}
           disabled={isUnresolved}
-          aria-label={`复制 ${icon.title} React JSX 组件`}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus:ring-1 focus:ring-slate-400 focus:outline-none"
-          title={isUnresolved ? '未解析资产不可生成组件' : '复制 React JSX 组件'}
+          aria-label={t.card.copyJsx}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          title={t.card.copyJsx}
         >
           {copiedType === 'jsx' ? (
             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -330,9 +242,9 @@ export const IconCard: React.FC<IconCardProps> = ({
           id={`btn-download-svg-${icon.slug}`}
           onClick={handleDownload}
           disabled={isUnresolved}
-          aria-label={`下载 ${icon.title} 原始矢量文件`}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus:ring-1 focus:ring-slate-400 focus:outline-none"
-          title={isUnresolved ? '未找到真实的官方源资产，已禁用下载' : `下载原始 ${icon.fileName}`}
+          aria-label={t.card.downloadSvg}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          title={t.card.downloadSvg}
         >
           <Download className="w-3.5 h-3.5" />
         </button>
@@ -340,9 +252,9 @@ export const IconCard: React.FC<IconCardProps> = ({
         <button
           id={`btn-inspect-svg-${icon.slug}`}
           onClick={() => onInspect(icon)}
-          aria-label={`打开 ${icon.title} 品牌资产家族档案`}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 text-xs transition-colors focus:ring-1 focus:ring-slate-400 focus:outline-none"
-          title="打开品牌资产家族档案 (Asset Family Inspector)"
+          aria-label={t.card.inspectAsset}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 text-xs transition-colors cursor-pointer"
+          title={t.card.inspectAsset}
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
