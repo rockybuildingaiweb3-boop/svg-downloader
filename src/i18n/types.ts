@@ -34,6 +34,7 @@ export interface TranslationDictionary {
     browseAssetsTitle: string;
     tabIdentities: string;
     sourcesWord: string;
+    tabMore: string;
   };
   systemBanner: {
     registryTitle: string;
@@ -118,6 +119,7 @@ export interface TranslationDictionary {
     contextOptions: Record<string, string>;
     variantOptions: Record<string, string>;
     trustOptions: Record<string, string>;
+    entityTypes: Record<string, string>;
   };
   card: {
     assetsAndSources: string;

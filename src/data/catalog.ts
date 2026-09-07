@@ -2,6 +2,7 @@ import rawRegistry from '../../generated/registry.json';
 import buildMetadata from '../../generated/build-metadata.json';
 import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem } from '../types';
 import { getSemanticSourceLabel } from '../types';
+import { inferEntityType } from '../taxonomy/taxonomy';
 
 export const BUILD_METADATA = buildMetadata;
 export const REGISTRY_STATS: RegistryStats = (rawRegistry as any).stats;
@@ -89,6 +90,7 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     categorySource: rec.categorySource || 'derived',
     categoryConfidence: rec.categoryConfidence ?? 0.8,
     categoryEvidence: rec.categoryEvidence || [],
+    entityType: rec.entityType || inferEntityType(rec),
     sourceCoverage: rec.sourceCoverage,
     sourceCoverageFound: rec.sourceCoverageFound,
     sourceCoverageChecked: rec.sourceCoverageChecked,
@@ -159,6 +161,7 @@ for (const icon of REGISTRY_IDENTITIES) {
       categorySource: icon.categorySource,
       categoryConfidence: icon.categoryConfidence,
       categoryEvidence: icon.categoryEvidence,
+      entityType: icon.entityType,
     });
   }
 }

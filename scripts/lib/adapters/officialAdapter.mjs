@@ -22,28 +22,30 @@ export class OfficialAdapter {
       const specs = JSON.parse(text);
 
       for (const [slug, spec] of Object.entries(specs)) {
-        const localPath = path.join(this.assetsDir, `${slug}.svg`);
-        let hasLocal = false;
-        try {
-          await fs.access(localPath);
-          hasLocal = true;
-        } catch {}
+        if (spec.source === 'official') {
+          const localPath = path.join(this.assetsDir, `${slug}.svg`);
+          let hasLocal = false;
+          try {
+            await fs.access(localPath);
+            hasLocal = true;
+          } catch {}
 
-        this.icons.set(slug.toLowerCase(), {
-          source: spec.source || 'wikimedia',
-          sourceId: spec.sourceId || `${slug}.svg`,
-          sourceVersion: spec.sourceVersion || 'official',
-          slug: slug.toLowerCase(),
-          title: spec.title || slug,
-          hex: spec.brandColor || '#111827',
-          sourceUrl: spec.sourceUrl,
-          license: spec.license || 'Public Domain / Corporate Trademark',
-          licenseStatus: 'known',
-          category: spec.category || 'uncategorized',
-          notes: spec.notes || '',
-          variant: 'official',
-          localPath: hasLocal ? localPath : null
-        });
+          this.icons.set(slug.toLowerCase(), {
+            source: 'official',
+            sourceId: spec.sourceId || `${slug}.svg`,
+            sourceVersion: spec.sourceVersion || 'official',
+            slug: slug.toLowerCase(),
+            title: spec.title || slug,
+            hex: spec.brandColor || '#111827',
+            sourceUrl: spec.sourceUrl,
+            license: spec.license || 'Public Domain / Corporate Trademark',
+            licenseStatus: 'known',
+            category: spec.category || 'uncategorized',
+            notes: spec.notes || '',
+            variant: 'official',
+            localPath: hasLocal ? localPath : null
+          });
+        }
       }
     } catch (err) {
       console.warn(`[OfficialAdapter] Warning reading special sources: ${err.message}`);
@@ -102,19 +104,18 @@ export class OfficialAdapter {
   getAssets(identityId) {
     const match = this.get(identityId);
     if (!match) return [];
-    const isWiki = match.source === 'wikimedia';
     const role = match.notes?.toLowerCase().includes('mark') ? 'mark' : 'logo';
     return [{
-      assetId: `${identityId}-${isWiki ? 'wikimedia' : 'official'}-${role}`,
+      assetId: `${identityId}-official-${role}`,
       identityId,
-      sourceProvider: isWiki ? 'wikimedia' : 'official',
-      sourceCollection: isWiki ? 'commons-controlled' : 'vendor-archive',
+      sourceProvider: 'official',
+      sourceCollection: 'vendor-archive',
       sourceId: match.sourceId,
       sourceVersion: match.sourceVersion || 'official',
       role,
       roleOrigin: 'source-confirmed',
       context: ['general'],
-      contextOrigin: isWiki ? 'unknown' : 'inferred',
+      contextOrigin: 'inferred',
       graphicVariant: 'official',
       file: `${identityId}.svg`,
       rawSha256: '',
@@ -122,7 +123,7 @@ export class OfficialAdapter {
       licenseStatus: match.licenseStatus,
       sourceUrl: match.sourceUrl,
       colorType: 'multi-color',
-      sourceTrust: isWiki ? 'community' : 'official',
+      sourceTrust: 'official',
       xmlValid: false,
       renderable: false,
       integrityVerified: false,
@@ -139,19 +140,18 @@ export class OfficialAdapter {
   listAllAssets() {
     const assets = [];
     for (const match of this.icons.values()) {
-      const isWiki = match.source === 'wikimedia';
       const role = match.notes?.toLowerCase().includes('mark') ? 'mark' : 'logo';
       assets.push({
-        assetId: `${match.slug}-${isWiki ? 'wikimedia' : 'official'}-${role}`,
+        assetId: `${match.slug}-official-${role}`,
         identityId: match.slug,
-        sourceProvider: isWiki ? 'wikimedia' : 'official',
-        sourceCollection: isWiki ? 'commons-controlled' : 'vendor-archive',
+        sourceProvider: 'official',
+        sourceCollection: 'vendor-archive',
         sourceId: match.sourceId,
         sourceVersion: match.sourceVersion || 'official',
         role,
         roleOrigin: 'source-confirmed',
         context: ['general'],
-        contextOrigin: isWiki ? 'unknown' : 'inferred',
+        contextOrigin: 'inferred',
         graphicVariant: 'official',
         file: `${match.slug}.svg`,
         rawSha256: '',
@@ -159,7 +159,7 @@ export class OfficialAdapter {
         licenseStatus: match.licenseStatus,
         sourceUrl: match.sourceUrl,
         colorType: 'multi-color',
-        sourceTrust: isWiki ? 'community' : 'official',
+        sourceTrust: 'official',
         xmlValid: false,
         renderable: false,
         integrityVerified: false,

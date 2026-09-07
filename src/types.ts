@@ -4,6 +4,25 @@ export type IconCategory = StandardCategoryId;
 
 export type CollectionType = 'mainstream' | 'all' | 'custom';
 
+export type EntityType =
+  | 'company'
+  | 'product'
+  | 'service'
+  | 'technology'
+  | 'framework'
+  | 'programming-language'
+  | 'platform'
+  | 'protocol'
+  | 'community'
+  | 'organization'
+  | 'app'
+  | 'game'
+  | 'tool'
+  | 'library'
+  | 'database'
+  | 'other';
+
+
 export type AssetRole =
   | 'all'
   | 'symbol'
@@ -188,6 +207,7 @@ export interface BrandAsset {
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
   categoryEvidence?: string[];
+  entityType?: EntityType;
 }
 
 export interface ConcreteAssetItem extends BrandAsset {
@@ -200,7 +220,9 @@ export interface ConcreteAssetItem extends BrandAsset {
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
   categoryEvidence?: string[];
+  entityType?: EntityType;
   matchScore?: number;
+
   matchChecklist?: string[];
   matchReason?: string;
 }
@@ -227,6 +249,7 @@ export interface BrandIdentity {
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
   categoryEvidence?: string[];
+  entityType?: EntityType;
   brandColor?: string;
   aliases?: string[];
   tags?: string[];
@@ -289,6 +312,7 @@ export interface IconRecord {
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
   categoryEvidence?: string[];
+  entityType?: EntityType;
   sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
@@ -331,6 +355,7 @@ export interface IconItem {
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
   categoryEvidence?: string[];
+  entityType?: EntityType;
   sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;

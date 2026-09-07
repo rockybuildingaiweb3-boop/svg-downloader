@@ -107,15 +107,20 @@ export const IconCard: React.FC<IconCardProps> = ({
       })
     : `${sourceFound} ${sourceFound === 1 ? t.card.sourcesCountSingle : t.card.sourcesCountMulti}`;
 
-  // Aspect-ratio-aware SVG preview dimensions (Requirement 18)
+  // Aspect-ratio-aware SVG preview dimensions (Phase 16)
   const isWordmark = icon.role?.includes('wordmark') || icon.canonicalAsset?.role?.includes('wordmark');
   const isLogo = icon.role === 'logo' || icon.canonicalAsset?.role === 'logo';
 
   const previewContainerClass = isWordmark
-    ? 'max-w-[120px] max-h-[36px] w-auto h-8'
+    ? 'max-w-[120px] max-h-[40px] w-auto h-9'
     : isLogo
-    ? 'max-w-[140px] max-h-[36px] w-auto h-9'
-    : 'max-w-[44px] max-h-[44px] w-10 h-10';
+    ? 'max-w-[140px] max-h-[40px] w-auto h-10'
+    : 'max-w-[48px] max-h-[48px] w-11 h-11';
+
+  const entityTypeLabel =
+    t.filters.entityTypes?.[icon.entityType || 'technology'] || icon.entityType || 'Technology';
+  const categoryLabel =
+    t.filters.categories[icon.primaryCategory || icon.category] || icon.primaryCategory || icon.category;
 
   return (
     <div
@@ -194,8 +199,8 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Bottom Info: Title, Verification Shield & Coverage Pill */}
-      <div className="text-center space-y-1">
+      {/* Bottom Info: Title, Badges (Entity Type, Category) & Provider Coverage */}
+      <div className="text-center space-y-1.5">
         <div className="flex items-center justify-center gap-1">
           <h3 className="text-xs font-bold text-slate-800 truncate" title={icon.title}>
             {icon.title}
@@ -205,7 +210,17 @@ export const IconCard: React.FC<IconCardProps> = ({
           )}
         </div>
 
-        {/* Clean Pill: "4 / 5 sources · N assets" */}
+        {/* Badges: Entity Type & Category */}
+        <div className="flex items-center justify-center gap-1 flex-wrap">
+          <span className="inline-flex items-center text-3xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+            {entityTypeLabel}
+          </span>
+          <span className="inline-flex items-center text-3xs font-medium px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+            {categoryLabel}
+          </span>
+        </div>
+
+        {/* Clean Pill: "4 / 5 providers · N assets" */}
         <div className="flex items-center justify-center">
           <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80">
             <Layers className="w-2.5 h-2.5 text-indigo-500" />
@@ -223,32 +238,33 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Action Bar: Primary Download & Inspect + Secondary More Menu (Requirement 20) */}
+      {/* Action Bar: Primary Inspect & Download + Secondary More Menu (Phase 15 & 17) */}
       <div
         className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-1 relative"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-1 flex-1">
           <button
+            id={`btn-inspect-svg-${icon.slug}`}
+            onClick={() => onInspect(icon)}
+            aria-label={t.card.inspectAsset}
+            className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors cursor-pointer"
+            title={t.card.inspectAsset}
+          >
+            <Maximize2 className="w-3 h-3" />
+            <span className="text-2xs">{t.card.inspectAsset}</span>
+          </button>
+
+          <button
             id={`btn-download-svg-${icon.slug}`}
             onClick={handleDownload}
             disabled={isUnresolved}
             aria-label={t.card.downloadSvg}
-            className="flex-1 inline-flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             title={t.card.downloadSvg}
           >
             <Download className="w-3 h-3" />
             <span className="text-2xs">{t.card.downloadSvg}</span>
-          </button>
-
-          <button
-            id={`btn-inspect-svg-${icon.slug}`}
-            onClick={() => onInspect(icon)}
-            aria-label={t.card.inspectAsset}
-            className="inline-flex items-center justify-center p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
-            title={t.card.inspectAsset}
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
           </button>
         </div>
 

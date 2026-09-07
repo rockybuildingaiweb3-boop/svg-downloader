@@ -9,7 +9,7 @@ import {
   Layers,
   Heart
 } from 'lucide-react';
-import { ConcreteAssetItem, DownloadReceipt, IconItem } from '../types';
+import { ConcreteAssetItem, DownloadReceipt, IconItem, getSemanticSourceLabel } from '../types';
 import { useTranslation } from '../i18n/context';
 import {
   fetchRawSvg,
@@ -164,13 +164,25 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
 
       {/* Center: Vector SVG Preview */}
       <div className="flex items-center justify-center py-4 my-1 min-h-[56px]">
-        <div className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center w-11 h-11">
+        <div className={`transition-transform duration-200 group-hover:scale-105 flex items-center justify-center ${
+          asset.role === 'wordmark'
+            ? 'max-w-[120px] max-h-[40px] w-full h-10'
+            : asset.role === 'logo'
+            ? 'max-w-[140px] max-h-[40px] w-full h-10'
+            : 'max-w-[48px] max-h-[48px] w-11 h-11'
+        }`}>
           <img
             src={`/icons/${asset.file}`}
             alt={`${asset.identityTitle || asset.identityId} - ${asset.file}`}
-            width={36}
-            height={36}
-            className="w-9 h-9 object-contain"
+            width={asset.role === 'wordmark' || asset.role === 'logo' ? 120 : 40}
+            height={40}
+            className={`object-contain ${
+              asset.role === 'wordmark'
+                ? 'max-w-[120px] max-h-[40px] w-auto h-auto'
+                : asset.role === 'logo'
+                ? 'max-w-[140px] max-h-[40px] w-auto h-auto'
+                : 'w-10 h-10'
+            }`}
             loading="lazy"
             decoding="async"
             onError={(e) => {
@@ -210,8 +222,13 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
 
         {/* Source & Variant Badges */}
         <div className="flex items-center justify-center gap-1 flex-wrap pt-0.5">
+          {asset.entityType && (
+            <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200/60">
+              {t.filters.entityTypes?.[asset.entityType || 'technology'] || asset.entityType}
+            </span>
+          )}
           <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-            {asset.sourcePlatform || asset.sourceProvider}
+            {getSemanticSourceLabel(asset.sourceProvider === 'iconify' ? 'svg-logos' : (asset.sourcePlatform || asset.sourceProvider))}
           </span>
           <span className="text-3xs font-mono px-1 py-0.5 rounded bg-slate-100 text-slate-600">
             {asset.graphicVariant}

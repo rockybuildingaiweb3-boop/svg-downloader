@@ -1,4 +1,5 @@
-import { StandardCategoryId, CATEGORY_IDS } from './taxonomy';
+import { StandardCategoryId, CATEGORY_IDS, inferEntityType } from './taxonomy';
+import { EntityType } from '../types';
 
 export interface IdentityCategoryInput {
   id: string;
@@ -18,12 +19,13 @@ export interface CategoryAssignment {
   categorySource: 'source' | 'curated' | 'derived' | 'fallback';
   categoryConfidence: number;
   categoryEvidence: string[];
+  entityType?: EntityType;
 }
 
-interface CategoryCandidate {
-  confidence: number;
-  source: 'source' | 'curated' | 'derived' | 'fallback';
-  evidence: string;
+interface CategoryCandidateAccumulator {
+  confidences: number[];
+  sources: Array<'source' | 'curated' | 'derived' | 'fallback'>;
+  evidences: string[];
 }
 
 // Explicit classification rules for canonical technology ecosystems
@@ -278,18 +280,36 @@ export function assignCategories(input: IdentityCategoryInput): CategoryAssignme
     }
   }
 
-  const candidates = new Map<StandardCategoryId, CategoryCandidate>();
+  const candidates = new Map<StandardCategoryId, CategoryCandidateAccumulator>();
+
+  function addEvidence(
+    category: StandardCategoryId,
+    confidence: number,
+    source: 'source' | 'curated' | 'derived' | 'fallback',
+    evidence: string
+  ) {
+    let cand = candidates.get(category);
+    if (!cand) {
+      cand = { confidences: [], sources: [], evidences: [] };
+      candidates.set(category, cand);
+    }
+    cand.confidences.push(confidence);
+    if (!cand.sources.includes(source)) {
+      cand.sources.push(source);
+    }
+    if (!cand.evidences.includes(evidence)) {
+      cand.evidences.push(evidence);
+    }
+    if (!evidenceList.includes(evidence)) {
+      evidenceList.push(evidence);
+    }
+  }
 
   // 2. Curated Hint (Confidence: 0.95)
   if (input.curatedHint) {
     const hint = input.curatedHint.toLowerCase().trim() as StandardCategoryId;
     if (CATEGORY_IDS.includes(hint) && hint !== 'all' && hint !== 'uncategorized' && hint !== 'needs-review') {
-      candidates.set(hint, {
-        confidence: 0.95,
-        source: 'curated',
-        evidence: `Curated catalog hint: ${hint}`,
-      });
-      evidenceList.push(`Curated catalog hint: ${hint}`);
+      addEvidence(hint, 0.95, 'curated', `Curated catalog hint: ${hint}`);
     }
   }
 
@@ -298,28 +318,22 @@ export function assignCategories(input: IdentityCategoryInput): CategoryAssignme
     for (const rawTag of input.deviconTags) {
       const tag = rawTag.toLowerCase().trim();
       if (tag === 'framework' || tag === 'library') {
-        candidates.set('technology', { confidence: 0.96, source: 'source', evidence: `Devicon tag: ${tag} -> technology` });
-        candidates.set('developer-tools', { confidence: 0.90, source: 'source', evidence: `Devicon tag: ${tag} -> developer-tools` });
-        evidenceList.push(`Devicon tag: ${tag}`);
+        addEvidence('technology', 0.96, 'source', `Devicon tag: ${tag} -> technology`);
+        addEvidence('developer-tools', 0.90, 'source', `Devicon tag: ${tag} -> developer-tools`);
       } else if (tag === 'language' || tag === 'programming-language') {
-        candidates.set('technology', { confidence: 0.96, source: 'source', evidence: `Devicon tag: ${tag} -> technology` });
-        candidates.set('developer-tools', { confidence: 0.92, source: 'source', evidence: `Devicon tag: ${tag} -> developer-tools` });
-        evidenceList.push(`Devicon tag: ${tag}`);
+        addEvidence('technology', 0.96, 'source', `Devicon tag: ${tag} -> technology`);
+        addEvidence('developer-tools', 0.92, 'source', `Devicon tag: ${tag} -> developer-tools`);
       } else if (tag === 'database' || tag === 'db') {
-        candidates.set('databases', { confidence: 0.96, source: 'source', evidence: `Devicon tag: ${tag} -> databases` });
-        candidates.set('technology', { confidence: 0.85, source: 'source', evidence: `Devicon tag: ${tag} -> technology` });
-        evidenceList.push(`Devicon tag: ${tag}`);
+        addEvidence('databases', 0.96, 'source', `Devicon tag: ${tag} -> databases`);
+        addEvidence('technology', 0.85, 'source', `Devicon tag: ${tag} -> technology`);
       } else if (tag === 'cloud') {
-        candidates.set('cloud', { confidence: 0.96, source: 'source', evidence: `Devicon tag: ${tag} -> cloud` });
-        candidates.set('infrastructure', { confidence: 0.88, source: 'source', evidence: `Devicon tag: ${tag} -> infrastructure` });
-        evidenceList.push(`Devicon tag: ${tag}`);
+        addEvidence('cloud', 0.96, 'source', `Devicon tag: ${tag} -> cloud`);
+        addEvidence('infrastructure', 0.88, 'source', `Devicon tag: ${tag} -> infrastructure`);
       } else if (tag === 'devops' || tag === 'tool') {
-        candidates.set('developer-tools', { confidence: 0.95, source: 'source', evidence: `Devicon tag: ${tag} -> developer-tools` });
-        candidates.set('infrastructure', { confidence: 0.88, source: 'source', evidence: `Devicon tag: ${tag} -> infrastructure` });
-        evidenceList.push(`Devicon tag: ${tag}`);
+        addEvidence('developer-tools', 0.95, 'source', `Devicon tag: ${tag} -> developer-tools`);
+        addEvidence('infrastructure', 0.88, 'source', `Devicon tag: ${tag} -> infrastructure`);
       } else if (tag === 'design') {
-        candidates.set('design', { confidence: 0.95, source: 'source', evidence: `Devicon tag: ${tag} -> design` });
-        evidenceList.push(`Devicon tag: ${tag}`);
+        addEvidence('design', 0.95, 'source', `Devicon tag: ${tag} -> design`);
       }
     }
   }
@@ -338,35 +352,21 @@ export function assignCategories(input: IdentityCategoryInput): CategoryAssignme
     });
 
     if (matchedKw) {
-      const existing = candidates.get(rule.category);
       const evidence = `Keyword match: "${matchedKw}" in identity/title -> ${rule.category}`;
-      if (!existing || existing.confidence < rule.weight) {
-        candidates.set(rule.category, {
-          confidence: rule.weight,
-          source: 'derived',
-          evidence,
-        });
-        evidenceList.push(evidence);
-      }
+      addEvidence(rule.category, rule.weight, 'derived', evidence);
     }
   }
 
   // 5. Structural Affix Heuristics
   if (candidates.size === 0) {
     if (cleanId.endsWith('db') || cleanId.endsWith('sql')) {
-      const ev = `Affix heuristic: ends with "db"/"sql" -> databases`;
-      candidates.set('databases', { confidence: 0.75, source: 'derived', evidence: ev });
-      evidenceList.push(ev);
+      addEvidence('databases', 0.75, 'derived', `Affix heuristic: ends with "db"/"sql" -> databases`);
     } else if (cleanId.endsWith('js') || cleanId.endsWith('ts') || cleanId.endsWith('py')) {
-      const ev = `Affix heuristic: programming file extension -> technology`;
-      candidates.set('technology', { confidence: 0.75, source: 'derived', evidence: ev });
-      candidates.set('developer-tools', { confidence: 0.70, source: 'derived', evidence: ev });
-      evidenceList.push(ev);
+      addEvidence('technology', 0.75, 'derived', `Affix heuristic: programming file extension -> technology`);
+      addEvidence('developer-tools', 0.70, 'derived', `Affix heuristic: programming file extension -> developer-tools`);
     } else if (cleanId.startsWith('apache') || cleanId.startsWith('gnu') || cleanId.startsWith('linux')) {
-      const ev = `Prefix heuristic: open-source foundation -> infrastructure`;
-      candidates.set('infrastructure', { confidence: 0.75, source: 'derived', evidence: ev });
-      candidates.set('technology', { confidence: 0.70, source: 'derived', evidence: ev });
-      evidenceList.push(ev);
+      addEvidence('infrastructure', 0.75, 'derived', `Prefix heuristic: open-source foundation -> infrastructure`);
+      addEvidence('technology', 0.70, 'derived', `Prefix heuristic: open-source foundation -> technology`);
     }
   }
 
@@ -380,6 +380,7 @@ export function assignCategories(input: IdentityCategoryInput): CategoryAssignme
         categorySource: 'fallback',
         categoryConfidence: 0.40,
         categoryEvidence: ['Low confidence score (no known signals matched); flagged for review'],
+        entityType: inferEntityType({ id: cleanId, primaryCategory: 'needs-review', deviconTags: input.deviconTags }),
       };
     } else {
       return {
@@ -388,28 +389,59 @@ export function assignCategories(input: IdentityCategoryInput): CategoryAssignme
         categorySource: 'fallback',
         categoryConfidence: 0.10,
         categoryEvidence: ['Insufficient classification evidence (< 0.20 confidence)'],
+        entityType: inferEntityType({ id: cleanId, primaryCategory: 'uncategorized', deviconTags: input.deviconTags }),
       };
     }
   }
 
-  // Sort candidates by confidence descending
-  const sorted = Array.from(candidates.entries())
-    .sort((a, b) => b[1].confidence - a[1].confidence);
+  // Calculate accumulated confidence and determine highest source priority for each category
+  const SOURCE_PRIORITY: Record<string, number> = { curated: 4, source: 3, derived: 2, fallback: 1 };
+  const evaluatedCategories: Array<{
+    category: StandardCategoryId;
+    confidence: number;
+    source: 'source' | 'curated' | 'derived' | 'fallback';
+    evidences: string[];
+  }> = [];
 
-  const topCategory = sorted[0][0];
-  const topConfidence = sorted[0][1].confidence;
-  const topSource = sorted[0][1].source;
+  for (const [cat, data] of candidates.entries()) {
+    const maxConf = Math.max(...data.confidences);
+    const boost = data.confidences.length > 1 ? Math.min(0.04, (data.confidences.length - 1) * 0.02) : 0;
+    const finalConfidence = Math.min(0.99, maxConf + boost);
+    const sortedSources = [...data.sources].sort((a, b) => (SOURCE_PRIORITY[b] || 0) - (SOURCE_PRIORITY[a] || 0));
+    const primarySource = sortedSources[0] || 'derived';
+
+    evaluatedCategories.push({
+      category: cat,
+      confidence: finalConfidence,
+      source: primarySource,
+      evidences: data.evidences,
+    });
+  }
+
+  // Sort candidates by confidence descending
+  evaluatedCategories.sort((a, b) => b.confidence - a.confidence);
+
+  const top = evaluatedCategories[0];
+  const topCategory = top.category;
+  const topConfidence = top.confidence;
+  const topSource = top.source;
 
   // Multi-category inclusion: include categories >= 0.65 confidence or within 0.15 of top
-  const activeCategories = sorted
-    .filter(([_, data]) => data.confidence >= 0.65 || (topConfidence - data.confidence <= 0.15))
-    .map(([cat]) => cat);
+  const activeCategories = evaluatedCategories
+    .filter(item => item.confidence >= 0.65 || (topConfidence - item.confidence <= 0.15))
+    .map(item => item.category);
+
+  const activeEvidences = Array.from(new Set([
+    ...top.evidences,
+    ...evaluatedCategories.filter(item => activeCategories.includes(item.category)).flatMap(item => item.evidences)
+  ]));
 
   return {
     primaryCategory: topCategory,
     categories: activeCategories.length > 0 ? activeCategories : [topCategory],
     categorySource: topSource,
     categoryConfidence: Number(topConfidence.toFixed(2)),
-    categoryEvidence: evidenceList.length > 0 ? evidenceList : [sorted[0][1].evidence],
+    categoryEvidence: activeEvidences.length > 0 ? activeEvidences : evidenceList,
+    entityType: inferEntityType({ id: cleanId, primaryCategory: topCategory, deviconTags: input.deviconTags }),
   };
 }

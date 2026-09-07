@@ -82,18 +82,34 @@ export default function App() {
     }
   }, [isMoreCategoriesOpen]);
   
-  // Local Collections: Favorites and Recent Downloads
-  const [favorites, setFavorites] = useState<string[]>(() => {
+  // Local Collections: Explicit separated identity and asset models (Phase 37)
+  const [favoriteIdentityIds, setFavoriteIdentityIds] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('svg_registry_favorites') || '[]');
+      return JSON.parse(localStorage.getItem('svg_registry_favorite_identities') || localStorage.getItem('svg_registry_favorites') || '[]');
     } catch {
       return [];
     }
   });
 
-  const [recents, setRecents] = useState<string[]>(() => {
+  const [favoriteAssetIds, setFavoriteAssetIds] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('svg_registry_recents') || '[]');
+      return JSON.parse(localStorage.getItem('svg_registry_favorite_assets') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const [recentIdentityIds, setRecentIdentityIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('svg_registry_recent_identities') || localStorage.getItem('svg_registry_recents') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const [recentAssetIds, setRecentAssetIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('svg_registry_recent_assets') || '[]');
     } catch {
       return [];
     }
@@ -149,26 +165,47 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => {
+  const toggleFavoriteIdentity = (id: string) => {
+    setFavoriteIdentityIds(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       try {
-        localStorage.setItem('svg_registry_favorites', JSON.stringify(next));
+        localStorage.setItem('svg_registry_favorite_identities', JSON.stringify(next));
       } catch {}
       showToast(next.includes(id) ? `Added ${id} to favorites` : `Removed ${id} from favorites`);
       return next;
     });
   };
 
+  const toggleFavoriteAsset = (assetId: string) => {
+    setFavoriteAssetIds(prev => {
+      const next = prev.includes(assetId) ? prev.filter(x => x !== assetId) : [...prev, assetId];
+      try {
+        localStorage.setItem('svg_registry_favorite_assets', JSON.stringify(next));
+      } catch {}
+      showToast(next.includes(assetId) ? `Added ${assetId} to favorites` : `Removed ${assetId} from favorites`);
+      return next;
+    });
+  };
+
   const handleDownloadReceipt = (receipt: DownloadReceipt) => {
-    setRecents(prev => {
+    setRecentIdentityIds(prev => {
       const filtered = prev.filter(x => x !== receipt.identityId);
       const next = [receipt.identityId, ...filtered].slice(0, 30);
       try {
-        localStorage.setItem('svg_registry_recents', JSON.stringify(next));
+        localStorage.setItem('svg_registry_recent_identities', JSON.stringify(next));
       } catch {}
       return next;
     });
+    if (receipt.fileName) {
+      setRecentAssetIds(prev => {
+        const filtered = prev.filter(x => x !== receipt.fileName);
+        const next = [receipt.fileName, ...filtered].slice(0, 30);
+        try {
+          localStorage.setItem('svg_registry_recent_assets', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }
     showToast(`Downloaded ${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)`);
   };
 
@@ -231,9 +268,9 @@ export default function App() {
     const rawFiltered = REGISTRY_IDENTITIES.filter(icon => {
       // 0. Local Collection filter
       if (selectedCollection === 'favorites') {
-        if (!favorites.includes(icon.id)) return false;
+        if (!favoriteIdentityIds.includes(icon.id)) return false;
       } else if (selectedCollection === 'recents') {
-        if (!recents.includes(icon.id)) return false;
+        if (!recentIdentityIds.includes(icon.id)) return false;
       } else if (selectedCollection === 'selected') {
         if (!selectedSlugs.includes(icon.slug)) return false;
       }
@@ -365,8 +402,8 @@ export default function App() {
   }, [
     searchTerm,
     selectedCollection,
-    favorites,
-    recents,
+    favoriteIdentityIds,
+    recentIdentityIds,
     selectedSlugs,
     selectedCategory,
     selectedSource,
@@ -390,9 +427,9 @@ export default function App() {
     return REGISTRY_ASSETS.filter(asset => {
       // 0. Selected collection filter
       if (selectedCollection === 'favorites') {
-        if (!favorites.includes(asset.identityId)) return false;
+        if (!favoriteAssetIds.includes(asset.assetId) && !favoriteIdentityIds.includes(asset.identityId)) return false;
       } else if (selectedCollection === 'recents') {
-        if (!recents.includes(asset.identityId)) return false;
+        if (!recentAssetIds.includes(asset.file) && !recentAssetIds.includes(asset.assetId) && !recentIdentityIds.includes(asset.identityId)) return false;
       } else if (selectedCollection === 'selected') {
         if (!selectedAssetIds.includes(asset.assetId)) return false;
       }
@@ -450,8 +487,10 @@ export default function App() {
     });
   }, [
     selectedCollection,
-    favorites,
-    recents,
+    favoriteIdentityIds,
+    favoriteAssetIds,
+    recentIdentityIds,
+    recentAssetIds,
     selectedAssetIds,
     selectedCategory,
     selectedSource,
@@ -636,7 +675,7 @@ export default function App() {
       />
 
       {/* System Verification & Live Registry Statistics Banner */}
-      <div className="bg-slate-900 text-white border-b border-slate-800 py-2.5 px-4 sm:px-6 lg:px-8 text-xs">
+      <div className="bg-slate-900 text-white border-b border-slate-800 py-2 px-4 sm:px-6 lg:px-8 text-xs">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
@@ -648,9 +687,19 @@ export default function App() {
               <strong className="text-white">{REGISTRY_STATS.totalIdentities.toLocaleString()}</strong> {t.header.identitiesWord} · <strong className="text-white">{REGISTRY_STATS.totalAssets.toLocaleString()}</strong> {t.header.assetsWord}
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
-            <span className="text-slate-400 font-mono text-2xs">
-              Simple Icons ({(REGISTRY_STATS.sourceCounts['simple-icons'] ?? 0).toLocaleString()}) · Devicon ({(REGISTRY_STATS.sourceCounts['devicon'] ?? 0).toLocaleString()}) · SVG Logos ({(REGISTRY_STATS.sourceCounts['svg-logos'] ?? REGISTRY_STATS.sourceCounts['iconify'] ?? 0).toLocaleString()}) · Official ({(REGISTRY_STATS.sourceCounts['wikimedia'] ?? 0).toLocaleString()})
-            </span>
+            <div className="flex items-center gap-2 text-slate-400 font-mono text-2xs flex-wrap">
+              {REGISTRY_SOURCES.map((sourceId, idx) => {
+                const count = REGISTRY_STATS.sourceCounts[sourceId] ?? 0;
+                const label = getSemanticSourceLabel(sourceId);
+                return (
+                  <span key={sourceId} className="inline-flex items-center gap-1">
+                    {idx > 0 && <span className="text-slate-600 mr-1">·</span>}
+                    <span className="text-slate-300 font-medium">{label}</span>
+                    <span className="text-slate-400">({count.toLocaleString()})</span>
+                  </span>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center gap-3 text-2xs text-slate-400">
@@ -749,11 +798,10 @@ export default function App() {
                   </span>
                   {[
                     { id: 'all', label: t.filters.allSources },
-                    { id: 'simple-icons', label: 'Simple Icons' },
-                    { id: 'devicon', label: 'Devicon' },
-                    { id: 'svg-logos', label: 'SVG Logos' },
-                    { id: 'official', label: 'Official' },
-                    { id: 'wikimedia', label: 'Wikimedia' }
+                    ...REGISTRY_SOURCES.map(src => ({
+                      id: src,
+                      label: getSemanticSourceLabel(src)
+                    }))
                   ].map(src => (
                     <button
                       key={src.id}
@@ -790,8 +838,8 @@ export default function App() {
 
               </div>
 
-              {/* Explainable Search Intent Bar */}
-              {parsedIntent && (
+              {/* Explainable Search Intent Bar (Only when structured constraints exist) */}
+              {parsedIntent && (parsedIntent.roleConstraint || parsedIntent.contextConstraint || parsedIntent.variantPreference || (parsedIntent.sourcePreference && parsedIntent.sourcePreference !== 'all')) && (
                 <div className="flex items-center justify-between gap-2 p-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl text-xs text-indigo-950 font-mono flex-wrap animate-in fade-in duration-150">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-indigo-700 flex items-center gap-1">
@@ -836,7 +884,7 @@ export default function App() {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>{t.filters.collections.all} ({REGISTRY_IDENTITIES.length})</span>
+                  <span>{t.filters.collections.all} ({browseLevel === 'identities' ? REGISTRY_IDENTITIES.length : REGISTRY_ASSETS.length})</span>
                 </button>
 
                 <button
@@ -849,7 +897,7 @@ export default function App() {
                   }`}
                 >
                   <Heart className={`w-3.5 h-3.5 ${selectedCollection === 'favorites' ? 'fill-current' : ''}`} />
-                  <span>{t.filters.collections.favorites} ({favorites.length})</span>
+                  <span>{t.filters.collections.favorites} ({browseLevel === 'identities' ? favoriteIdentityIds.length : (favoriteAssetIds.length || favoriteIdentityIds.length)})</span>
                 </button>
 
                 <button
@@ -862,7 +910,7 @@ export default function App() {
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  <span>{t.filters.collections.recents} ({recents.length})</span>
+                  <span>{t.filters.collections.recents} ({browseLevel === 'identities' ? recentIdentityIds.length : (recentAssetIds.length || recentIdentityIds.length)})</span>
                 </button>
 
                 {selectedSlugs.length > 0 && (
@@ -1257,8 +1305,8 @@ export default function App() {
                           isSelected={selectedSlugs.includes(icon.slug)}
                           onToggleSelect={handleToggleSelect}
                           onInspect={setInspectedIcon}
-                          isFavorite={favorites.includes(icon.id)}
-                          onToggleFavorite={toggleFavorite}
+                          isFavorite={favoriteIdentityIds.includes(icon.id)}
+                          onToggleFavorite={toggleFavoriteIdentity}
                           onDownloadReceipt={handleDownloadReceipt}
                         />
                       ))
@@ -1272,8 +1320,8 @@ export default function App() {
                             const icon = ICON_MAP[slug];
                             if (icon) setInspectedIcon(icon);
                           }}
-                          isFavorite={favorites.includes(asset.identityId)}
-                          onToggleFavorite={toggleFavorite}
+                          isFavorite={favoriteAssetIds.includes(asset.assetId)}
+                          onToggleFavorite={toggleFavoriteAsset}
                           onDownloadReceipt={handleDownloadReceipt}
                         />
                       ))

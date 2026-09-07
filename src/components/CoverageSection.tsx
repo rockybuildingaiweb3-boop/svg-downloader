@@ -45,9 +45,9 @@ export const CoverageSection: React.FC = () => {
     }
 
     const conflictsCount =
-      (conflictsData as any).totalConflictsDetected ||
-      (conflictsData as any).conflicts?.length ||
-      1215;
+      (conflictsData as any).totalConflictsDetected ??
+      (conflictsData as any).conflicts?.length ??
+      0;
 
     return {
       stats: {

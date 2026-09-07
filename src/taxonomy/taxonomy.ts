@@ -87,3 +87,65 @@ export interface MultiCategoryMetadata {
   categoryConfidence: number;
   categoryEvidence?: string[];
 }
+
+import type { EntityType } from '../types';
+
+export function inferEntityType(item: {
+  id?: string;
+  title?: string;
+  primaryCategory?: string;
+  category?: string;
+  categories?: string[];
+  deviconTags?: string[];
+  sourceProvider?: string;
+}): EntityType {
+  const id = (item.id || '').toLowerCase();
+  const tags = (item.deviconTags || []).map(t => t.toLowerCase());
+  const cat = item.primaryCategory || item.category || '';
+
+  if (tags.includes('framework') || id.endsWith('js') || id.includes('framework')) {
+    return 'framework';
+  }
+  if (
+    tags.includes('programming') ||
+    tags.includes('language') ||
+    ['python', 'rust', 'c', 'cplusplus', 'csharp', 'java', 'typescript', 'javascript', 'go', 'golang', 'ruby', 'php', 'swift', 'kotlin', 'dart', 'scala', 'elixir', 'haskell', 'lua', 'perl', 'r', 'julia'].includes(id)
+  ) {
+    return 'programming-language';
+  }
+  if (cat === 'databases' || tags.includes('database') || id.includes('sql') || id.includes('db')) {
+    return 'database';
+  }
+  if (cat === 'web3' || tags.includes('blockchain') || tags.includes('cryptocurrency')) {
+    return 'protocol';
+  }
+  if (['github', 'gitlab', 'aws', 'amazonwebservices', 'googlecloud', 'microsoftazure', 'vercel', 'netlify', 'cloudflare', 'digitalocean', 'heroku'].includes(id)) {
+    return 'platform';
+  }
+  if (['docker', 'kubernetes', 'terraform', 'ansible', 'jenkins', 'webpack', 'vite', 'esbuild', 'babel', 'git'].includes(id)) {
+    return 'tool';
+  }
+  if (cat === 'cloud' || cat === 'infrastructure') {
+    return 'platform';
+  }
+  if (cat === 'apps' || ['slack', 'discord', 'telegram', 'whatsapp', 'signal', 'spotify', 'zoom', 'notion', 'figma'].includes(id)) {
+    return 'app';
+  }
+  if (cat === 'brands' || ['apple', 'google', 'microsoft', 'amazon', 'meta', 'tesla', 'nvidia', 'intel', 'amd', 'samsung', 'sony', 'adobe', 'ibm', 'oracle', 'salesforce'].includes(id)) {
+    return 'company';
+  }
+  if (cat === 'developer-tools') {
+    return 'tool';
+  }
+  if (cat === 'social' || cat === 'communication') {
+    return 'service';
+  }
+  if (cat === 'ai') {
+    return 'technology';
+  }
+  if (cat === 'gaming') {
+    return 'game';
+  }
+  return 'technology';
+}
+

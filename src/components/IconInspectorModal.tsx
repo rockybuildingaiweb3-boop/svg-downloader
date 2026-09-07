@@ -727,6 +727,79 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             </div>
           </div>
 
+          {/* Section: Canonical Arbitration Decision ("Why This Asset?") */}
+          {icon.canonicalDecision && (
+            <div className="space-y-2 p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-100">
+              <div className="flex items-center justify-between flex-wrap gap-1">
+                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{t.inspector.canonicalDecisionTitle}</span>
+                </h3>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-2xs font-mono px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold">
+                    Policy: {icon.canonicalDecision.policy}
+                  </span>
+                  {icon.canonicalDecision.score !== undefined && (
+                    <span className="text-2xs font-mono px-2 py-0.5 rounded bg-white text-slate-700 border border-indigo-200">
+                      Score: {icon.canonicalDecision.score}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {icon.canonicalDecision.reasons && icon.canonicalDecision.reasons.length > 0 && (
+                <ul className="space-y-1 pt-1">
+                  {icon.canonicalDecision.reasons.map((reason, idx) => (
+                    <li key={idx} className="flex items-center gap-1.5 text-2xs text-slate-700 font-medium">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* Section: Provider Availability Matrix (Source Coverage) */}
+          {icon.sourceCoverage && Object.keys(icon.sourceCoverage).length > 0 && (
+            <div className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+              <div className="flex items-center justify-between flex-wrap gap-1">
+                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-slate-600" />
+                  <span>{t.inspector.sourceCoverageTitle}</span>
+                </h3>
+                <span className="text-2xs font-mono text-slate-500 font-medium">
+                  {icon.sourceCoverageScore || `${Object.values(icon.sourceCoverage).filter(s => s === 'available').length} / ${Object.keys(icon.sourceCoverage).length}`} providers
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                {Object.entries(icon.sourceCoverage).map(([providerId, status]) => {
+                  const label = getSemanticSourceLabel(providerId === 'iconify' ? 'svg-logos' : providerId);
+                  const isAvailable = status === 'available';
+                  const isError = status === 'error';
+                  return (
+                    <div
+                      key={providerId}
+                      className={`p-2 rounded-lg border text-center transition-colors ${
+                        isAvailable
+                          ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800'
+                          : isError
+                          ? 'bg-rose-50/70 border-rose-200 text-rose-800'
+                          : 'bg-white border-slate-200 text-slate-500'
+                      }`}
+                    >
+                      <span className="block text-2xs font-bold truncate">{label}</span>
+                      <span className="block text-3xs font-mono uppercase tracking-wider mt-0.5">
+                        {status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Section 4: Structural Vector Geometry AST Analysis */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
