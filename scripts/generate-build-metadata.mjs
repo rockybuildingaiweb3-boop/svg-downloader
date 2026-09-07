@@ -32,7 +32,7 @@ const buildMetadata = {
   registryVersion: registry.version || '2.0.0',
   totalIdentities: registry.stats?.totalIdentities ?? (registry.identities ? registry.identities.length : 0),
   totalAssets: registry.stats?.totalAssets ?? (registry.assets ? registry.assets.length : 0),
-  totalProviders: registry.stats?.totalProviders ?? (registry.sources ? registry.sources.length : 5)
+  totalProviders: registry.stats?.totalProviders ?? (registry.sources ? registry.sources.filter(s => s.enabled !== false).length : 5)
 };
 
 const genPath = path.join(rootDir, 'generated', 'build-metadata.json');

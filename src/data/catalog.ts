@@ -171,13 +171,8 @@ export const ASSET_MAP: Record<string, ConcreteAssetItem> = REGISTRY_ASSETS.redu
   return acc;
 }, {} as Record<string, ConcreteAssetItem>);
 
-export const REGISTRY_SOURCES: ('official' | 'simple-icons' | 'devicon' | 'svg-logos' | 'wikimedia')[] = [
-  'official',
-  'simple-icons',
-  'devicon',
-  'svg-logos',
-  'wikimedia',
-];
+import { ENABLED_SOURCES } from './sourceRegistry';
+export const REGISTRY_SOURCES: SourceProvider[] = ENABLED_SOURCES.map(s => s.id);
 
 // Pre-indexed Category and Source lookup maps for O(1) filtering (Phase 18)
 export const CATEGORY_INDEX: Record<string, string[]> = {};

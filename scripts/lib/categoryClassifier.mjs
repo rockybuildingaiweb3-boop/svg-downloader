@@ -242,7 +242,7 @@ const SEMANTIC_PATTERNS = [
  * @param {string} id
  * @param {string} category
  * @param {string[]} tags
- * @returns {string}
+ * @returns {{ entityType: string, entityTypeConfidence: number, entityTypeEvidence: string[] }}
  */
 export function inferEntityType(id = '', category = '', tags = []) {
   const cleanId = (id || '').toLowerCase().trim();
@@ -254,7 +254,11 @@ export function inferEntityType(id = '', category = '', tags = []) {
     cleanTags.includes('library') ||
     ['react', 'vue', 'angular', 'svelte', 'nextdotjs', 'nuxt', 'express', 'django', 'flask', 'spring', 'laravel', 'rails', 'fastapi', 'tailwind', 'tailwindcss', 'bootstrap', 'jquery', 'pandas', 'numpy', 'pytorch', 'tensorflow', 'scikit-learn'].includes(cleanId)
   ) {
-    return 'framework';
+    return {
+      entityType: 'framework',
+      entityTypeConfidence: 0.95,
+      entityTypeEvidence: ['Framework/library tag or recognized web/AI framework signature']
+    };
   }
   if (
     cleanTags.includes('language') ||
@@ -262,42 +266,94 @@ export function inferEntityType(id = '', category = '', tags = []) {
     cleanTags.includes('programming') ||
     ['python', 'rust', 'c', 'cplusplus', 'csharp', 'java', 'typescript', 'javascript', 'go', 'golang', 'ruby', 'php', 'swift', 'kotlin', 'dart', 'scala', 'elixir', 'haskell', 'lua', 'perl', 'r', 'julia', 'solidity'].includes(cleanId)
   ) {
-    return 'programming-language';
+    return {
+      entityType: 'programming-language',
+      entityTypeConfidence: 0.98,
+      entityTypeEvidence: ['Programming language upstream tag or recognized canonical language identity']
+    };
   }
   if (cat === 'databases' || cleanTags.includes('database') || cleanTags.includes('db') || cleanId.includes('sql') || cleanId.includes('db') || ['mongodb', 'redis', 'postgres', 'postgresql', 'mysql', 'sqlite', 'cassandra', 'neo4j', 'couchdb', 'mariadb', 'supabase', 'cockroachdb', 'clickhouse'].includes(cleanId)) {
-    return 'database';
+    return {
+      entityType: 'database',
+      entityTypeConfidence: 0.95,
+      entityTypeEvidence: ['Database category classification or DBMS name match']
+    };
   }
   if (cat === 'web3' || cleanTags.includes('blockchain') || cleanTags.includes('cryptocurrency') || ['bitcoin', 'ethereum', 'solana', 'binance', 'polygon', 'cardano', 'avalanche', 'polkadot', 'chainlink', 'uniswap'].includes(cleanId)) {
-    return 'protocol';
+    return {
+      entityType: 'protocol',
+      entityTypeConfidence: 0.90,
+      entityTypeEvidence: ['Web3/blockchain protocol classification']
+    };
   }
   if (['github', 'gitlab', 'aws', 'amazonwebservices', 'googlecloud', 'microsoftazure', 'azure', 'vercel', 'netlify', 'cloudflare', 'digitalocean', 'heroku', 'npm', 'pypi', 'dockerhub'].includes(cleanId)) {
-    return 'platform';
+    return {
+      entityType: 'platform',
+      entityTypeConfidence: 0.95,
+      entityTypeEvidence: ['Developer or cloud hosting platform canonical identity']
+    };
   }
   if (['docker', 'kubernetes', 'terraform', 'ansible', 'jenkins', 'webpack', 'vite', 'esbuild', 'babel', 'git', 'postman', 'insomnia', 'eslint', 'prettier', 'vitest', 'jest'].includes(cleanId)) {
-    return 'tool';
+    return {
+      entityType: 'tool',
+      entityTypeConfidence: 0.92,
+      entityTypeEvidence: ['Developer tool/utility canonical match']
+    };
   }
   if (cat === 'cloud' || cat === 'infrastructure') {
-    return 'platform';
+    return {
+      entityType: 'platform',
+      entityTypeConfidence: 0.88,
+      entityTypeEvidence: ['Cloud / infrastructure domain platform']
+    };
   }
   if (cat === 'apps' || ['slack', 'discord', 'telegram', 'whatsapp', 'signal', 'spotify', 'zoom', 'notion', 'figma', 'skype', 'teams', 'obsidian', 'trello', 'asana', 'airtable'].includes(cleanId)) {
-    return 'app';
+    return {
+      entityType: 'app',
+      entityTypeConfidence: 0.90,
+      entityTypeEvidence: ['Application / desktop software classification']
+    };
   }
   if (cat === 'brands' || ['apple', 'google', 'microsoft', 'amazon', 'meta', 'tesla', 'nvidia', 'intel', 'amd', 'samsung', 'sony', 'adobe', 'ibm', 'oracle', 'salesforce', 'cisco', 'dell', 'hp', 'lenovo', 'nike', 'adidas', 'visa', 'mastercard', 'paypal', 'stripe', 'uber', 'airbnb'].includes(cleanId)) {
-    return 'company';
+    return {
+      entityType: 'company',
+      entityTypeConfidence: 0.92,
+      entityTypeEvidence: ['Commercial enterprise or corporate brand match']
+    };
   }
   if (cat === 'developer-tools') {
-    return 'tool';
+    return {
+      entityType: 'tool',
+      entityTypeConfidence: 0.85,
+      entityTypeEvidence: ['Developer tools category assignment']
+    };
   }
   if (cat === 'social' || cat === 'communication') {
-    return 'service';
+    return {
+      entityType: 'service',
+      entityTypeConfidence: 0.85,
+      entityTypeEvidence: ['Social network or communication service category']
+    };
   }
   if (cat === 'ai') {
-    return 'technology';
+    return {
+      entityType: 'technology',
+      entityTypeConfidence: 0.82,
+      entityTypeEvidence: ['Artificial intelligence ecosystem entry']
+    };
   }
   if (cat === 'gaming') {
-    return 'game';
+    return {
+      entityType: 'game',
+      entityTypeConfidence: 0.85,
+      entityTypeEvidence: ['Gaming category classification']
+    };
   }
-  return 'technology';
+  return {
+    entityType: 'technology',
+    entityTypeConfidence: 0.70,
+    entityTypeEvidence: ['General technology domain inference']
+  };
 }
 
 /**
@@ -426,22 +482,28 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
   if (candidateCategories.size === 0) {
     const hasAlphaNumeric = /[a-z0-9]/.test(cleanId);
     if (hasAlphaNumeric && cleanId.length >= 3) {
+      const entityInfo = inferEntityType(cleanId, 'needs-review', deviconTags);
       return {
         primaryCategory: 'needs-review',
         categories: ['needs-review'],
         categorySource: 'fallback',
         categoryConfidence: 0.40,
         categoryEvidence: ['Low confidence score (no known signals matched); flagged for review'],
-        entityType: inferEntityType(cleanId, 'needs-review', deviconTags)
+        entityType: entityInfo.entityType,
+        entityTypeConfidence: entityInfo.entityTypeConfidence,
+        entityTypeEvidence: entityInfo.entityTypeEvidence
       };
     } else {
+      const entityInfo = inferEntityType(cleanId, 'uncategorized', deviconTags);
       return {
         primaryCategory: 'uncategorized',
         categories: ['uncategorized'],
         categorySource: 'fallback',
         categoryConfidence: 0.10,
         categoryEvidence: ['Insufficient classification evidence (< 0.20 confidence)'],
-        entityType: inferEntityType(cleanId, 'uncategorized', deviconTags)
+        entityType: entityInfo.entityType,
+        entityTypeConfidence: entityInfo.entityTypeConfidence,
+        entityTypeEvidence: entityInfo.entityTypeEvidence
       };
     }
   }
@@ -453,7 +515,7 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
   for (const [cat, data] of candidateCategories.entries()) {
     const maxConf = Math.max(...data.confidences);
     // Accumulate multiple evidence signals to boost confidence
-    const boost = data.confidences.length > 1 ? Math.min(0.04, (data.confidences.length - 1) * 0.02) : 0;
+    const boost = data.confidences.length > 1 ? Math.min(0.06, (data.confidences.length - 1) * 0.03) : 0;
     const finalConfidence = Math.min(0.99, maxConf + boost);
     const sortedSources = [...data.sources].sort((a, b) => (SOURCE_PRIORITY[b] || 0) - (SOURCE_PRIORITY[a] || 0));
     const primarySource = sortedSources[0] || 'derived';
@@ -485,12 +547,16 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
     ...evaluatedCategories.filter(item => activeCategories.includes(item.category)).flatMap(item => item.evidences)
   ]));
 
+  const entityInfo = inferEntityType(cleanId, topCategory, deviconTags);
+
   return {
     primaryCategory: topCategory,
     categories: activeCategories.length > 0 ? activeCategories : [topCategory],
     categorySource: topSource,
     categoryConfidence: Number(topConfidence.toFixed(2)),
     categoryEvidence: activeEvidences.length > 0 ? activeEvidences : allEvidenceList,
-    entityType: inferEntityType(cleanId, topCategory, deviconTags)
+    entityType: entityInfo.entityType,
+    entityTypeConfidence: entityInfo.entityTypeConfidence,
+    entityTypeEvidence: entityInfo.entityTypeEvidence
   };
 }

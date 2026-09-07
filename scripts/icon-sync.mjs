@@ -375,8 +375,10 @@ async function main() {
         'simple-icons': resolver.simpleIcons.version,
         'devicon': resolver.devicon.version,
         'svg-logos': resolver.svgLogos.version,
-        'official': 'official-vendor'
+        'official': 'official-vendor',
+        'wikimedia': resolver.wikimedia?.version || 'commons-archive'
       },
+      sources: resolver.sources || [],
       policy,
       conflicts: resolver.conflicts,
       collections: resolver.collections
@@ -419,7 +421,11 @@ async function main() {
         registryVersion: metadata.version || '2.0.0',
         totalIdentities: recordsToPersist.length,
         totalAssets: recordsToPersist.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
-        totalProviders: 5
+        totalProviders: (resolver.enabledSources && resolver.enabledSources.length > 0)
+          ? resolver.enabledSources.length
+          : (resolver.sources && resolver.sources.length > 0)
+          ? resolver.sources.filter(s => s.enabled !== false).length
+          : 5
       };
       await fs.writeFile(path.join(GENERATED_DIR, 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
       await fs.writeFile(path.join(PUBLIC_ICONS_DIR, '..', 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');

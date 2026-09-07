@@ -47,6 +47,8 @@ export class IconResolver {
       },
       identityOverrides: {}
     };
+    this.sources = [];
+    this.enabledSources = [];
     this.loaded = false;
     this.conflicts = [];
   }
@@ -54,7 +56,24 @@ export class IconResolver {
   async load() {
     if (this.loaded) return this;
 
-    // 1. Load config/aliases.json
+    // 1. Load config/sources.json (Canonical Source Definitions)
+    try {
+      const srcContent = await fs.readFile(path.join(this.rootDir, 'config', 'sources.json'), 'utf8');
+      const srcJson = JSON.parse(srcContent);
+      this.sources = (srcJson.sources || []).map(s => ({
+        ...s,
+        id: s.id === 'iconify' ? 'svg-logos' : s.id,
+        platform: s.platform || (s.id === 'svg-logos' ? 'iconify' : s.id),
+        collection: s.collection || (s.id === 'svg-logos' ? 'logos' : s.id),
+        adapter: s.adapter || s.id,
+        enabled: s.enabled !== false
+      }));
+      this.enabledSources = this.sources.filter(s => s.enabled);
+    } catch (err) {
+      console.warn(`[IconResolver] Warning: could not load config/sources.json: ${err.message}`);
+    }
+
+    // 2. Load config/aliases.json
     try {
       const aliasContent = await fs.readFile(path.join(this.rootDir, 'config', 'aliases.json'), 'utf8');
       const aliasJson = JSON.parse(aliasContent);
@@ -71,7 +90,7 @@ export class IconResolver {
       console.warn(`[IconResolver] Warning: could not load config/aliases.json: ${err.message}`);
     }
 
-    // 2. Load config/collections.json
+    // 3. Load config/collections.json
     try {
       const collContent = await fs.readFile(path.join(this.rootDir, 'config', 'collections.json'), 'utf8');
       this.collections = JSON.parse(collContent);
@@ -79,7 +98,7 @@ export class IconResolver {
       console.warn(`[IconResolver] Warning: could not load config/collections.json: ${err.message}`);
     }
 
-    // 3. Load config/source-policies.json
+    // 4. Load config/source-policies.json
     try {
       const polContent = await fs.readFile(path.join(this.rootDir, 'config', 'source-policies.json'), 'utf8');
       const polJson = JSON.parse(polContent);
@@ -90,7 +109,7 @@ export class IconResolver {
       console.warn(`[IconResolver] Warning: could not load config/source-policies.json: ${err.message}`);
     }
 
-    // 4. Load all 5 adapters in parallel
+    // 5. Load all 5 adapters in parallel
     await Promise.all([
       this.simpleIcons.load(),
       this.devicon.load(),
@@ -211,6 +230,13 @@ export class IconResolver {
 
     const candidateList = Array.from(candidates);
 
+    const getErrorStatus = (err) => {
+      if (err?.name === 'AbortError' || err?.message?.includes('timeout') || err?.code === 'ETIMEDOUT') {
+        return 'timeout';
+      }
+      return 'error';
+    };
+
     // 2. Query Official Vendor Provider
     const officialAssets = [];
     let officialStatus = 'not-found';
@@ -223,8 +249,8 @@ export class IconResolver {
           break;
         }
       }
-    } catch {
-      officialStatus = 'error';
+    } catch (err) {
+      officialStatus = getErrorStatus(err);
     }
 
     // 3. Query Wikimedia Commons Provider
@@ -239,8 +265,8 @@ export class IconResolver {
           break;
         }
       }
-    } catch {
-      wikimediaStatus = 'error';
+    } catch (err) {
+      wikimediaStatus = getErrorStatus(err);
     }
 
     // 4. Query SVG Logos Provider (with -icon probe)
@@ -268,8 +294,8 @@ export class IconResolver {
           }
         }
       }
-    } catch {
-      svgLogosStatus = 'error';
+    } catch (err) {
+      svgLogosStatus = getErrorStatus(err);
     }
 
     // 5. Query Devicon Provider
@@ -289,8 +315,8 @@ export class IconResolver {
           break;
         }
       }
-    } catch {
-      deviconStatus = 'error';
+    } catch (err) {
+      deviconStatus = getErrorStatus(err);
     }
 
     // 6. Query Simple Icons Provider
@@ -305,21 +331,30 @@ export class IconResolver {
           break;
         }
       }
-    } catch {
-      simpleIconsStatus = 'error';
+    } catch (err) {
+      simpleIconsStatus = getErrorStatus(err);
     }
 
-    // Explicit Source Availability Status (Phase 8)
-    const sourceCoverage = {
-      official: officialStatus,
-      wikimedia: wikimediaStatus,
-      'svg-logos': svgLogosStatus,
-      devicon: deviconStatus,
-      'simple-icons': simpleIconsStatus
-    };
+    // Explicit Source Availability Status (Phase 8 & T0.6)
+    const sourceCoverage = {};
+    if (this.sources && this.sources.length > 0) {
+      for (const src of this.sources) {
+        if (!src.enabled) {
+          sourceCoverage[src.id] = 'disabled';
+        }
+      }
+    }
+
+    if (sourceCoverage['official'] !== 'disabled') sourceCoverage['official'] = officialStatus;
+    if (sourceCoverage['wikimedia'] !== 'disabled') sourceCoverage['wikimedia'] = wikimediaStatus;
+    if (sourceCoverage['svg-logos'] !== 'disabled') sourceCoverage['svg-logos'] = svgLogosStatus;
+    if (sourceCoverage['devicon'] !== 'disabled') sourceCoverage['devicon'] = deviconStatus;
+    if (sourceCoverage['simple-icons'] !== 'disabled') sourceCoverage['simple-icons'] = simpleIconsStatus;
 
     const sourceCoverageFound = Object.values(sourceCoverage).filter(s => s === 'available').length;
-    const sourceCoverageChecked = Object.keys(sourceCoverage).length;
+    const sourceCoverageChecked = (this.enabledSources && this.enabledSources.length > 0)
+      ? this.enabledSources.length
+      : Object.keys(sourceCoverage).filter(k => sourceCoverage[k] !== 'disabled').length;
     const sourceCoverageScore = `${sourceCoverageFound} / ${sourceCoverageChecked}`;
 
     const allFamilyAssets = [
@@ -670,7 +705,7 @@ export class IconResolver {
       collections: this.collections
     });
 
-    // Annotate all family assets with category metadata
+    // Annotate all family assets with category metadata & entity type
     for (const a of allFamilyAssets) {
       a.primaryCategory = catClassification.primaryCategory;
       a.categories = catClassification.categories;
@@ -678,6 +713,9 @@ export class IconResolver {
       a.categoryConfidence = catClassification.categoryConfidence;
       a.categoryEvidence = catClassification.categoryEvidence;
       a.category = catClassification.primaryCategory;
+      a.entityType = catClassification.entityType;
+      a.entityTypeConfidence = catClassification.entityTypeConfidence;
+      a.entityTypeEvidence = catClassification.entityTypeEvidence;
     }
 
     // Alternative Sources list for backward compatibility
@@ -733,6 +771,9 @@ export class IconResolver {
       categorySource: catClassification.categorySource,
       categoryConfidence: catClassification.categoryConfidence,
       categoryEvidence: catClassification.categoryEvidence,
+      entityType: catClassification.entityType,
+      entityTypeConfidence: catClassification.entityTypeConfidence,
+      entityTypeEvidence: catClassification.entityTypeEvidence,
       sourceCoverage,
       sourceCoverageFound,
       sourceCoverageChecked,

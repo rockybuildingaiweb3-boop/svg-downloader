@@ -47,11 +47,16 @@ export const CANONICAL_SOURCES: SourceDefinition[] = (sourcesConfig.sources || [
 export const ENABLED_SOURCES: SourceDefinition[] = CANONICAL_SOURCES.filter(s => s.enabled);
 
 export const SOURCE_IDS = ENABLED_SOURCES.map(s => s.id);
+export const ENABLED_SOURCE_IDS = SOURCE_IDS;
 
 export const SOURCE_MAP: Record<string, SourceDefinition> = CANONICAL_SOURCES.reduce((acc, s) => {
   acc[s.id] = s;
   return acc;
 }, {} as Record<string, SourceDefinition>);
+
+export function getEnabledProvidersCount(): number {
+  return ENABLED_SOURCES.length;
+}
 
 export function getSourceDefinition(providerId: string): SourceDefinition | undefined {
   const norm = providerId === 'iconify' ? 'svg-logos' : providerId;

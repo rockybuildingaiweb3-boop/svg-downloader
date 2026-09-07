@@ -75,11 +75,36 @@ export interface CanonicalDecision {
   mode?: string;
 }
 
+export type ProviderStatus =
+  | 'available'
+  | 'not-found'
+  | 'not-supported'
+  | 'error'
+  | 'timeout'
+  | 'disabled'
+  | 'unknown';
+
 export interface RegistryStats {
   generatedAt: string;
   totalIdentities: number;
   totalAssets: number;
+  totalProviders?: number;
   sourceCounts: Record<string, number>;
+  sourceAssetCounts?: Record<string, number>;
+  sourceIdentityCounts?: Record<string, number>;
+  sourceDistribution?: {
+    oneProvider: number;
+    twoProviders: number;
+    threeProviders: number;
+    fourProviders: number;
+    fiveOrMoreProviders: number;
+    singleSourcePercentage: number;
+    multiSourcePercentage: number;
+    singleSourceCount?: number;
+    twoSourcesCount?: number;
+    threeSourcesCount?: number;
+    fourOrMoreSourcesCount?: number;
+  };
   canonicalCount: number;
   variantCount: number;
   verifiedIdentities: number;

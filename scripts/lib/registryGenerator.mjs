@@ -60,17 +60,82 @@ export class RegistryGenerator {
       }
     }
 
-    const sourceCounts = {};
+    const sourceAssetCounts = {};
     for (const a of allAssets) {
-      const src = a.sourceProvider || 'simple-icons';
-      sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+      const src = a.sourceProvider === 'iconify' ? 'svg-logos' : (a.sourceProvider || 'simple-icons');
+      sourceAssetCounts[src] = (sourceAssetCounts[src] || 0) + 1;
     }
+
+    const sourceIdentityCounts = {};
+    let oneProvider = 0;
+    let twoProviders = 0;
+    let threeProviders = 0;
+    let fourProviders = 0;
+    let fiveOrMoreProviders = 0;
+
+    for (const r of cleanRecords) {
+      const availableProviders = new Set();
+      if (r.sourceCoverage) {
+        for (const [prov, state] of Object.entries(r.sourceCoverage)) {
+          if (state === 'available') availableProviders.add(prov === 'iconify' ? 'svg-logos' : prov);
+        }
+      } else if (r.assets && r.assets.length > 0) {
+        for (const a of r.assets) {
+          const prov = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
+          if (prov) availableProviders.add(prov);
+        }
+      } else {
+        const prov = r.sourceProvider === 'iconify' ? 'svg-logos' : (r.sourceProvider || 'simple-icons');
+        availableProviders.add(prov);
+      }
+
+      for (const prov of availableProviders) {
+        sourceIdentityCounts[prov] = (sourceIdentityCounts[prov] || 0) + 1;
+      }
+
+      const count = availableProviders.size;
+      if (count <= 1) oneProvider++;
+      else if (count === 2) twoProviders++;
+      else if (count === 3) threeProviders++;
+      else if (count === 4) fourProviders++;
+      else fiveOrMoreProviders++;
+    }
+
+    const multiSourceCount = twoProviders + threeProviders + fourProviders + fiveOrMoreProviders;
+    const singleSourcePercentage = cleanRecords.length > 0
+      ? Math.round((oneProvider / cleanRecords.length) * 1000) / 10
+      : 0;
+    const multiSourcePercentage = cleanRecords.length > 0
+      ? Math.round((multiSourceCount / cleanRecords.length) * 1000) / 10
+      : 0;
+
+    const totalProviders = (this.metadata.sources && this.metadata.sources.length > 0)
+      ? this.metadata.sources.filter(s => s.enabled !== false).length
+      : Object.keys(sourceIdentityCounts).length || 5;
+
+    const sourceDistribution = {
+      oneProvider,
+      twoProviders,
+      threeProviders,
+      fourProviders,
+      fiveOrMoreProviders,
+      singleSourcePercentage,
+      multiSourcePercentage,
+      singleSourceCount: oneProvider,
+      twoSourcesCount: twoProviders,
+      threeSourcesCount: threeProviders,
+      fourOrMoreSourcesCount: fourProviders + fiveOrMoreProviders
+    };
 
     const stats = {
       generatedAt: new Date().toISOString(),
       totalIdentities: cleanRecords.length,
       totalAssets: allAssets.length,
-      sourceCounts,
+      totalProviders,
+      sourceCounts: sourceAssetCounts,
+      sourceAssetCounts,
+      sourceIdentityCounts,
+      sourceDistribution,
       canonicalCount: cleanRecords.length,
       variantCount: Math.max(0, allAssets.length - cleanRecords.length),
       verifiedIdentities: cleanRecords.filter(r => r.verified || r.verificationStatus === 'verified').length,
@@ -171,7 +236,8 @@ export class RegistryGenerator {
     let singleSourceCount = 0;
     let twoSourcesCount = 0;
     let threeSourcesCount = 0;
-    let fourOrMoreSourcesCount = 0;
+    let fourSourcesCount = 0;
+    let fiveOrMoreSourcesCount = 0;
     const singleSourceIdentities = [];
     const twoSourceIdentities = [];
 
@@ -193,7 +259,7 @@ export class RegistryGenerator {
       const availableProviders = new Set();
       if (r.sourceCoverage) {
         for (const [prov, state] of Object.entries(r.sourceCoverage)) {
-          if (state === 'available') availableProviders.add(prov);
+          if (state === 'available') availableProviders.add(prov === 'iconify' ? 'svg-logos' : prov);
         }
       } else {
         for (const a of assets) {
@@ -224,16 +290,30 @@ export class RegistryGenerator {
         twoSourceIdentities.push(r.id);
       } else if (count === 3) {
         threeSourcesCount++;
-      } else if (count >= 4) {
-        fourOrMoreSourcesCount++;
+      } else if (count === 4) {
+        fourSourcesCount++;
+      } else if (count >= 5) {
+        fiveOrMoreSourcesCount++;
       }
     }
+
+    const multiSourceTotal = twoSourcesCount + threeSourcesCount + fourSourcesCount + fiveOrMoreSourcesCount;
+    const singleSourcePercentage = cleanRecords.length > 0
+      ? Math.round((singleSourceCount / cleanRecords.length) * 1000) / 10
+      : 0;
+    const multiSourcePercentage = cleanRecords.length > 0
+      ? Math.round((multiSourceTotal / cleanRecords.length) * 1000) / 10
+      : 0;
+
+    const totalProvidersCount = (this.metadata.sources && this.metadata.sources.length > 0)
+      ? this.metadata.sources.filter(s => s.enabled !== false).length
+      : Object.keys(providerCounts).length;
 
     const coverageReport = {
       generatedAt: new Date().toISOString(),
       totalIdentities: cleanRecords.length,
       totalAssets,
-      totalProviders: Object.keys(providerCounts).length,
+      totalProviders: totalProvidersCount,
       providerMatrix: {
         'official': providerCounts['official'].identities,
         'simple-icons': providerCounts['simple-icons'].identities,
@@ -249,10 +329,17 @@ export class RegistryGenerator {
         'wikimedia': providerCounts['wikimedia'].assets
       },
       sourceDistribution: {
+        oneProvider: singleSourceCount,
+        twoProviders: twoSourcesCount,
+        threeProviders: threeSourcesCount,
+        fourProviders: fourSourcesCount,
+        fiveOrMoreProviders: fiveOrMoreSourcesCount,
+        singleSourcePercentage,
+        multiSourcePercentage,
         singleSourceIdentities: singleSourceCount,
         twoSourceIdentities: twoSourcesCount,
         threeSourceIdentities: threeSourcesCount,
-        fourOrMoreSourceIdentities: fourOrMoreSourcesCount,
+        fourOrMoreSourceIdentities: fourSourcesCount + fiveOrMoreSourcesCount,
         sampleSingleSources: singleSourceIdentities.slice(0, 100),
         sampleTwoSources: twoSourceIdentities.slice(0, 100)
       },
@@ -305,13 +392,92 @@ export class RegistryGenerator {
 
   async generateStatisticsJson() {
     const cleanRecords = this.records.map(r => this.cleanRecord(r));
-    const totalAssets = cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0);
+    const allAssets = [];
+    for (const r of cleanRecords) {
+      if (r.assets && Array.isArray(r.assets)) {
+        for (const a of r.assets) allAssets.push(a);
+      } else if (r.canonicalAsset) {
+        allAssets.push(r.canonicalAsset);
+      }
+    }
+    const totalAssets = allAssets.length;
+
+    const sourceAssetCounts = {};
+    for (const a of allAssets) {
+      const src = a.sourceProvider === 'iconify' ? 'svg-logos' : (a.sourceProvider || 'simple-icons');
+      sourceAssetCounts[src] = (sourceAssetCounts[src] || 0) + 1;
+    }
+
+    const sourceIdentityCounts = {};
+    let oneProvider = 0;
+    let twoProviders = 0;
+    let threeProviders = 0;
+    let fourProviders = 0;
+    let fiveOrMoreProviders = 0;
+
+    for (const r of cleanRecords) {
+      const availableProviders = new Set();
+      if (r.sourceCoverage) {
+        for (const [prov, state] of Object.entries(r.sourceCoverage)) {
+          if (state === 'available') availableProviders.add(prov === 'iconify' ? 'svg-logos' : prov);
+        }
+      } else if (r.assets && r.assets.length > 0) {
+        for (const a of r.assets) {
+          const prov = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
+          if (prov) availableProviders.add(prov);
+        }
+      } else {
+        const prov = r.sourceProvider === 'iconify' ? 'svg-logos' : (r.sourceProvider || 'simple-icons');
+        availableProviders.add(prov);
+      }
+
+      for (const prov of availableProviders) {
+        sourceIdentityCounts[prov] = (sourceIdentityCounts[prov] || 0) + 1;
+      }
+
+      const count = availableProviders.size;
+      if (count <= 1) oneProvider++;
+      else if (count === 2) twoProviders++;
+      else if (count === 3) threeProviders++;
+      else if (count === 4) fourProviders++;
+      else fiveOrMoreProviders++;
+    }
+
+    const multiSourceCount = twoProviders + threeProviders + fourProviders + fiveOrMoreProviders;
+    const singleSourcePercentage = cleanRecords.length > 0
+      ? Math.round((oneProvider / cleanRecords.length) * 1000) / 10
+      : 0;
+    const multiSourcePercentage = cleanRecords.length > 0
+      ? Math.round((multiSourceCount / cleanRecords.length) * 1000) / 10
+      : 0;
+
+    const totalProviders = (this.metadata.sources && this.metadata.sources.length > 0)
+      ? this.metadata.sources.filter(s => s.enabled !== false).length
+      : Object.keys(sourceIdentityCounts).length || 5;
+
+    const sourceDistribution = {
+      oneProvider,
+      twoProviders,
+      threeProviders,
+      fourProviders,
+      fiveOrMoreProviders,
+      singleSourcePercentage,
+      multiSourcePercentage,
+      singleSourceCount: oneProvider,
+      twoSourcesCount: twoProviders,
+      threeSourcesCount: threeProviders,
+      fourOrMoreSourcesCount: fourProviders + fiveOrMoreProviders
+    };
 
     const stats = {
       generatedAt: new Date().toISOString(),
       totalIdentities: cleanRecords.length,
       totalAssets,
-      totalProviders: 5,
+      totalProviders,
+      sourceCounts: sourceAssetCounts,
+      sourceAssetCounts,
+      sourceIdentityCounts,
+      sourceDistribution,
       verifiedIdentities: cleanRecords.filter(r => r.verified || r.verificationStatus === 'verified').length,
       conflictsCount: (this.metadata.conflicts || []).length
     };
