@@ -125,27 +125,24 @@ export function inferEntityType(item: {
   if (['docker', 'kubernetes', 'terraform', 'ansible', 'jenkins', 'webpack', 'vite', 'esbuild', 'babel', 'git'].includes(id)) {
     return 'tool';
   }
-  if (cat === 'cloud' || cat === 'infrastructure') {
+  if (tags.includes('platform') || tags.includes('cloud-platform') || tags.includes('paas') || tags.includes('iaas')) {
     return 'platform';
   }
-  if (cat === 'apps' || ['slack', 'discord', 'telegram', 'whatsapp', 'signal', 'spotify', 'zoom', 'notion', 'figma'].includes(id)) {
+  if (['slack', 'discord', 'telegram', 'whatsapp', 'signal', 'spotify', 'zoom', 'notion', 'figma'].includes(id)) {
     return 'app';
   }
-  if (cat === 'brands' || ['apple', 'google', 'microsoft', 'amazon', 'meta', 'tesla', 'nvidia', 'intel', 'amd', 'samsung', 'sony', 'adobe', 'ibm', 'oracle', 'salesforce'].includes(id)) {
+  if (['apple', 'google', 'microsoft', 'amazon', 'meta', 'tesla', 'nvidia', 'intel', 'amd', 'samsung', 'sony', 'adobe', 'ibm', 'oracle', 'salesforce'].includes(id)) {
     return 'company';
   }
-  if (cat === 'developer-tools') {
+  if (tags.includes('tool') || tags.includes('cli') || tags.includes('linter') || tags.includes('bundler')) {
     return 'tool';
   }
-  if (cat === 'social' || cat === 'communication') {
+  if (tags.includes('social-network') || tags.includes('chat') || tags.includes('messaging')) {
     return 'service';
   }
-  if (cat === 'ai') {
-    return 'technology';
-  }
-  if (cat === 'gaming') {
+  if (tags.includes('game') || tags.includes('gaming')) {
     return 'game';
   }
-  return 'technology';
+  return 'unknown';
 }
 

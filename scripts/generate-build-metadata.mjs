@@ -25,6 +25,22 @@ try {
   gitCommit = 'head';
 }
 
+let totalProviders = registry.stats?.totalProviders;
+if (!totalProviders || totalProviders === 0) {
+  if (Array.isArray(registry.sources) && registry.sources.length > 0) {
+    totalProviders = registry.sources.filter(s => s.enabled !== false).length;
+  }
+}
+if (!totalProviders || totalProviders === 0) {
+  try {
+    const sourcesConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'config', 'sources.json'), 'utf8'));
+    totalProviders = (sourcesConfig.sources || []).filter(s => s.enabled !== false).length;
+  } catch {}
+}
+if (!totalProviders || totalProviders === 0) {
+  totalProviders = 5;
+}
+
 const buildMetadata = {
   registryGeneratedAt: registry.stats?.generatedAt || new Date().toISOString(),
   gitCommit,
@@ -32,7 +48,7 @@ const buildMetadata = {
   registryVersion: registry.version || '2.0.0',
   totalIdentities: registry.stats?.totalIdentities ?? (registry.identities ? registry.identities.length : 0),
   totalAssets: registry.stats?.totalAssets ?? (registry.assets ? registry.assets.length : 0),
-  totalProviders: registry.stats?.totalProviders ?? (registry.sources ? registry.sources.filter(s => s.enabled !== false).length : 5)
+  totalProviders
 };
 
 const genPath = path.join(rootDir, 'generated', 'build-metadata.json');

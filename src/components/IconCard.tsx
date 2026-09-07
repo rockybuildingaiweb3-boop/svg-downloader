@@ -125,7 +125,7 @@ export const IconCard: React.FC<IconCardProps> = ({
     ? 'max-w-[140px] max-h-[40px] w-auto h-10'
     : 'max-w-[48px] max-h-[48px] w-11 h-11';
 
-  const entityTypeLabel = getLocalizedEntityTypeLabel(icon.entityType || 'technology', t);
+  const entityTypeLabel = getLocalizedEntityTypeLabel(icon.entityType || 'unknown', t);
   const categoryLabel = getLocalizedCategoryLabel(icon.primaryCategory || icon.category || 'uncategorized', t);
 
   return (

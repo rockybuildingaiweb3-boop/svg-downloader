@@ -167,6 +167,7 @@ export const en: TranslationDictionary = {
       tool: 'Developer Tool',
       library: 'Library',
       database: 'Database',
+      unknown: 'Unknown',
       other: 'Entity',
     },
   },

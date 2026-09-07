@@ -167,6 +167,7 @@ export const ja: TranslationDictionary = {
       tool: '開発ツール',
       library: 'ライブラリ',
       database: 'データベース',
+      unknown: '不明',
       other: 'エンティティ',
     },
   },

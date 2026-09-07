@@ -20,6 +20,7 @@ export type EntityType =
   | 'tool'
   | 'library'
   | 'database'
+  | 'unknown'
   | 'other';
 
 
@@ -288,6 +289,8 @@ export interface BrandIdentity {
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
   sourceCoverageScore?: string;
+  providerCount?: number;
+  assetProviderCount?: number;
   rolesAvailable: AssetRole[];
   contextsAvailable: UsageContext[];
   variantsAvailable: string[];
@@ -342,6 +345,8 @@ export interface IconRecord {
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
   sourceCoverageScore?: string;
+  providerCount?: number;
+  assetProviderCount?: number;
   // Granular verification
   xmlValid: boolean;
   svgRenderable?: boolean;
@@ -385,6 +390,8 @@ export interface IconItem {
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
   sourceCoverageScore?: string;
+  providerCount?: number;
+  assetProviderCount?: number;
   hex: string;
   svg?: string;
   source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos' | 'iconify';

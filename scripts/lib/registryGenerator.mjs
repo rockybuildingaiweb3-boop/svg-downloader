@@ -12,6 +12,18 @@ export class RegistryGenerator {
     this.metadata = metadata;
   }
 
+  async getCanonicalSources() {
+    let sources = this.metadata.sources;
+    if (!sources || sources.length === 0) {
+      try {
+        const rootDir = path.resolve(this.outDir, '..');
+        const srcContent = await fs.readFile(path.join(rootDir, 'config', 'sources.json'), 'utf8');
+        sources = JSON.parse(srcContent).sources || [];
+      } catch {}
+    }
+    return sources || [];
+  }
+
   async generateAll() {
     await fs.mkdir(this.outDir, { recursive: true });
 
@@ -62,7 +74,7 @@ export class RegistryGenerator {
 
     const sourceAssetCounts = {};
     for (const a of allAssets) {
-      const src = a.sourceProvider === 'iconify' ? 'svg-logos' : (a.sourceProvider || 'simple-icons');
+      const src = a.sourceProvider === 'iconify' ? 'svg-logos' : (a.sourceProvider || 'unknown');
       sourceAssetCounts[src] = (sourceAssetCounts[src] || 0) + 1;
     }
 
@@ -85,7 +97,7 @@ export class RegistryGenerator {
           if (prov) availableProviders.add(prov);
         }
       } else {
-        const prov = r.sourceProvider === 'iconify' ? 'svg-logos' : (r.sourceProvider || 'simple-icons');
+        const prov = r.sourceProvider === 'iconify' ? 'svg-logos' : (r.sourceProvider || 'unknown');
         availableProviders.add(prov);
       }
 
@@ -109,9 +121,11 @@ export class RegistryGenerator {
       ? Math.round((multiSourceCount / cleanRecords.length) * 1000) / 10
       : 0;
 
-    const totalProviders = (this.metadata.sources && this.metadata.sources.length > 0)
-      ? this.metadata.sources.filter(s => s.enabled !== false).length
-      : Object.keys(sourceIdentityCounts).length;
+    const canonicalSources = await this.getCanonicalSources();
+    const enabledSources = canonicalSources.filter(s => s.enabled !== false);
+    const totalProviders = enabledSources.length > 0
+      ? enabledSources.length
+      : Math.max(Object.keys(sourceIdentityCounts).length, 5);
 
     const sourceDistribution = {
       oneProvider,
@@ -148,7 +162,7 @@ export class RegistryGenerator {
       stats,
       identities: cleanRecords,
       assets: allAssets,
-      sources: this.metadata.sources || [],
+      sources: canonicalSources,
       collections: this.metadata.collections || {}
     };
 
@@ -305,8 +319,10 @@ export class RegistryGenerator {
       ? Math.round((multiSourceTotal / cleanRecords.length) * 1000) / 10
       : 0;
 
-    const totalProvidersCount = (this.metadata.sources && this.metadata.sources.length > 0)
-      ? this.metadata.sources.filter(s => s.enabled !== false).length
+    const canonicalSources = await this.getCanonicalSources();
+    const enabledSources = canonicalSources.filter(s => s.enabled !== false);
+    const totalProvidersCount = enabledSources.length > 0
+      ? enabledSources.length
       : Object.keys(providerCounts).length;
 
     const coverageReport = {
@@ -404,7 +420,7 @@ export class RegistryGenerator {
 
     const sourceAssetCounts = {};
     for (const a of allAssets) {
-      const src = a.sourceProvider === 'iconify' ? 'svg-logos' : (a.sourceProvider || 'simple-icons');
+      const src = a.sourceProvider === 'iconify' ? 'svg-logos' : (a.sourceProvider || 'unknown');
       sourceAssetCounts[src] = (sourceAssetCounts[src] || 0) + 1;
     }
 
@@ -427,7 +443,7 @@ export class RegistryGenerator {
           if (prov) availableProviders.add(prov);
         }
       } else {
-        const prov = r.sourceProvider === 'iconify' ? 'svg-logos' : (r.sourceProvider || 'simple-icons');
+        const prov = r.sourceProvider === 'iconify' ? 'svg-logos' : (r.sourceProvider || 'unknown');
         availableProviders.add(prov);
       }
 
@@ -451,9 +467,11 @@ export class RegistryGenerator {
       ? Math.round((multiSourceCount / cleanRecords.length) * 1000) / 10
       : 0;
 
-    const totalProviders = (this.metadata.sources && this.metadata.sources.length > 0)
-      ? this.metadata.sources.filter(s => s.enabled !== false).length
-      : Object.keys(sourceIdentityCounts).length;
+    const canonicalSources = await this.getCanonicalSources();
+    const enabledSources = canonicalSources.filter(s => s.enabled !== false);
+    const totalProviders = enabledSources.length > 0
+      ? enabledSources.length
+      : Math.max(Object.keys(sourceIdentityCounts).length, 5);
 
     const sourceDistribution = {
       oneProvider,

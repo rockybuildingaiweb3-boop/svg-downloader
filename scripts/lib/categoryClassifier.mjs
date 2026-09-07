@@ -321,38 +321,31 @@ export function inferEntityType(id = '', category = '', tags = []) {
       entityTypeEvidence: ['Commercial enterprise or corporate brand match']
     };
   }
-  if (cat === 'developer-tools') {
+  if (cleanTags.includes('tool') || cleanTags.includes('cli') || cleanTags.includes('linter') || cleanTags.includes('bundler')) {
     return {
       entityType: 'tool',
       entityTypeConfidence: 0.85,
-      entityTypeEvidence: ['Developer tools category assignment']
+      entityTypeEvidence: ['Developer tool upstream tag or signature']
     };
   }
-  if (cat === 'social' || cat === 'communication') {
+  if (cleanTags.includes('social-network') || cleanTags.includes('chat') || cleanTags.includes('messaging')) {
     return {
       entityType: 'service',
       entityTypeConfidence: 0.85,
-      entityTypeEvidence: ['Social network or communication service category']
+      entityTypeEvidence: ['Social network or communication service tag']
     };
   }
-  if (cat === 'ai') {
-    return {
-      entityType: 'technology',
-      entityTypeConfidence: 0.82,
-      entityTypeEvidence: ['Artificial intelligence ecosystem entry']
-    };
-  }
-  if (cat === 'gaming') {
+  if (cleanTags.includes('game') || cleanTags.includes('gaming')) {
     return {
       entityType: 'game',
       entityTypeConfidence: 0.85,
-      entityTypeEvidence: ['Gaming category classification']
+      entityTypeEvidence: ['Gaming domain tag']
     };
   }
   return {
-    entityType: 'technology',
-    entityTypeConfidence: 0.70,
-    entityTypeEvidence: ['General technology domain inference']
+    entityType: 'unknown',
+    entityTypeConfidence: 0.1,
+    entityTypeEvidence: ['Unknown or unclassified entity type']
   };
 }
 

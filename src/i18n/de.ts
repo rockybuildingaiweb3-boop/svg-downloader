@@ -167,6 +167,7 @@ export const de: TranslationDictionary = {
       tool: 'Entwickler-Tool',
       library: 'Bibliothek',
       database: 'Datenbank',
+      unknown: 'Unbekannt',
       other: 'Entität',
     },
   },

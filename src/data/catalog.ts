@@ -4,21 +4,39 @@ import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, Con
 import { getSemanticSourceLabel } from '../types';
 import { inferEntityType } from '../taxonomy/taxonomy';
 
+import { ENABLED_SOURCES } from './sourceRegistry';
+
 export const BUILD_METADATA = buildMetadata;
 export const REGISTRY_STATS: RegistryStats = (rawRegistry as any).stats;
 export const CANONICAL_CATALOG: IconRecord[] = (rawRegistry as any).identities as IconRecord[];
+
+export function classifyLicenseStatus(license: string | undefined): string {
+  if (!license || license.toLowerCase() === 'unknown') return 'unknown';
+  const l = license.toLowerCase();
+  if (l.includes('trademark') || l.includes('brand guidelines') || l.includes('proprietary')) return 'trademark';
+  if (l.includes('restricted') || l.includes('all rights reserved') || l.includes('non-commercial')) return 'restricted';
+  if (l.includes('mixed') || l.includes('multi')) return 'mixed';
+  return 'known';
+}
+
+function normalizeProvider(prov: string | undefined): SourceProvider {
+  if (!prov) return 'unknown' as any;
+  if (prov === 'iconify') return 'svg-logos';
+  return prov as SourceProvider;
+}
 
 /**
  * Maps canonical record to UI IconItem with full BrandIdentity and AssetFamily support
  */
 export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
-  const sourceProvider = (rec.sourceProvider || rec.source || 'simple-icons') as any;
-  const sourceCollection = rec.sourceCollection || (rec.source === 'svg-logos' ? 'logos' : rec.source);
-  const role = (rec.role || 'logo') as any;
-  const context = (rec.context || ['general']) as any[];
+  const rawProv = rec.sourceProvider || rec.source;
+  const sourceProvider = normalizeProvider(rawProv);
+  const sourceCollection = rec.sourceCollection || (rec.source === 'svg-logos' || rec.source === 'iconify' ? 'logos' : rec.source) || 'unknown';
+  const role = (rec.role || 'unknown') as any;
+  const context = (rec.context && rec.context.length > 0) ? rec.context : (['unknown'] as any[]);
   const contextOrigin = (rec.contextOrigin || 'unknown') as any;
-  const graphicVariant = rec.graphicVariant || rec.variant || 'default';
-  const trustState = (rec.trustState || (rec.sourceTrusted ? 'verified' : 'community')) as any;
+  const graphicVariant = rec.graphicVariant || rec.variant || 'unknown';
+  const trustState = rec.trustState || 'community';
 
   const defaultAsset: BrandAsset = {
     assetId: rec.canonicalAssetId || `${rec.id}-${sourceProvider}-${role}`,
@@ -26,21 +44,21 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     sourceProvider,
     sourcePlatform: getSemanticSourceLabel(sourceProvider, sourceCollection),
     sourceCollection,
-    sourceId: rec.sourceId,
-    sourceVersion: rec.sourceVersion,
+    sourceId: rec.sourceId || rec.id,
+    sourceVersion: rec.sourceVersion || 'unknown',
     role,
     context,
     contextOrigin,
     graphicVariant,
     file: rec.file,
     rawSha256: rec.rawSha256,
-    license: rec.license || null as any,
-    licenseStatus: rec.license ? 'permissive' : 'unknown',
+    license: rec.license || 'Unknown',
+    licenseStatus: classifyLicenseStatus(rec.license),
     sourceUrl: rec.sourceUrl,
     isCanonical: true,
     xmlValid: rec.xmlValid ?? false,
     svgRenderable: rec.svgRenderable ?? rec.renderable ?? false,
-    sourceTrusted: rec.sourceTrusted ?? (trustState === 'verified' || trustState === 'trusted'),
+    sourceTrusted: rec.sourceTrusted ?? false,
     canonicalResolved: rec.canonicalResolved ?? false,
     integrityVerified: rec.integrityVerified ?? false,
     variantVerified: rec.variantVerified ?? false,
@@ -54,28 +72,44 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
   };
 
   const assets: BrandAsset[] = (rec.assets && rec.assets.length > 0)
-    ? rec.assets.map(a => ({
-        ...a,
-        sourcePlatform: getSemanticSourceLabel(a.sourceProvider || sourceProvider, a.sourceCollection || sourceCollection),
-        xmlValid: a.xmlValid ?? false,
-        svgRenderable: a.svgRenderable ?? a.renderable ?? false,
-        sourceTrusted: a.sourceTrusted ?? (a.trustState === 'verified' || a.trustState === 'trusted'),
-        canonicalResolved: a.canonicalResolved ?? false,
-        integrityVerified: a.integrityVerified ?? false,
-        variantVerified: a.variantVerified ?? false,
-        renderable: a.renderable ?? false,
-        verificationStatus: a.verificationStatus || 'unresolved',
-        trustState: a.trustState || trustState,
-        colorType: a.colorType || 'monochrome',
-        structuralMetrics: a.structuralMetrics
-      }))
+    ? rec.assets.map(a => {
+        const aProv = normalizeProvider(a.sourceProvider || sourceProvider);
+        const aColl = a.sourceCollection || (aProv === 'svg-logos' ? 'logos' : sourceCollection);
+        return {
+          ...a,
+          sourceProvider: aProv,
+          sourcePlatform: getSemanticSourceLabel(aProv, aColl),
+          sourceCollection: aColl,
+          xmlValid: a.xmlValid ?? false,
+          svgRenderable: a.svgRenderable ?? a.renderable ?? false,
+          sourceTrusted: a.sourceTrusted ?? false,
+          canonicalResolved: a.canonicalResolved ?? false,
+          integrityVerified: a.integrityVerified ?? false,
+          variantVerified: a.variantVerified ?? false,
+          renderable: a.renderable ?? false,
+          verificationStatus: a.verificationStatus || (a.xmlValid && a.renderable && a.integrityVerified ? 'verified' : 'unresolved'),
+          trustState: a.trustState || trustState,
+          licenseStatus: classifyLicenseStatus(a.license || rec.license),
+          colorType: a.colorType || 'monochrome',
+          structuralMetrics: a.structuralMetrics
+        };
+      })
     : [defaultAsset];
 
-  const canonicalAsset = rec.canonicalAsset || assets.find(a => a.isCanonical) || assets[0];
-  const sourceRecords: SourceRecord[] = rec.sourceRecords || [];
-  const sourcesCount = rec.totalAssets
-    ? Math.max(1, new Set(assets.map(a => a.sourceProvider)).size)
-    : (sourceRecords.length || (rec.alternativeSources?.length ? rec.alternativeSources.length + 1 : 1));
+  const distinctProviders = new Set(assets.map(a => a.sourceProvider).filter(Boolean));
+  const assetProviderCount = distinctProviders.size;
+
+  const canonicalAsset = rec.canonicalAsset ? {
+    ...rec.canonicalAsset,
+    sourceProvider: normalizeProvider(rec.canonicalAsset.sourceProvider || sourceProvider),
+    licenseStatus: classifyLicenseStatus(rec.canonicalAsset.license || rec.license)
+  } : (assets.find(a => a.isCanonical) || assets[0]);
+
+  const sourceRecords: SourceRecord[] = (rec.sourceRecords || []).map(sr => ({
+    ...sr,
+    sourceProvider: normalizeProvider(sr.sourceProvider)
+  }));
+  const sourcesCount = rec.sourceCoverageFound ?? (rec.sourceCoverage ? Object.values(rec.sourceCoverage).filter(v => v === 'available').length : assetProviderCount);
 
   return {
     id: rec.id,
@@ -87,16 +121,18 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     categories: Array.isArray(rec.categories) && rec.categories.length > 0
       ? rec.categories
       : [rec.primaryCategory || rec.category || 'uncategorized'],
-    categorySource: rec.categorySource || 'derived',
-    categoryConfidence: rec.categoryConfidence ?? 0.8,
+    categorySource: rec.categorySource || 'fallback',
+    categoryConfidence: rec.categoryConfidence !== undefined ? rec.categoryConfidence : undefined,
     categoryEvidence: rec.categoryEvidence || [],
     entityType: rec.entityType || inferEntityType(rec),
     sourceCoverage: rec.sourceCoverage,
-    sourceCoverageFound: rec.sourceCoverageFound,
-    sourceCoverageChecked: rec.sourceCoverageChecked,
+    sourceCoverageFound: rec.sourceCoverageFound ?? (rec.sourceCoverage ? Object.values(rec.sourceCoverage).filter(v => v === 'available').length : assetProviderCount),
+    sourceCoverageChecked: rec.sourceCoverageChecked ?? (rec.sourceCoverage ? Object.keys(rec.sourceCoverage).length : ENABLED_SOURCES.length),
     sourceCoverageScore: rec.sourceCoverageScore,
+    providerCount: rec.sourceCoverageFound ?? sourcesCount,
+    assetProviderCount,
     hex: (rec.brandColor || '#111827').replace('#', ''),
-    source: rec.source,
+    source: normalizeProvider(rec.source),
     sourceProvider,
     sourcePlatform: getSemanticSourceLabel(sourceProvider, sourceCollection),
     sourceCollection,
@@ -110,7 +146,7 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     variant: rec.variant || 'default',
     variants: rec.variants || {},
     license: rec.license,
-    licenseStatus: rec.license ? 'permissive' : 'unknown',
+    licenseStatus: classifyLicenseStatus(rec.license),
     sourceUrl: rec.sourceUrl,
     alternativeSources: rec.alternativeSources,
     sourceRecords,
@@ -118,7 +154,7 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     // Granular verification flags
     xmlValid: rec.xmlValid ?? false,
     svgRenderable: rec.svgRenderable ?? rec.renderable ?? false,
-    sourceTrusted: rec.sourceTrusted ?? (trustState === 'verified' || trustState === 'trusted'),
+    sourceTrusted: rec.sourceTrusted ?? false,
     canonicalResolved: rec.canonicalResolved ?? false,
     integrityVerified: rec.integrityVerified ?? false,
     variantVerified: rec.variantVerified ?? false,
@@ -171,7 +207,6 @@ export const ASSET_MAP: Record<string, ConcreteAssetItem> = REGISTRY_ASSETS.redu
   return acc;
 }, {} as Record<string, ConcreteAssetItem>);
 
-import { ENABLED_SOURCES } from './sourceRegistry';
 export const REGISTRY_SOURCES: SourceProvider[] = ENABLED_SOURCES.map(s => s.id);
 
 // Pre-indexed Category and Source lookup maps for O(1) filtering (Phase 18)

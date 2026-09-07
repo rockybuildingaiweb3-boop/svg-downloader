@@ -57,6 +57,11 @@ async function main() {
             const rawReg = JSON.parse(await fs.readFile(path.join(GENERATED_DIR, 'registry.json'), 'utf8'));
             regStats = rawReg.stats || regStats;
           } catch {}
+          let totalProviders = 5;
+          try {
+            const sourcesConfig = JSON.parse(await fs.readFile(path.join(ROOT, 'config', 'sources.json'), 'utf8'));
+            totalProviders = (sourcesConfig.sources || []).filter(s => s.enabled !== false).length;
+          } catch {}
           const meta = {
             registryGeneratedAt: new Date().toISOString(),
             gitCommit,
@@ -64,7 +69,7 @@ async function main() {
             registryVersion: '2.0.0',
             totalIdentities: regStats.totalIdentities || parsedCat.length,
             totalAssets: regStats.totalAssets || 0,
-            totalProviders: 5
+            totalProviders
           };
           await fs.writeFile(path.join(GENERATED_DIR, 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
           await fs.writeFile(path.join(PUBLIC_ICONS_DIR, '..', 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');

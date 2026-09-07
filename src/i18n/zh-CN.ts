@@ -167,6 +167,7 @@ export const zhCN: TranslationDictionary = {
       tool: '开发工具',
       library: '类库',
       database: '数据库',
+      unknown: '未知',
       other: '实体',
     },
   },

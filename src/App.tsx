@@ -32,7 +32,8 @@ import {
   ConcreteAssetItem,
   getSemanticSourceLabel
 } from './types';
-import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_SOURCES, REGISTRY_STATS, ASSET_MAP, ICON_MAP } from './data/catalog';
+import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_SOURCES, REGISTRY_STATS, BUILD_METADATA, ASSET_MAP, ICON_MAP } from './data/catalog';
+import { ENABLED_SOURCES, getEnabledProvidersCount } from './data/sourceRegistry';
 import { CATEGORY_DEFINITIONS } from './taxonomy/taxonomy';
 import { computeCategoryStats } from './taxonomy/categoryResolver';
 import { Header, ActiveTabType } from './components/Header';
@@ -296,16 +297,10 @@ export default function App() {
 
       // 2. Source filter
       if (selectedSource !== 'all') {
-        const iconSrc = icon.sourceProvider || icon.source || 'simple-icons';
-        if (selectedSource === 'svg-logos') {
-          if (iconSrc !== 'svg-logos' && icon.sourceCollection !== 'logos') {
-            const hasSvgLogosAsset = icon.assets && icon.assets.some(a => a.sourceProvider === 'svg-logos');
-            if (!hasSvgLogosAsset) return false;
-          }
-        } else if (iconSrc !== selectedSource) {
-          const hasMatchingAsset = icon.assets && icon.assets.some(a => a.sourceProvider === selectedSource);
-          if (!hasMatchingAsset) return false;
-        }
+        const matchesProvider = icon.sourceProvider === selectedSource ||
+          (icon.sourceCoverage && icon.sourceCoverage[selectedSource] === 'available') ||
+          (icon.assets && icon.assets.some(a => a.sourceProvider === selectedSource));
+        if (!matchesProvider) return false;
       }
 
       // 3. Status filter
@@ -455,16 +450,7 @@ export default function App() {
 
       // 2. Source filter
       if (selectedSource !== 'all') {
-        const src: string = asset.sourceProvider;
-        if (selectedSource === 'svg-logos') {
-          if (src !== 'svg-logos' && asset.sourceCollection !== 'logos') return false;
-        } else if (selectedSource === 'official') {
-          if (src !== 'official') return false;
-        } else if (selectedSource === 'wikimedia') {
-          if (src !== 'wikimedia') return false;
-        } else if (src !== selectedSource) {
-          return false;
-        }
+        if (asset.sourceProvider !== selectedSource) return false;
       }
 
       // 3. Status filter
@@ -667,23 +653,13 @@ export default function App() {
               <span>{t.header.multiSourceBadge}</span>
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
-            <span className="text-slate-200 font-medium">
-              <strong className="text-white">{REGISTRY_STATS.totalIdentities.toLocaleString()}</strong> {t.header.identitiesWord} · <strong className="text-white">{REGISTRY_STATS.totalAssets.toLocaleString()}</strong> {t.header.assetsWord}
+            <span className="text-slate-300 font-medium">
+              v{BUILD_METADATA.registryVersion || '2.0.0'}
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
-            <div className="flex items-center gap-2 text-slate-400 font-mono text-2xs flex-wrap">
-              {REGISTRY_SOURCES.map((sourceId, idx) => {
-                const count = REGISTRY_STATS.sourceCounts[sourceId] ?? 0;
-                const label = getSemanticSourceLabel(sourceId);
-                return (
-                  <span key={sourceId} className="inline-flex items-center gap-1">
-                    {idx > 0 && <span className="text-slate-600 mr-1">·</span>}
-                    <span className="text-slate-300 font-medium">{label}</span>
-                    <span className="text-slate-400">· {count.toLocaleString()} {t.coverageView.assetsWord}</span>
-                  </span>
-                );
-              })}
-            </div>
+            <span className="text-slate-300 font-medium">
+              {ENABLED_SOURCES.length} {t.sourcesView.title}
+            </span>
           </div>
 
           <div className="flex items-center gap-3 text-2xs text-slate-400">
@@ -782,9 +758,9 @@ export default function App() {
                   </span>
                   {[
                     { id: 'all', label: t.filters.allSources },
-                    ...REGISTRY_SOURCES.map(src => ({
-                      id: src,
-                      label: getSemanticSourceLabel(src)
+                    ...ENABLED_SOURCES.map(src => ({
+                      id: src.id,
+                      label: src.name
                     }))
                   ].map(src => (
                     <button

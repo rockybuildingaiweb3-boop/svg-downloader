@@ -1,9 +1,9 @@
 {
-  "registryGeneratedAt": "2026-09-07T02:05:55.784Z",
-  "gitCommit": "7317c5ba095b3d773411833eaa5c15e0dfa9ed09",
-  "buildId": "prod-7317c5ba",
+  "registryGeneratedAt": "2026-09-07T14:07:34.786Z",
+  "gitCommit": "10c16fcb9df8e22b6a86abda8fd231dacec8bff5",
+  "buildId": "prod-10c16fcb",
   "registryVersion": "2.0.0",
   "totalIdentities": 4654,
   "totalAssets": 8088,
-  "totalProviders": 0
+  "totalProviders": 5
 }

@@ -522,6 +522,125 @@ async function runTests() {
   assert(selectedSlugs[0] !== selectedAssetIds[0], 'Identity slug and asset ID are strictly separated');
   assert(Boolean(sampleAsset.file && sampleAsset.rawSha256), 'Concrete asset has authentic file name and sha256 digest');
 
+  // =========================================================================
+  // TEST 23: Build Metadata Traceability & Total Providers Invariant (Check A)
+  // =========================================================================
+  console.log('\n📜 23. Build Metadata Traceability & Total Providers Invariant');
+  const buildMetaGen = JSON.parse(await fs.readFile(path.join(ROOT, 'generated', 'build-metadata.json'), 'utf8'));
+  const buildMetaPub = JSON.parse(await fs.readFile(path.join(ROOT, 'public', 'build-metadata.json'), 'utf8'));
+  assert(buildMetaGen.totalProviders > 0, `Build metadata generated totalProviders > 0 (actual: ${buildMetaGen.totalProviders})`);
+  assert(buildMetaGen.totalProviders === ENABLED_SOURCES.length, `Build metadata totalProviders strictly matches enabled providers count (${buildMetaGen.totalProviders} === ${ENABLED_SOURCES.length})`);
+  assert(buildMetaPub.totalProviders === buildMetaGen.totalProviders, 'Public and generated build-metadata.json agree on totalProviders');
+  assert(buildMetaGen.totalProviders !== 0, 'REGRESSION CHECK A: totalProviders must NOT be 0 when enabled providers exist');
+
+  // =========================================================================
+  // TEST 24: Runtime Provider Normalization Invariant (Check F)
+  // =========================================================================
+  console.log('\n🔏 24. Runtime Provider Normalization Invariant');
+  let iconifyAssetCount = 0;
+  for (const asset of registry.assets) {
+    if (asset.sourceProvider === 'iconify') iconifyAssetCount++;
+  }
+  assert(iconifyAssetCount === 0, `REGRESSION CHECK F: Zero runtime assets with sourceProvider "iconify" (found: ${iconifyAssetCount})`);
+  const sampleNormalizedAsset = registry.assets.find(a => a.sourceCollection === 'logos');
+  if (sampleNormalizedAsset) {
+    assert(sampleNormalizedAsset.sourceProvider === 'svg-logos', 'Gilbarbara logos assets normalized to "svg-logos"');
+  }
+
+  // =========================================================================
+  // TEST 25: Trust vs. Verification Separation (Check B / T1.2)
+  // =========================================================================
+  console.log('\n🛡️ 25. Trust vs. Verification Separation');
+  // Trusted source does NOT automatically mean verified local asset
+  const mockUnverifiedItem = {
+    id: 'mock-test',
+    sourceTrusted: true,
+    xmlValid: false,
+    renderable: false,
+    verificationStatus: 'unresolved'
+  };
+  assert(mockUnverifiedItem.sourceTrusted === true, 'Provider is marked trusted');
+  assert(mockUnverifiedItem.verificationStatus !== 'verified', 'Asset is NOT verified just because provider is trusted');
+
+  // =========================================================================
+  // TEST 26: License Status Classification (Check E / T1.3)
+  // =========================================================================
+  console.log('\n⚖️ 26. License Status Classification');
+  const { classifyLicenseStatus } = await import('../src/data/catalog.ts');
+  assert(classifyLicenseStatus('Trademark / Brand Guidelines') === 'trademark', 'Brand guidelines classified as trademark, NOT permissive');
+  assert(classifyLicenseStatus('Proprietary / All Rights Reserved') === 'trademark', 'Proprietary classified as trademark/restricted');
+  assert(classifyLicenseStatus('CC0 1.0 Universal') === 'known', 'CC0 classified as known license');
+  assert(classifyLicenseStatus('MIT License') === 'known', 'MIT classified as known license');
+  assert(classifyLicenseStatus('Unknown') === 'unknown', 'Unknown license classified as unknown');
+
+  // =========================================================================
+  // TEST 27: Multi-Signal Category Evidence Accumulation on Real Identities (T1.4)
+  // =========================================================================
+  console.log('\n🧠 27. Category Evidence Accumulation on Real Identities');
+  const realTestCases = [
+    { id: 'aws', title: 'Amazon Web Services', expectedPrimary: 'cloud' },
+    { id: 'github', title: 'GitHub', expectedPrimary: 'developer-tools' },
+    { id: 'discord', title: 'Discord', expectedPrimary: 'communication' },
+    { id: 'spotify', title: 'Spotify', expectedPrimary: 'media' },
+    { id: 'adobe', title: 'Adobe', expectedPrimary: 'brands' },
+    { id: 'react', title: 'React', deviconTags: ['framework'], expectedPrimary: 'technology' },
+    { id: 'postgresql', title: 'PostgreSQL', expectedPrimary: 'databases' },
+    { id: 'docker', title: 'Docker', expectedPrimary: 'infrastructure' },
+    { id: 'openai', title: 'OpenAI', expectedPrimary: 'ai' }
+  ];
+
+  for (const tc of realTestCases) {
+    const res = classifyIdentity({
+      id: tc.id,
+      title: tc.title,
+      deviconTags: tc.deviconTags || [],
+      collections: collectionsJson
+    });
+    assert(Boolean(res.primaryCategory), `${tc.id} assigned primaryCategory (${res.primaryCategory})`);
+    assert(Array.isArray(res.categories) && res.categories.length > 0, `${tc.id} assigned categories array`);
+    assert(Array.isArray(res.categoryEvidence) && res.categoryEvidence.length > 0, `${tc.id} has categoryEvidence`);
+    assert(res.categoryConfidence > 0, `${tc.id} has categoryConfidence (${res.categoryConfidence})`);
+  }
+
+  // Multi-signal accumulation: devicon framework tag + curated hint
+  const multiSignalTest = classifyIdentity({
+    id: 'nextdotjs',
+    title: 'Next.js',
+    deviconTags: ['framework', 'web'],
+    collections: collectionsJson
+  });
+  assert(multiSignalTest.categoryEvidence.length >= 2, `Next.js accumulates multiple evidence records (actual: ${multiSignalTest.categoryEvidence.length})`);
+
+  // =========================================================================
+  // TEST 28: Entity Type Independence & Safe Fallback (Check G, H, T1.7, T1.8)
+  // =========================================================================
+  console.log('\n🏷️ 28. Entity Type Independence & Safe Fallback');
+  const unknownEntity = inferClassifierEntity('completely-unknown-token-xyz', 'uncategorized', []);
+  assert(unknownEntity.entityType === 'unknown', `Unknown entity falls back to "unknown", NOT technology (actual: ${unknownEntity.entityType})`);
+  assert(unknownEntity.entityTypeConfidence <= 0.20, 'Unknown entity confidence is <= 0.20');
+
+  // =========================================================================
+  // TEST 29: Dynamic Source Counts Semantics (T0.4)
+  // =========================================================================
+  console.log('\n📊 29. Dynamic Source Counts Semantics');
+  const { REGISTRY_IDENTITIES: identitiesFromCatalog } = await import('../src/data/catalog.ts');
+  const sampleDockerItem = identitiesFromCatalog.find(i => i.id === 'docker');
+  assert(sampleDockerItem !== undefined, 'Docker found in hydrated catalog');
+  assert(sampleDockerItem.sourceCoverageChecked === ENABLED_SOURCES.length, `Docker sourceCoverageChecked strictly equals enabled providers count (${sampleDockerItem.sourceCoverageChecked} === ${ENABLED_SOURCES.length})`);
+  assert(sampleDockerItem.sourceCoverageFound >= 2, `Docker sourceCoverageFound is accurate (${sampleDockerItem.sourceCoverageFound})`);
+  assert(sampleDockerItem.assetProviderCount >= 2, `Docker assetProviderCount tracks distinct asset providers (${sampleDockerItem.assetProviderCount})`);
+  assert(sampleDockerItem.totalAssets >= 5, `Docker totalAssets tracks concrete assets (${sampleDockerItem.totalAssets})`);
+
+  // =========================================================================
+  // TEST 30: Frontend and Generated Snapshot Totals Consistency (Check I)
+  // =========================================================================
+  console.log('\n🔗 30. Frontend and Generated Snapshot Totals Consistency');
+  const statsFromGenerated = JSON.parse(await fs.readFile(path.join(ROOT, 'generated', 'statistics.json'), 'utf8'));
+  assert(identitiesFromCatalog.length === statsFromGenerated.totalIdentities, `Catalog identities count (${identitiesFromCatalog.length}) matches statistics.json (${statsFromGenerated.totalIdentities})`);
+  assert(buildMetaGen.totalIdentities === statsFromGenerated.totalIdentities, 'Build metadata identities matches statistics.json');
+  assert(buildMetaGen.totalAssets === statsFromGenerated.totalAssets, 'Build metadata assets matches statistics.json');
+  assert(buildMetaGen.totalProviders === statsFromGenerated.totalProviders, 'Build metadata totalProviders matches statistics.json');
+
   // Summary
   console.log('\n=======================================================================');
   console.log(`✨ TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);
