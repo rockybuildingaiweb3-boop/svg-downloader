@@ -46,13 +46,13 @@ export type UsageContext =
 export type ContextOrigin = 'source-confirmed' | 'inferred' | 'unknown';
 
 export type SourceProvider =
+  | 'official'
   | 'simple-icons'
   | 'devicon'
-  | 'iconify'
-  | 'official'
+  | 'svg-logos'
   | 'wikimedia';
 
-export type IconSource = 'all' | SourceProvider | 'svg-logos';
+export type IconSource = 'all' | SourceProvider;
 
 export type TrustState = 'trusted' | 'verified' | 'community' | 'unverified';
 

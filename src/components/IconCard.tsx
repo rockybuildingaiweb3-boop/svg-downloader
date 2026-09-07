@@ -93,9 +93,15 @@ export const IconCard: React.FC<IconCardProps> = ({
     }
   };
 
+  const sourceFound = icon.sourceCoverageFound || sourcesCount;
+  const sourceChecked = icon.sourceCoverageChecked || 5;
+  const coverageBadgeText = format(t.card.coverageBadge, {
+    found: sourceFound,
+    total: sourceChecked,
+  });
   const assetsAndSourcesText = format(t.card.assetsAndSources, {
     assets: totalAssetsCount,
-    sources: sourcesCount,
+    sources: `${sourceFound}/${sourceChecked}`,
   });
 
   return (
@@ -103,7 +109,7 @@ export const IconCard: React.FC<IconCardProps> = ({
       id={`icon-card-${icon.slug}`}
       role="button"
       tabIndex={0}
-      aria-label={`${icon.title} (${assetsAndSourcesText})`}
+      aria-label={`${icon.title} (${coverageBadgeText})`}
       onClick={() => onInspect(icon)}
       onKeyDown={handleKeyDown}
       className={`group relative rounded-2xl p-4 border transition-all duration-200 cursor-pointer flex flex-col justify-between focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
@@ -188,11 +194,14 @@ export const IconCard: React.FC<IconCardProps> = ({
           )}
         </div>
 
-        {/* Clean Pill: "N assets · M sources" */}
+        {/* Clean Pill: "4 / 5 sources · N assets" (Phase 29) */}
         <div className="flex items-center justify-center">
-          <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80">
+          <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80" title={assetsAndSourcesText}>
             <Layers className="w-2.5 h-2.5 text-indigo-500" />
-            <span>{assetsAndSourcesText}</span>
+            <span className="font-semibold text-slate-700">{coverageBadgeText}</span>
+            {totalAssetsCount > 1 && (
+              <span className="text-slate-500">· {totalAssetsCount}</span>
+            )}
           </span>
         </div>
 

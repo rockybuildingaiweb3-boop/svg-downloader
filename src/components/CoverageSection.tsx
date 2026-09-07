@@ -11,7 +11,7 @@ import {
   GitFork,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/context';
-import { REGISTRY_ITEMS } from '../data/registry';
+import { REGISTRY_IDENTITIES } from '../data/registry';
 import { computeCategoryStats } from '../taxonomy/categoryResolver';
 import { CATEGORY_DEFINITIONS } from '../taxonomy/taxonomy';
 import { computeRegistryCoverageSummary, computeRegistryHealth } from '../utils/sourceCoverage';
@@ -22,14 +22,14 @@ export const CoverageSection: React.FC = () => {
 
   // Compute live statistics dynamically from actual active registry
   const { stats, coverageSummary, categoryData, health } = React.useMemo(() => {
-    const categoryStats = computeCategoryStats(REGISTRY_ITEMS);
-    const coverageSummary = computeRegistryCoverageSummary(REGISTRY_ITEMS);
+    const categoryStats = computeCategoryStats(REGISTRY_IDENTITIES);
+    const coverageSummary = computeRegistryCoverageSummary(REGISTRY_IDENTITIES);
 
     let multiColorCount = 0;
     const roleCounts: Record<string, number> = {};
     const variantCounts: Record<string, number> = {};
 
-    for (const item of REGISTRY_ITEMS) {
+    for (const item of REGISTRY_IDENTITIES) {
       if (item.assets && item.assets.length > 0) {
         for (const asset of item.assets) {
           if (asset.graphicVariant === 'color' || asset.graphicVariant === 'original') {
@@ -51,7 +51,7 @@ export const CoverageSection: React.FC = () => {
 
     return {
       stats: {
-        totalIdentities: REGISTRY_ITEMS.length,
+        totalIdentities: REGISTRY_IDENTITIES.length,
         totalAssets: categoryStats.totalAssets,
         multiColorCount,
         conflictsCount,
@@ -62,7 +62,7 @@ export const CoverageSection: React.FC = () => {
       },
       coverageSummary,
       categoryData: categoryStats.categoryStats,
-      health: computeRegistryHealth(REGISTRY_ITEMS),
+      health: computeRegistryHealth(REGISTRY_IDENTITIES),
     };
   }, []);
 

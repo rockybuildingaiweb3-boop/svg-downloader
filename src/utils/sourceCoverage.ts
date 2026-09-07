@@ -80,13 +80,13 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
       }
     } else {
       for (const a of assets) {
-        const p = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
+        const p = (a.sourceProvider as string) === 'iconify' ? 'svg-logos' : a.sourceProvider;
         if (p) distinctProviders.add(p);
       }
     }
 
     if (distinctProviders.size === 0 && item.sourceProvider) {
-      const p = item.sourceProvider === 'iconify' ? 'svg-logos' : item.sourceProvider;
+      const p = (item.sourceProvider as string) === 'iconify' ? 'svg-logos' : item.sourceProvider;
       distinctProviders.add(p);
     }
 
@@ -98,7 +98,7 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
     }
 
     for (const a of assets) {
-      const p = a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider;
+      const p = (a.sourceProvider as string) === 'iconify' ? 'svg-logos' : a.sourceProvider;
       if (providerCounts[p]) {
         providerCounts[p].assets++;
       }

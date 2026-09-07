@@ -1,27 +1,31 @@
 /**
- * Authoritative Unified Registry Data Access Module
+ * Authoritative Unified Registry Data Access Module (Phase 1)
  */
 import {
   CANONICAL_CATALOG,
   REGISTRY_IDENTITIES,
-  REGISTRY_ITEMS,
   REGISTRY_ASSETS,
   REGISTRY_STATS,
+  REGISTRY_SOURCES,
   ICON_MAP,
-  ASSET_MAP
+  ASSET_MAP,
+  CATEGORY_INDEX,
+  SOURCE_INDEX,
 } from './catalog';
 
 export {
   CANONICAL_CATALOG,
   REGISTRY_IDENTITIES,
-  REGISTRY_ITEMS,
   REGISTRY_ASSETS,
   REGISTRY_STATS,
+  REGISTRY_SOURCES,
   ICON_MAP,
-  ASSET_MAP
+  ASSET_MAP,
+  CATEGORY_INDEX,
+  SOURCE_INDEX,
 };
 
-export const TOTAL_IDENTITIES = REGISTRY_ITEMS.length;
+export const TOTAL_IDENTITIES = REGISTRY_IDENTITIES.length;
 export const TOTAL_ASSETS = REGISTRY_ASSETS.length;
 
 export function getIdentityById(id: string) {

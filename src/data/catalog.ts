@@ -9,7 +9,7 @@ export const CANONICAL_CATALOG: IconRecord[] = (rawRegistry as any).identities a
  * Maps canonical record to UI IconItem with full BrandIdentity and AssetFamily support
  */
 export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
-  const sourceProvider = (rec.sourceProvider || (rec.source === 'svg-logos' ? 'iconify' : rec.source)) as any;
+  const sourceProvider = (rec.sourceProvider || rec.source || 'simple-icons') as any;
   const sourceCollection = rec.sourceCollection || (rec.source === 'svg-logos' ? 'logos' : rec.source);
   const role = (rec.role || 'logo') as any;
   const context = (rec.context || ['general']) as any[];
@@ -79,11 +79,11 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     slug: rec.id,
     fileName: rec.file,
     title: rec.title,
-    category: rec.primaryCategory || rec.category || 'technology',
-    primaryCategory: rec.primaryCategory || rec.category || 'technology',
+    category: rec.primaryCategory || rec.category || 'uncategorized',
+    primaryCategory: rec.primaryCategory || rec.category || 'uncategorized',
     categories: Array.isArray(rec.categories) && rec.categories.length > 0
       ? rec.categories
-      : [rec.primaryCategory || rec.category || 'technology'],
+      : [rec.primaryCategory || rec.category || 'uncategorized'],
     categorySource: rec.categorySource || 'derived',
     categoryConfidence: rec.categoryConfidence ?? 0.8,
     categoryEvidence: rec.categoryEvidence || [],
@@ -165,3 +165,36 @@ export const ASSET_MAP: Record<string, ConcreteAssetItem> = REGISTRY_ASSETS.redu
   acc[asset.assetId] = asset;
   return acc;
 }, {} as Record<string, ConcreteAssetItem>);
+
+export const REGISTRY_SOURCES: ('official' | 'simple-icons' | 'devicon' | 'svg-logos' | 'wikimedia')[] = [
+  'official',
+  'simple-icons',
+  'devicon',
+  'svg-logos',
+  'wikimedia',
+];
+
+// Pre-indexed Category and Source lookup maps for O(1) filtering (Phase 18)
+export const CATEGORY_INDEX: Record<string, string[]> = {};
+export const SOURCE_INDEX: Record<string, string[]> = {};
+
+for (const icon of REGISTRY_IDENTITIES) {
+  const cats = icon.categories || (icon.category ? [icon.category] : ['uncategorized']);
+  for (const cat of cats) {
+    if (!CATEGORY_INDEX[cat]) CATEGORY_INDEX[cat] = [];
+    CATEGORY_INDEX[cat].push(icon.id);
+  }
+
+  const src = icon.sourceProvider || 'simple-icons';
+  if (!SOURCE_INDEX[src]) SOURCE_INDEX[src] = [];
+  SOURCE_INDEX[src].push(icon.id);
+
+  for (const asset of icon.assets || []) {
+    if (asset.sourceProvider && asset.sourceProvider !== src) {
+      if (!SOURCE_INDEX[asset.sourceProvider]) SOURCE_INDEX[asset.sourceProvider] = [];
+      if (!SOURCE_INDEX[asset.sourceProvider].includes(icon.id)) {
+        SOURCE_INDEX[asset.sourceProvider].push(icon.id);
+      }
+    }
+  }
+}

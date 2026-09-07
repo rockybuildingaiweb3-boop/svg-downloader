@@ -11,7 +11,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { useTranslation } from '../i18n/context';
-import { REGISTRY_ITEMS } from '../data/registry';
+import { REGISTRY_IDENTITIES } from '../data/registry';
 import { computeRegistryCoverageSummary } from '../utils/sourceCoverage';
 
 import sourcesConfig from '../../config/sources.json';
@@ -35,11 +35,11 @@ const SOURCES: SourceMeta[] = (sourcesConfig.sources || []).map((s: any) => ({
 }));
 
 export const SourcesSection: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
 
-  // Compute live statistics dynamically from actual registry
+  // Compute live coverage summary from actual active registry
   const coverageSummary = React.useMemo(() => {
-    return computeRegistryCoverageSummary(REGISTRY_ITEMS);
+    return computeRegistryCoverageSummary(REGISTRY_IDENTITIES);
   }, []);
 
   const providerCounts = React.useMemo(() => {

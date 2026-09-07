@@ -16,11 +16,11 @@
  */
 
 /**
- * @typedef {'simple-icons' | 'devicon' | 'iconify' | 'official' | 'wikimedia'} SourceProvider
+ * @typedef {'official' | 'simple-icons' | 'devicon' | 'svg-logos' | 'wikimedia'} SourceProvider
  */
 
 /**
- * @typedef {'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos' | 'iconify'} IconSource
+ * @typedef {'all' | SourceProvider} IconSource
  */
 
 /**

@@ -177,6 +177,28 @@ export default function App() {
     return count;
   }, [selectedRole, selectedContext, selectedVariant, selectedTrustState]);
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      selectedCategory !== 'all' ||
+      selectedSource !== 'all' ||
+      selectedStatus !== 'all' ||
+      selectedRole !== 'all' ||
+      selectedContext !== 'all' ||
+      selectedVariant !== 'all' ||
+      selectedTrustState !== 'all' ||
+      searchTerm.trim() !== ''
+    );
+  }, [
+    selectedCategory,
+    selectedSource,
+    selectedStatus,
+    selectedRole,
+    selectedContext,
+    selectedVariant,
+    selectedTrustState,
+    searchTerm,
+  ]);
+
   // Filtered icons
   const filteredIcons = useMemo(() => {
     const baseFiltered = REGISTRY_IDENTITIES.map(icon => {
@@ -224,14 +246,14 @@ export default function App() {
       // 2. Source filter
       if (selectedSource !== 'all') {
         const iconSrc = icon.sourceProvider || icon.source || 'simple-icons';
-        if (selectedSource === 'official') {
-          if (iconSrc !== 'official') return false;
-        } else if (selectedSource === 'wikimedia') {
-          if (iconSrc !== 'wikimedia') return false;
-        } else if (selectedSource === 'svg-logos') {
-          if (iconSrc !== 'iconify' && icon.source !== 'svg-logos' && icon.sourceCollection !== 'logos') return false;
+        if (selectedSource === 'svg-logos') {
+          if (iconSrc !== 'svg-logos' && icon.sourceCollection !== 'logos') {
+            const hasSvgLogosAsset = icon.assets && icon.assets.some(a => a.sourceProvider === 'svg-logos');
+            if (!hasSvgLogosAsset) return false;
+          }
         } else if (iconSrc !== selectedSource) {
-          return false;
+          const hasMatchingAsset = icon.assets && icon.assets.some(a => a.sourceProvider === selectedSource);
+          if (!hasMatchingAsset) return false;
         }
       }
 
@@ -357,7 +379,7 @@ export default function App() {
       if (selectedSource !== 'all') {
         const src: string = asset.sourceProvider;
         if (selectedSource === 'svg-logos') {
-          if (src !== 'iconify' && src !== 'svg-logos' && asset.sourceCollection !== 'logos') return false;
+          if (src !== 'svg-logos' && asset.sourceCollection !== 'logos') return false;
         } else if (selectedSource === 'official') {
           if (src !== 'official') return false;
         } else if (selectedSource === 'wikimedia') {
@@ -867,6 +889,115 @@ export default function App() {
                 })}
               </div>
 
+              {/* Row 2.5: Active Filter Chips (Phase 28) */}
+              {hasActiveFilters && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-2.5 pb-1 border-t border-slate-100 animate-in fade-in duration-150">
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1">
+                    <Filter className="w-3 h-3 text-indigo-500" />
+                    <span>{t.filters.activeFilters}:</span>
+                  </span>
+
+                  {selectedCategory !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span>{format(t.filters.chipCategory, { value: getCategoryLabel(selectedCategory) })}</span>
+                      <button
+                        onClick={() => setSelectedCategory('all')}
+                        className="hover:text-indigo-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: getCategoryLabel(selectedCategory) })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedSource !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
+                      <span>{format(t.filters.chipSource, { value: getSemanticSourceLabel(selectedSource) })}</span>
+                      <button
+                        onClick={() => setSelectedSource('all')}
+                        className="hover:text-sky-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: getSemanticSourceLabel(selectedSource) })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedStatus !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span>{format(t.filters.chipStatus, { value: selectedStatus })}</span>
+                      <button
+                        onClick={() => setSelectedStatus('all')}
+                        className="hover:text-emerald-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: selectedStatus })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedRole !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                      <span>{format(t.filters.chipRole, { value: selectedRole })}</span>
+                      <button
+                        onClick={() => setSelectedRole('all')}
+                        className="hover:text-purple-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: selectedRole })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedContext !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      <span>{format(t.filters.chipContext, { value: selectedContext })}</span>
+                      <button
+                        onClick={() => setSelectedContext('all')}
+                        className="hover:text-blue-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: selectedContext })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedVariant !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-pink-50 text-pink-700 border border-pink-200">
+                      <span>{format(t.filters.chipVariant, { value: selectedVariant })}</span>
+                      <button
+                        onClick={() => setSelectedVariant('all')}
+                        className="hover:text-pink-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: selectedVariant })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {searchTerm.trim() !== '' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                      <span>{format(t.filters.chipSearch, { value: searchTerm })}</span>
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="hover:text-amber-950 cursor-pointer ml-0.5"
+                        aria-label={t.filters.clearSearchTerm}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  <button
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center gap-1 text-2xs font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer ml-1"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>{t.filters.clearAll}</span>
+                  </button>
+                </div>
+              )}
+
               {/* Row 3: Advanced Filtering Drawer */}
               {showAdvancedFilters && (
                 <div className="pt-3 pb-1 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-150">
@@ -965,11 +1096,11 @@ export default function App() {
                   <span>
                     {browseLevel === 'identities' ? (
                       <>
-                        {t.filters.showingCount} <strong>{filteredIcons.length}</strong> / {REGISTRY_STATS.totalIdentities.toLocaleString()}
+                        <strong className="text-slate-900">{filteredIcons.length.toLocaleString()}</strong> {t.header.tabIdentities.toLowerCase()} · <strong className="text-slate-900">{filteredIcons.reduce((acc, icon) => acc + (icon.assets?.length || 1), 0).toLocaleString()}</strong> {t.header.browseAssetsTitle.toLowerCase()}
                       </>
                     ) : (
                       <>
-                        {t.filters.showingCount} <strong>{filteredAssets.length}</strong> / {REGISTRY_STATS.totalAssets.toLocaleString()}
+                        <strong className="text-slate-900">{filteredAssets.length.toLocaleString()}</strong> {t.header.browseAssetsTitle.toLowerCase()}
                       </>
                     )}
                   </span>

@@ -356,12 +356,6 @@ async function main() {
     await fs.copyFile(coveragePath, path.join(PUBLIC_ICONS_DIR, '..', 'coverage.json'));
     await fs.copyFile(categoriesPath, path.join(PUBLIC_ICONS_DIR, '..', 'categories.json'));
     await fs.copyFile(statisticsPath, path.join(PUBLIC_ICONS_DIR, '..', 'statistics.json'));
-
-    // Also copy to src/data/ for compile-time bundle access
-    await fs.copyFile(catalogPath, path.join(SRC_DATA_DIR, 'catalog.json'));
-    await fs.copyFile(registryPath, path.join(SRC_DATA_DIR, 'registry.json'));
-    await fs.copyFile(coveragePath, path.join(SRC_DATA_DIR, 'coverage.json'));
-    await fs.copyFile(categoriesPath, path.join(SRC_DATA_DIR, 'categories.json'));
   }
 
   // Output Standard Statistics Breakdown

@@ -25,55 +25,80 @@
   "identityOverrides": {
     "amazon": {
       "preferredSource": "wikimedia",
+      "preferredRole": "logo",
       "preferredVariant": "official",
-      "note": "Amazon official smile mark in #111827 with brandColor #FF9900 metadata preserved"
+      "reason": "Authentic Amazon smile mark with preserved corporate brandColor metadata (#FF9900)",
+      "evidence": "Corporate brand book guideline geometry archived in Wikimedia Commons repository"
     },
     "microsoft": {
       "preferredSource": "wikimedia",
+      "preferredRole": "symbol",
       "preferredVariant": "official",
-      "note": "Microsoft official 4-color corporate mark"
+      "reason": "Microsoft authentic 4-color corporate window emblem",
+      "evidence": "Official Microsoft corporate branding guidelines vector asset"
     },
     "openai": {
       "preferredSource": "wikimedia",
+      "preferredRole": "symbol",
       "preferredVariant": "official",
-      "note": "OpenAI official verified swirl vector"
+      "reason": "OpenAI official verified flower swirl emblem",
+      "evidence": "Primary brand mark vector registered in Wikimedia brand archive"
     },
     "adobe": {
       "preferredSource": "wikimedia",
-      "preferredVariant": "official"
+      "preferredRole": "symbol",
+      "preferredVariant": "official",
+      "reason": "Adobe corporate red triangle letterform 'A'",
+      "evidence": "Adobe Systems corporate identity guidelines"
     },
     "oracle": {
       "preferredSource": "wikimedia",
-      "preferredVariant": "official"
+      "preferredRole": "wordmark-horizontal",
+      "preferredVariant": "official",
+      "reason": "Oracle corporate red oval logotype",
+      "evidence": "Oracle Corporation brand repository"
     },
     "ibm": {
       "preferredSource": "wikimedia",
-      "preferredVariant": "official"
+      "preferredRole": "wordmark-horizontal",
+      "preferredVariant": "official",
+      "reason": "IBM 8-bar Paul Rand iconic corporate logotype",
+      "evidence": "International Business Machines corporate archives"
     },
     "google": {
       "preferredSource": "svg-logos",
+      "preferredRole": "symbol",
       "preferredVariant": "default",
-      "note": "Google official 4-color G mark from SVG Logos"
+      "reason": "Google authentic 4-color G mark with precise brand geometry",
+      "evidence": "Gil Barbara SVG Logos verified corporate brand asset"
     },
     "react": {
       "preferredSource": "devicon",
+      "preferredRole": "symbol",
       "preferredVariant": "original",
-      "note": "React 60-degree precision atom orbits with original and plain variants"
+      "reason": "React 60-degree precision atom orbits with original cyan rendering",
+      "evidence": "Devicon developer ecosystem upstream repository"
     },
     "docker": {
       "preferredSource": "devicon",
+      "preferredRole": "logo",
       "preferredVariant": "original",
-      "note": "Docker official container whale vector"
+      "reason": "Docker official container whale vector",
+      "evidence": "Devicon official containerization asset"
     },
     "cloudflare": {
       "preferredSource": "svg-logos",
+      "preferredRole": "symbol",
       "preferredVariant": "default",
-      "note": "Cloudflare official orange cloud mark"
+      "reason": "Cloudflare official orange cloud emblem",
+      "evidence": "Gil Barbara SVG Logos corporate collection"
     },
     "github": {
       "preferredSource": "devicon",
+      "preferredRole": "symbol",
       "preferredVariant": "original",
-      "note": "GitHub official Invertocat"
+      "reason": "GitHub official Invertocat mark with high-fidelity silhouette",
+      "evidence": "Devicon upstream authentic developer tool mark"
     }
   }
 }

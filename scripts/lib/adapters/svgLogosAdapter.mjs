@@ -87,6 +87,9 @@ export class SvgLogosAdapter {
 
       const entry = {
         source: 'svg-logos',
+        sourceProvider: 'svg-logos',
+        sourcePlatform: 'iconify',
+        sourceCollection: 'logos',
         sourceId: name,
         name: cleanName,
         baseIdentity,
@@ -196,9 +199,10 @@ export class SvgLogosAdapter {
     const assets = [];
     for (const match of combined.values()) {
       assets.push({
-        assetId: `${match.name}-iconify-logos`,
+        assetId: `${match.name}-svg-logos-logos`,
         identityId: cleanId,
-        sourceProvider: 'iconify',
+        sourceProvider: 'svg-logos',
+        sourcePlatform: 'iconify',
         sourceCollection: 'logos',
         sourceId: match.sourceId,
         sourceVersion: this.version,
@@ -233,9 +237,10 @@ export class SvgLogosAdapter {
     const assets = [];
     for (const match of this.icons.values()) {
       assets.push({
-        assetId: `${match.name}-iconify-logos`,
+        assetId: `${match.name}-svg-logos-logos`,
         identityId: match.baseIdentity,
-        sourceProvider: 'iconify',
+        sourceProvider: 'svg-logos',
+        sourcePlatform: 'iconify',
         sourceCollection: 'logos',
         sourceId: match.sourceId,
         sourceVersion: this.version,

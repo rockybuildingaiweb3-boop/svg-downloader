@@ -60,6 +60,18 @@ export interface TranslationDictionary {
     resetFilters: string;
     selectAll: string;
     clearSelection: string;
+    activeFilters: string;
+    clearAll: string;
+    chipCategory: string;
+    chipSource: string;
+    chipStatus: string;
+    chipRole: string;
+    chipContext: string;
+    chipVariant: string;
+    chipSearch: string;
+    removeFilter: string;
+    clearSearchTerm: string;
+    resultsCountBanner: string;
     intentAnalysis: string;
     targetBrand: string;
     roleConstraint: string;
@@ -108,6 +120,7 @@ export interface TranslationDictionary {
   };
   card: {
     assetsAndSources: string;
+    coverageBadge: string;
     verified: string;
     unresolved: string;
     unresolvedDesc: string;

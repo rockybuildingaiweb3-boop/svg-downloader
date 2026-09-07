@@ -213,82 +213,113 @@ export class IconResolver {
 
     // 2. Query Official Vendor Provider
     const officialAssets = [];
-    for (const c of candidateList) {
-      const found = this.official.getAssets(c);
-      if (found.length > 0) {
-        officialAssets.push(...found);
-        break;
+    let officialStatus = 'not-found';
+    try {
+      for (const c of candidateList) {
+        const found = this.official.getAssets(c);
+        if (found.length > 0) {
+          officialAssets.push(...found);
+          officialStatus = 'available';
+          break;
+        }
       }
+    } catch {
+      officialStatus = 'error';
     }
 
     // 3. Query Wikimedia Commons Provider
     const wikimediaAssets = [];
-    for (const c of candidateList) {
-      const found = this.wikimedia.getAssets(c);
-      if (found.length > 0) {
-        wikimediaAssets.push(...found);
-        break;
+    let wikimediaStatus = 'not-found';
+    try {
+      for (const c of candidateList) {
+        const found = this.wikimedia.getAssets(c);
+        if (found.length > 0) {
+          wikimediaAssets.push(...found);
+          wikimediaStatus = 'available';
+          break;
+        }
       }
+    } catch {
+      wikimediaStatus = 'error';
     }
 
     // 4. Query SVG Logos Provider (with -icon probe)
     const svgLogosAssets = [];
-    const seenSvgNames = new Set();
-    for (const c of candidateList) {
-      const found = this.svgLogos.getAssets(c);
-      for (const a of found) {
-        if (!seenSvgNames.has(a.sourceId)) {
-          seenSvgNames.add(a.sourceId);
-          svgLogosAssets.push(a);
-        }
-      }
-      if (!c.endsWith('-icon')) {
-        const foundIcon = this.svgLogos.getAssets(`${c}-icon`);
-        for (const a of foundIcon) {
+    let svgLogosStatus = 'not-found';
+    try {
+      const seenSvgNames = new Set();
+      for (const c of candidateList) {
+        const found = this.svgLogos.getAssets(c);
+        for (const a of found) {
           if (!seenSvgNames.has(a.sourceId)) {
             seenSvgNames.add(a.sourceId);
             svgLogosAssets.push(a);
+            svgLogosStatus = 'available';
+          }
+        }
+        if (!c.endsWith('-icon')) {
+          const foundIcon = this.svgLogos.getAssets(`${c}-icon`);
+          for (const a of foundIcon) {
+            if (!seenSvgNames.has(a.sourceId)) {
+              seenSvgNames.add(a.sourceId);
+              svgLogosAssets.push(a);
+              svgLogosStatus = 'available';
+            }
           }
         }
       }
+    } catch {
+      svgLogosStatus = 'error';
     }
 
     // 5. Query Devicon Provider
     const deviconAssets = [];
     let deviconTags = [];
-    for (const c of candidateList) {
-      const devMatch = this.devicon.findByQuery(c);
-      if (devMatch && Array.isArray(devMatch.tags) && devMatch.tags.length > 0) {
-        deviconTags = devMatch.tags;
+    let deviconStatus = 'not-found';
+    try {
+      for (const c of candidateList) {
+        const devMatch = this.devicon.findByQuery(c);
+        if (devMatch && Array.isArray(devMatch.tags) && devMatch.tags.length > 0) {
+          deviconTags = devMatch.tags;
+        }
+        const found = this.devicon.getAssets(c);
+        if (found.length > 0) {
+          deviconAssets.push(...found);
+          deviconStatus = 'available';
+          break;
+        }
       }
-      const found = this.devicon.getAssets(c);
-      if (found.length > 0) {
-        deviconAssets.push(...found);
-        break;
-      }
+    } catch {
+      deviconStatus = 'error';
     }
 
     // 6. Query Simple Icons Provider
     const simpleIconsAssets = [];
-    for (const c of candidateList) {
-      const found = this.simpleIcons.getAssets(c);
-      if (found.length > 0) {
-        simpleIconsAssets.push(...found);
-        break;
+    let simpleIconsStatus = 'not-found';
+    try {
+      for (const c of candidateList) {
+        const found = this.simpleIcons.getAssets(c);
+        if (found.length > 0) {
+          simpleIconsAssets.push(...found);
+          simpleIconsStatus = 'available';
+          break;
+        }
       }
+    } catch {
+      simpleIconsStatus = 'error';
     }
 
-    // Explicit Source Availability Status (Objective 3.2 & 3.4)
+    // Explicit Source Availability Status (Phase 8)
     const sourceCoverage = {
-      official: officialAssets.length > 0 ? 'available' : 'not-found',
-      wikimedia: wikimediaAssets.length > 0 ? 'available' : 'not-found',
-      'svg-logos': svgLogosAssets.length > 0 ? 'available' : 'not-found',
-      devicon: deviconAssets.length > 0 ? 'available' : 'not-found',
-      'simple-icons': simpleIconsAssets.length > 0 ? 'available' : 'not-found'
+      official: officialStatus,
+      wikimedia: wikimediaStatus,
+      'svg-logos': svgLogosStatus,
+      devicon: deviconStatus,
+      'simple-icons': simpleIconsStatus
     };
 
     const sourceCoverageFound = Object.values(sourceCoverage).filter(s => s === 'available').length;
-    const sourceCoverageChecked = 5;
+    const sourceCoverageChecked = Object.keys(sourceCoverage).length;
     const sourceCoverageScore = `${sourceCoverageFound} / ${sourceCoverageChecked}`;
 
     const allFamilyAssets = [
@@ -379,15 +410,14 @@ export class IconResolver {
     }
 
     // 2. User Requested Preferred Source (+100)
-    if (criteria.preferredSource && (asset.sourceProvider === criteria.preferredSource || (criteria.preferredSource === 'svg-logos' && asset.sourceProvider === 'iconify'))) {
+    if (criteria.preferredSource && asset.sourceProvider === criteria.preferredSource) {
       score += 100;
       reasons.push(`Requested source matched (${asset.sourceProvider})`);
     }
 
     // 3. Source Policy Priority Ranking (0-50 based on activePolicy.priority list)
-    const priorityList = activePolicy.priority || ['official', 'wikimedia', 'iconify', 'svg-logos', 'simple-icons', 'devicon'];
-    const providerKey = asset.sourceProvider === 'iconify' ? 'svg-logos' : asset.sourceProvider;
-    const pIndex = priorityList.indexOf(providerKey) !== -1 ? priorityList.indexOf(providerKey) : priorityList.indexOf(asset.sourceProvider);
+    const priorityList = activePolicy.priority || ['official', 'wikimedia', 'svg-logos', 'simple-icons', 'devicon'];
+    const pIndex = priorityList.indexOf(asset.sourceProvider);
     if (pIndex !== -1) {
       const pScore = Math.max(0, (priorityList.length - pIndex) * 10);
       score += pScore;
@@ -657,7 +687,7 @@ export class IconResolver {
       if (seenProviders.has(a.sourceProvider)) continue;
       seenProviders.add(a.sourceProvider);
       alternativeSources.push({
-        source: a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider,
+        source: a.sourceProvider,
         sourceId: a.sourceId,
         sourceVersion: a.sourceVersion,
         variants: [a.graphicVariant],
@@ -680,7 +710,7 @@ export class IconResolver {
       id: canonicalId,
       title,
       canonicalName: canonicalId,
-      source: canonicalAsset.sourceProvider === 'iconify' ? 'svg-logos' : canonicalAsset.sourceProvider,
+      source: canonicalAsset.sourceProvider,
       sourceProvider: canonicalAsset.sourceProvider,
       sourcePlatform,
       sourceCollection: canonicalAsset.sourceCollection,

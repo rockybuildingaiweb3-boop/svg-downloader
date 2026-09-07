@@ -233,7 +233,7 @@ export class RegistryGenerator {
       generatedAt: new Date().toISOString(),
       totalIdentities: cleanRecords.length,
       totalAssets,
-      totalProviders: 5,
+      totalProviders: Object.keys(providerCounts).length,
       providerMatrix: {
         'official': providerCounts['official'].identities,
         'simple-icons': providerCounts['simple-icons'].identities,
