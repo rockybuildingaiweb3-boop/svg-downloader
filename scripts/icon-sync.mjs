@@ -354,6 +354,20 @@ async function main() {
         }
         recordsToPersist = Array.from(recordMap.values());
       } catch {}
+    } else {
+      // Catalog Shrinkage Protection (Requirement 4.5)
+      try {
+        const existingCatText = await fs.readFile(path.join(GENERATED_DIR, 'catalog.json'), 'utf8');
+        const existingCat = JSON.parse(existingCatText);
+        if (Array.isArray(existingCat) && existingCat.length > 4000) {
+          const threshold = Math.floor(existingCat.length * 0.95);
+          if (recordsToPersist.length < threshold && !args.includes('--allow-shrink')) {
+            console.error(`❌ Catalog shrinkage protection triggered: new count (${recordsToPersist.length}) is below safety threshold (${threshold}, current: ${existingCat.length}).`);
+            console.error(`Pass --allow-shrink to override this protection.`);
+            process.exit(1);
+          }
+        }
+      } catch {}
     }
 
     const metadata = {

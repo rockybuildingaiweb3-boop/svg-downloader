@@ -70,6 +70,7 @@ export const de: TranslationDictionary = {
     chipRole: 'Rolle: {value}',
     chipContext: 'Kontext: {value}',
     chipVariant: 'Variante: {value}',
+    chipTrust: 'Vertrauensstufe: {value}',
     chipSearch: 'Suche: "{value}"',
     removeFilter: 'Filter {name} entfernen',
     clearSearchTerm: 'Suchbegriff löschen',
@@ -188,6 +189,7 @@ export const de: TranslationDictionary = {
     copySvgCode: 'SVG-Code kopieren',
     copyReactJsx: 'React JSX kopieren',
     inspectAssetFamily: 'Asset-Familie prüfen',
+    imageLoadError: 'Vorschau nicht verfügbar',
   },
   inspector: {
     canonicalMainAsset: 'Kanonisches Haupt-Asset',

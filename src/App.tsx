@@ -49,6 +49,15 @@ import { CommandPalette } from './components/CommandPalette';
 import { downloadZip, downloadEngineeringZip, downloadConcreteAssetsZip } from './utils/svgHelpers';
 import { searchCatalogAssetAware, parseSearchIntent } from './utils/assetResolver';
 import { useTranslation } from './i18n/context';
+import {
+  getLocalizedCategoryLabel,
+  getLocalizedRoleLabel,
+  getLocalizedContextLabel,
+  getLocalizedVariantLabel,
+  getLocalizedTrustLabel,
+  getLocalizedStatusLabel,
+  getLocalizedEntityTypeLabel
+} from './utils/localizedLabels';
 
 const PRIMARY_CATEGORY_IDS = [
   'all',
@@ -1048,11 +1057,11 @@ export default function App() {
 
                   {selectedCategory !== 'all' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      <span>{format(t.filters.chipCategory, { value: getCategoryLabel(selectedCategory) })}</span>
+                      <span>{format(t.filters.chipCategory, { value: getLocalizedCategoryLabel(selectedCategory, t) })}</span>
                       <button
                         onClick={() => setSelectedCategory('all')}
                         className="hover:text-indigo-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getCategoryLabel(selectedCategory) })}
+                        aria-label={format(t.filters.removeFilter, { name: getLocalizedCategoryLabel(selectedCategory, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1074,11 +1083,11 @@ export default function App() {
 
                   {selectedStatus !== 'all' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span>{format(t.filters.chipStatus, { value: selectedStatus })}</span>
+                      <span>{format(t.filters.chipStatus, { value: getLocalizedStatusLabel(selectedStatus, t) })}</span>
                       <button
                         onClick={() => setSelectedStatus('all')}
                         className="hover:text-emerald-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: selectedStatus })}
+                        aria-label={format(t.filters.removeFilter, { name: getLocalizedStatusLabel(selectedStatus, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1087,11 +1096,11 @@ export default function App() {
 
                   {selectedRole !== 'all' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                      <span>{format(t.filters.chipRole, { value: selectedRole })}</span>
+                      <span>{format(t.filters.chipRole, { value: getLocalizedRoleLabel(selectedRole, t) })}</span>
                       <button
                         onClick={() => setSelectedRole('all')}
                         className="hover:text-purple-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: selectedRole })}
+                        aria-label={format(t.filters.removeFilter, { name: getLocalizedRoleLabel(selectedRole, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1100,11 +1109,11 @@ export default function App() {
 
                   {selectedContext !== 'all' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                      <span>{format(t.filters.chipContext, { value: selectedContext })}</span>
+                      <span>{format(t.filters.chipContext, { value: getLocalizedContextLabel(selectedContext, t) })}</span>
                       <button
                         onClick={() => setSelectedContext('all')}
                         className="hover:text-blue-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: selectedContext })}
+                        aria-label={format(t.filters.removeFilter, { name: getLocalizedContextLabel(selectedContext, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1113,11 +1122,24 @@ export default function App() {
 
                   {selectedVariant !== 'all' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-pink-50 text-pink-700 border border-pink-200">
-                      <span>{format(t.filters.chipVariant, { value: selectedVariant })}</span>
+                      <span>{format(t.filters.chipVariant, { value: getLocalizedVariantLabel(selectedVariant, t) })}</span>
                       <button
                         onClick={() => setSelectedVariant('all')}
                         className="hover:text-pink-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: selectedVariant })}
+                        aria-label={format(t.filters.removeFilter, { name: getLocalizedVariantLabel(selectedVariant, t) })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedTrustState !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200">
+                      <span>{format(t.filters.chipTrust, { value: getLocalizedTrustLabel(selectedTrustState, t) })}</span>
+                      <button
+                        onClick={() => setSelectedTrustState('all')}
+                        className="hover:text-teal-950 cursor-pointer ml-0.5"
+                        aria-label={format(t.filters.removeFilter, { name: getLocalizedTrustLabel(selectedTrustState, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>

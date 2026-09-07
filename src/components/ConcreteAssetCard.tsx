@@ -42,6 +42,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
   const { t } = useTranslation();
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<boolean>(false);
 
   const handleCopySvg = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -171,32 +172,28 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
             ? 'max-w-[140px] max-h-[40px] w-full h-10'
             : 'max-w-[48px] max-h-[48px] w-11 h-11'
         }`}>
-          <img
-            src={`/icons/${asset.file}`}
-            alt={`${asset.identityTitle || asset.identityId} - ${asset.file}`}
-            width={asset.role === 'wordmark' || asset.role === 'logo' ? 120 : 40}
-            height={40}
-            className={`object-contain ${
-              asset.role === 'wordmark'
-                ? 'max-w-[120px] max-h-[40px] w-auto h-auto'
-                : asset.role === 'logo'
-                ? 'max-w-[140px] max-h-[40px] w-auto h-auto'
-                : 'w-10 h-10'
-            }`}
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              const el = e.currentTarget;
-              el.style.display = 'none';
-              const parent = el.parentElement;
-              if (parent && !parent.querySelector('.err-badge')) {
-                const span = document.createElement('span');
-                span.className = 'err-badge text-2xs text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200';
-                span.innerText = 'Error';
-                parent.appendChild(span);
-              }
-            }}
-          />
+          {imageError ? (
+            <span className="err-badge text-2xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-medium">
+              {t.card.imageLoadError}
+            </span>
+          ) : (
+            <img
+              src={`/icons/${asset.file}`}
+              alt={`${asset.identityTitle || asset.identityId} - ${asset.file}`}
+              width={asset.role === 'wordmark' || asset.role === 'logo' ? 120 : 40}
+              height={40}
+              className={`object-contain ${
+                asset.role === 'wordmark'
+                  ? 'max-w-[120px] max-h-[40px] w-auto h-auto'
+                  : asset.role === 'logo'
+                  ? 'max-w-[140px] max-h-[40px] w-auto h-auto'
+                  : 'w-10 h-10'
+              }`}
+              loading="lazy"
+              decoding="async"
+              onError={() => setImageError(true)}
+            />
+          )}
         </div>
       </div>
 

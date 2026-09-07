@@ -70,6 +70,7 @@ export const ja: TranslationDictionary = {
     chipRole: '役割: {value}',
     chipContext: '用途: {value}',
     chipVariant: 'バリアント: {value}',
+    chipTrust: '信頼レベル: {value}',
     chipSearch: '検索: "{value}"',
     removeFilter: '{name}フィルターを解除',
     clearSearchTerm: '検索キーワードをクリア',
@@ -188,6 +189,7 @@ export const ja: TranslationDictionary = {
     copySvgCode: 'SVGコードをコピー',
     copyReactJsx: 'React JSXをコピー',
     inspectAssetFamily: 'アセットファミリーを調査',
+    imageLoadError: 'プレビュー利用不可',
   },
   inspector: {
     canonicalMainAsset: '標準プライマリアセット',

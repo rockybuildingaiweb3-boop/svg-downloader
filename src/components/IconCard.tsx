@@ -43,6 +43,7 @@ export const IconCard: React.FC<IconCardProps> = ({
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
+  const [imageError, setImageError] = useState<boolean>(false);
 
   const isUnresolved = icon.verificationStatus === 'unresolved';
   const totalAssetsCount = icon.totalAssets || icon.assets?.length || 1;
@@ -175,6 +176,10 @@ export const IconCard: React.FC<IconCardProps> = ({
             <AlertTriangle className="w-5 h-5 text-amber-500 mb-0.5" />
             <span className="text-2xs font-semibold text-amber-700">{t.card.unresolved}</span>
           </div>
+        ) : imageError ? (
+          <span className="err-badge text-2xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-medium">
+            {t.card.imageLoadError}
+          </span>
         ) : (
           <div className="transition-transform duration-200 group-hover:scale-105 flex items-center justify-center">
             <img
@@ -183,17 +188,7 @@ export const IconCard: React.FC<IconCardProps> = ({
               className={`${previewContainerClass} object-contain`}
               loading="lazy"
               decoding="async"
-              onError={(e) => {
-                const el = e.currentTarget;
-                el.style.display = 'none';
-                const parent = el.parentElement;
-                if (parent && !parent.querySelector('.err-badge')) {
-                  const span = document.createElement('span');
-                  span.className = 'err-badge text-2xs text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200';
-                  span.innerText = 'Error';
-                  parent.appendChild(span);
-                }
-              }}
+              onError={() => setImageError(true)}
             />
           </div>
         )}

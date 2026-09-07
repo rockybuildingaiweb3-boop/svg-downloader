@@ -364,7 +364,45 @@ async function runTests() {
   const unknownClassification = classifyIdentity({ id: 'xyz-completely-unknown-token-1234' });
   assert(unknownClassification.primaryCategory === 'needs-review' || unknownClassification.primaryCategory === 'uncategorized', 'Unknown token falls back to needs-review or uncategorized');
   assert(unknownClassification.primaryCategory !== 'technology', 'Unknown token does NOT silently fallback to technology');
-  assert(unknownClassification.primaryCategory !== 'brands', 'Unknown token does NOT silently fallback to brands');
+  // =========================================================================
+  // TEST 17: Centralized Enum Localization Helpers & Precomputed Index
+  // =========================================================================
+  console.log('\n🗂️ 17. Precomputed Registry Indexes & Localization Helpers');
+  const {
+    getLocalizedCategoryLabel,
+    getLocalizedRoleLabel,
+    getLocalizedContextLabel,
+    getLocalizedVariantLabel,
+    getLocalizedTrustLabel,
+    getLocalizedStatusLabel,
+    getLocalizedEntityTypeLabel
+  } = await import('../src/utils/localizedLabels.ts');
+
+  assert(getLocalizedCategoryLabel('developer-tools', en) === en.filters.categories['developer-tools'], 'Localized category helper handles developer-tools in en');
+  assert(getLocalizedCategoryLabel('developer-tools', zhCN) === zhCN.filters.categories['developer-tools'], 'Localized category helper handles developer-tools in zh-CN');
+  assert(getLocalizedRoleLabel('wordmark', en) === en.filters.roleOptions.wordmark, 'Localized role helper handles wordmark in en');
+  assert(getLocalizedRoleLabel('wordmark', zhCN) === zhCN.filters.roleOptions.wordmark, 'Localized role helper handles wordmark in zh-CN');
+  assert(getLocalizedTrustLabel('verified', en).includes('Verified'), 'Localized trust helper handles verified in en');
+  assert(Boolean(getLocalizedStatusLabel('multi-source', en)), 'Localized status helper handles multi-source');
+
+  const {
+    findIdentityById,
+    findIdentityBySlug,
+    findAssetById,
+    getIdentitiesByCategory,
+    getIdentitiesBySource,
+    getRegistrySummary
+  } = await import('../src/utils/registryIndex.ts');
+
+  const summary = getRegistrySummary();
+  assert(summary.totalIdentities >= 4600, `Registry index summary reports >= 4,600 identities (${summary.totalIdentities})`);
+  assert(summary.totalAssets >= 7000, `Registry index summary reports >= 7,000 assets (${summary.totalAssets})`);
+  const foundDocker = findIdentityById('docker');
+  assert(Boolean(foundDocker), 'findIdentityById("docker") returns Docker identity');
+  const foundBySlug = findIdentityBySlug('docker');
+  assert(Boolean(foundBySlug && foundBySlug.id === 'docker'), 'findIdentityBySlug("docker") matches');
+  const devToolsIcons = getIdentitiesByCategory('developer-tools');
+  assert(devToolsIcons.length > 0, `getIdentitiesByCategory("developer-tools") returns non-empty list (${devToolsIcons.length})`);
 
   // Summary
   console.log('\n=======================================================================');

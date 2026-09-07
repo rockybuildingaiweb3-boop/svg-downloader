@@ -70,6 +70,7 @@ export const zhCN: TranslationDictionary = {
     chipRole: '角色：{value}',
     chipContext: '场景：{value}',
     chipVariant: '变体：{value}',
+    chipTrust: '信任等级：{value}',
     chipSearch: '搜索："{value}"',
     removeFilter: '移除{name}筛选',
     clearSearchTerm: '清空搜索词',
@@ -188,6 +189,7 @@ export const zhCN: TranslationDictionary = {
     copySvgCode: '复制 SVG 代码',
     copyReactJsx: '复制 React 组件',
     inspectAssetFamily: '查看资产族谱',
+    imageLoadError: '预览暂不可用',
   },
   inspector: {
     canonicalMainAsset: '官方规范主资产',

@@ -70,6 +70,7 @@ export interface TranslationDictionary {
     chipRole: string;
     chipContext: string;
     chipVariant: string;
+    chipTrust: string;
     chipSearch: string;
     removeFilter: string;
     clearSearchTerm: string;
@@ -143,6 +144,7 @@ export interface TranslationDictionary {
     copySvgCode: string;
     copyReactJsx: string;
     inspectAssetFamily: string;
+    imageLoadError: string;
   };
   inspector: {
     canonicalMainAsset: string;
