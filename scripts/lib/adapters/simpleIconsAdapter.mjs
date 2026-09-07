@@ -226,4 +226,18 @@ export class SimpleIconsAdapter {
   count() {
     return this.icons.size;
   }
+
+  getMetadata() {
+    return {
+      id: 'simple-icons',
+      name: 'Simple Icons',
+      version: this.version || '16.30.0',
+      license: 'CC0 1.0 Universal',
+      licenseUrl: 'https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md',
+      sourceUrl: 'https://github.com/simple-icons/simple-icons',
+      collection: 'simple-icons',
+      trustPolicy: 'trusted',
+      totalAssets: this.icons.size
+    };
+  }
 }

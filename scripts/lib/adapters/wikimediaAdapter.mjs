@@ -161,5 +161,19 @@ export class WikimediaAdapter {
   size() {
     return this.icons.size;
   }
+
+  getMetadata() {
+    return {
+      id: 'wikimedia',
+      name: 'Wikimedia Commons',
+      version: 'Archive',
+      license: 'Public Domain / CC BY-SA',
+      licenseUrl: 'https://commons.wikimedia.org/wiki/Commons:Licensing',
+      sourceUrl: 'https://commons.wikimedia.org',
+      collection: 'wikimedia',
+      trustPolicy: 'community',
+      totalAssets: this.icons.size
+    };
+  }
 }
 

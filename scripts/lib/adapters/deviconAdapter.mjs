@@ -257,4 +257,18 @@ export class DeviconAdapter {
   count() {
     return this.icons.size;
   }
+
+  getMetadata() {
+    return {
+      id: 'devicon',
+      name: 'Devicon',
+      version: this.version || '2.17.0',
+      license: 'MIT License',
+      licenseUrl: 'https://github.com/devicons/devicon/blob/master/LICENSE',
+      sourceUrl: 'https://github.com/devicons/devicon',
+      collection: 'devicon',
+      trustPolicy: 'community',
+      totalAssets: this.totalAssetCount || 2402
+    };
+  }
 }

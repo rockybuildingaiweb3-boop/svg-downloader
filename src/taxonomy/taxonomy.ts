@@ -60,4 +60,5 @@ export interface MultiCategoryMetadata {
   categories: string[];
   categorySource: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence: number;
+  categoryEvidence?: string[];
 }

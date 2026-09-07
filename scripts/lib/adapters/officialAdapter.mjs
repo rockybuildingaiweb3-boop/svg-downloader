@@ -182,4 +182,18 @@ export class OfficialAdapter {
   count() {
     return this.icons.size;
   }
+
+  getMetadata() {
+    return {
+      id: 'official',
+      name: 'Official Vendor Brand Guidelines',
+      version: '1.0.0',
+      license: 'Trademark / Brand Guidelines',
+      licenseUrl: 'https://brand.google/guidelines/',
+      sourceUrl: 'https://github.com/rockybuildingaiweb3-boop/svg-downloader',
+      collection: 'official',
+      trustPolicy: 'trusted',
+      totalAssets: this.icons.size
+    };
+  }
 }

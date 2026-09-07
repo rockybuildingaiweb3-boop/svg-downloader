@@ -646,6 +646,7 @@ export class IconResolver {
       a.categories = catClassification.categories;
       a.categorySource = catClassification.categorySource;
       a.categoryConfidence = catClassification.categoryConfidence;
+      a.categoryEvidence = catClassification.categoryEvidence;
       a.category = catClassification.primaryCategory;
     }
 
@@ -701,6 +702,7 @@ export class IconResolver {
       categories: catClassification.categories,
       categorySource: catClassification.categorySource,
       categoryConfidence: catClassification.categoryConfidence,
+      categoryEvidence: catClassification.categoryEvidence,
       sourceCoverage,
       sourceCoverageFound,
       sourceCoverageChecked,

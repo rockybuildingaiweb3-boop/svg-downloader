@@ -247,21 +247,26 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
   const allAliases = (aliases || []).map(a => a.toLowerCase().trim());
   const searchHaystack = [cleanId, cleanTitle, ...allAliases].join(' ');
 
-  const candidateCategories = new Map(); // category -> { confidence, source }
+  const candidateCategories = new Map(); // category -> { confidence, source, evidence }
+  const evidenceList = [];
 
   // 1. Check Curated Collections (Highest Confidence)
   if (collections.categories) {
     for (const [catName, list] of Object.entries(collections.categories)) {
       if (Array.isArray(list) && (list.includes(cleanId) || allAliases.some(a => list.includes(a)))) {
         const canonicalCat = CURATED_CATEGORY_MAP[catName] || 'brands';
-        candidateCategories.set(canonicalCat, { confidence: 0.98, source: 'curated' });
+        const ev = `Curated catalog category hint: ${catName}`;
+        candidateCategories.set(canonicalCat, { confidence: 0.98, source: 'curated', evidence: ev });
+        evidenceList.push(ev);
       }
     }
   }
 
   if (collections.mainstream && collections.mainstream.includes(cleanId)) {
     if (!candidateCategories.has('technology') && !candidateCategories.has('brands')) {
-      candidateCategories.set('technology', { confidence: 0.92, source: 'curated' });
+      const ev = 'Curated mainstream collection';
+      candidateCategories.set('technology', { confidence: 0.92, source: 'curated', evidence: ev });
+      evidenceList.push(ev);
     }
   }
 
@@ -270,22 +275,34 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
     for (const rawTag of deviconTags) {
       const tag = rawTag.toLowerCase().trim();
       if (tag === 'framework' || tag === 'library') {
-        candidateCategories.set('technology', { confidence: 0.95, source: 'source' });
-        candidateCategories.set('developer-tools', { confidence: 0.88, source: 'source' });
+        const ev = `Devicon upstream tag: ${tag} -> technology/developer-tools`;
+        candidateCategories.set('technology', { confidence: 0.96, source: 'source', evidence: ev });
+        candidateCategories.set('developer-tools', { confidence: 0.90, source: 'source', evidence: ev });
+        evidenceList.push(ev);
       } else if (tag === 'language' || tag === 'programming-language') {
-        candidateCategories.set('technology', { confidence: 0.96, source: 'source' });
-        candidateCategories.set('developer-tools', { confidence: 0.90, source: 'source' });
+        const ev = `Devicon upstream tag: ${tag} -> technology/developer-tools`;
+        candidateCategories.set('technology', { confidence: 0.96, source: 'source', evidence: ev });
+        candidateCategories.set('developer-tools', { confidence: 0.90, source: 'source', evidence: ev });
+        evidenceList.push(ev);
       } else if (tag === 'database' || tag === 'db') {
-        candidateCategories.set('databases', { confidence: 0.96, source: 'source' });
-        candidateCategories.set('technology', { confidence: 0.85, source: 'source' });
+        const ev = `Devicon upstream tag: ${tag} -> databases`;
+        candidateCategories.set('databases', { confidence: 0.96, source: 'source', evidence: ev });
+        candidateCategories.set('technology', { confidence: 0.85, source: 'source', evidence: ev });
+        evidenceList.push(ev);
       } else if (tag === 'cloud') {
-        candidateCategories.set('cloud', { confidence: 0.95, source: 'source' });
-        candidateCategories.set('infrastructure', { confidence: 0.88, source: 'source' });
+        const ev = `Devicon upstream tag: ${tag} -> cloud`;
+        candidateCategories.set('cloud', { confidence: 0.95, source: 'source', evidence: ev });
+        candidateCategories.set('infrastructure', { confidence: 0.88, source: 'source', evidence: ev });
+        evidenceList.push(ev);
       } else if (tag === 'devops' || tag === 'tool') {
-        candidateCategories.set('developer-tools', { confidence: 0.95, source: 'source' });
-        candidateCategories.set('infrastructure', { confidence: 0.85, source: 'source' });
+        const ev = `Devicon upstream tag: ${tag} -> developer-tools`;
+        candidateCategories.set('developer-tools', { confidence: 0.95, source: 'source', evidence: ev });
+        candidateCategories.set('infrastructure', { confidence: 0.85, source: 'source', evidence: ev });
+        evidenceList.push(ev);
       } else if (tag === 'design') {
-        candidateCategories.set('design', { confidence: 0.95, source: 'source' });
+        const ev = `Devicon upstream tag: ${tag} -> design`;
+        candidateCategories.set('design', { confidence: 0.95, source: 'source', evidence: ev });
+        evidenceList.push(ev);
       }
     }
   }
@@ -309,8 +326,10 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
 
     if (matched) {
       const existing = candidateCategories.get(rule.category);
+      const ev = `Semantic keyword match: ${rule.category}`;
       if (!existing || existing.confidence < rule.weight) {
-        candidateCategories.set(rule.category, { confidence: rule.weight, source: 'derived' });
+        candidateCategories.set(rule.category, { confidence: rule.weight, source: 'derived', evidence: ev });
+        evidenceList.push(ev);
       }
     }
   }
@@ -318,13 +337,19 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
   // If no candidates found yet, check generic suffix/prefix heuristics
   if (candidateCategories.size === 0) {
     if (cleanId.endsWith('db') || cleanId.endsWith('sql')) {
-      candidateCategories.set('databases', { confidence: 0.75, source: 'derived' });
+      const ev = 'Affix heuristic: ends with db/sql';
+      candidateCategories.set('databases', { confidence: 0.75, source: 'derived', evidence: ev });
+      evidenceList.push(ev);
     } else if (cleanId.endsWith('js') || cleanId.endsWith('ts') || cleanId.endsWith('py')) {
-      candidateCategories.set('technology', { confidence: 0.75, source: 'derived' });
-      candidateCategories.set('developer-tools', { confidence: 0.70, source: 'derived' });
+      const ev = 'Affix heuristic: language file extension';
+      candidateCategories.set('technology', { confidence: 0.75, source: 'derived', evidence: ev });
+      candidateCategories.set('developer-tools', { confidence: 0.70, source: 'derived', evidence: ev });
+      evidenceList.push(ev);
     } else if (cleanId.startsWith('apache') || cleanId.startsWith('gnu') || cleanId.startsWith('linux')) {
-      candidateCategories.set('infrastructure', { confidence: 0.75, source: 'derived' });
-      candidateCategories.set('technology', { confidence: 0.70, source: 'derived' });
+      const ev = 'Prefix heuristic: open-source foundation';
+      candidateCategories.set('infrastructure', { confidence: 0.75, source: 'derived', evidence: ev });
+      candidateCategories.set('technology', { confidence: 0.70, source: 'derived', evidence: ev });
+      evidenceList.push(ev);
     }
   }
 
@@ -337,14 +362,16 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
         primaryCategory: 'needs-review',
         categories: ['needs-review'],
         categorySource: 'fallback',
-        categoryConfidence: 0.40
+        categoryConfidence: 0.40,
+        categoryEvidence: ['Low confidence score (no known signals matched); flagged for review']
       };
     } else {
       return {
         primaryCategory: 'uncategorized',
         categories: ['uncategorized'],
         categorySource: 'fallback',
-        categoryConfidence: 0.10
+        categoryConfidence: 0.10,
+        categoryEvidence: ['Insufficient classification evidence (< 0.20 confidence)']
       };
     }
   }
@@ -362,10 +389,15 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
     .filter(([_, data]) => data.confidence >= 0.65 || (topConfidence - data.confidence <= 0.15))
     .map(([cat]) => cat);
 
+  const activeEvidence = Array.from(new Set(
+    activeCategories.map(cat => candidateCategories.get(cat)?.evidence).filter(Boolean)
+  ));
+
   return {
     primaryCategory: topCategory,
     categories: activeCategories.length > 0 ? activeCategories : [topCategory],
     categorySource: topSource,
-    categoryConfidence: Number(topConfidence.toFixed(2))
+    categoryConfidence: Number(topConfidence.toFixed(2)),
+    categoryEvidence: activeEvidence.length > 0 ? activeEvidence : evidenceList
   };
 }

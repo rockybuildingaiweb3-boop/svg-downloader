@@ -11,7 +11,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import conflictsData from '../../generated/conflicts.json';
-import { CURATED_ICONS } from '../data/curatedIcons';
+import { REGISTRY_IDENTITIES } from '../data/catalog';
 import { IconItem } from '../types';
 import { useTranslation } from '../i18n/context';
 
@@ -45,7 +45,7 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
 
   const iconMap = useMemo(() => {
     const map = new Map<string, IconItem>();
-    for (const item of CURATED_ICONS) {
+    for (const item of REGISTRY_IDENTITIES) {
       map.set(item.slug, item);
     }
     return map;
@@ -106,7 +106,7 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100 text-xs">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-slate-400 block text-2xs">{t.conflictsView.identitiesAuditedTitle}</span>
-            <span className="text-base font-extrabold text-slate-900">{CURATED_ICONS.length}</span>
+            <span className="text-base font-extrabold text-slate-900">{REGISTRY_IDENTITIES.length}</span>
             <span className="text-2xs text-slate-500 block">{t.conflictsView.identitiesAuditedDesc}</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">

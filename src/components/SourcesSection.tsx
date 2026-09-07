@@ -14,51 +14,25 @@ import { useTranslation } from '../i18n/context';
 import { REGISTRY_ITEMS } from '../data/registry';
 import { computeRegistryCoverageSummary } from '../utils/sourceCoverage';
 
+import sourcesConfig from '../../config/sources.json';
+
 interface SourceMeta {
   id: string;
   name: string;
   repoUrl: string;
   version: string;
   license: string;
+  trustPolicy?: string;
 }
 
-const SOURCES: SourceMeta[] = [
-  {
-    id: 'simple-icons',
-    name: 'Simple Icons',
-    repoUrl: 'https://github.com/simple-icons/simple-icons',
-    version: 'v16.30.0',
-    license: 'CC0 1.0 Universal',
-  },
-  {
-    id: 'devicon',
-    name: 'Devicon',
-    repoUrl: 'https://github.com/devicons/devicon',
-    version: 'v2.17.0',
-    license: 'MIT License',
-  },
-  {
-    id: 'svg-logos',
-    name: 'SVG Logos (Gilbarbara)',
-    repoUrl: 'https://github.com/gilbarbara/logos',
-    version: 'v1.2.13 (verified)',
-    license: 'CC0 1.0 Universal / MIT',
-  },
-  {
-    id: 'official',
-    name: 'Official Vendor Brand Kits',
-    repoUrl: 'https://github.com/rockybuildingaiweb3-boop/svg-downloader',
-    version: 'Direct Vendor Guidelines',
-    license: 'Corporate Trademark / Fair Use',
-  },
-  {
-    id: 'wikimedia',
-    name: 'Wikimedia Commons',
-    repoUrl: 'https://commons.wikimedia.org',
-    version: 'Historical Archive',
-    license: 'Public Domain / CC BY-SA',
-  },
-];
+const SOURCES: SourceMeta[] = (sourcesConfig.sources || []).map((s: any) => ({
+  id: s.id,
+  name: s.name,
+  repoUrl: s.sourceUrl,
+  version: s.version,
+  license: s.license,
+  trustPolicy: s.trustPolicy
+}));
 
 export const SourcesSection: React.FC = () => {
   const { t } = useTranslation();

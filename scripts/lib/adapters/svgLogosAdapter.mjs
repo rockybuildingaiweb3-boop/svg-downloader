@@ -272,4 +272,18 @@ export class SvgLogosAdapter {
   count() {
     return this.icons.size;
   }
+
+  getMetadata() {
+    return {
+      id: 'svg-logos',
+      name: 'SVG Logos',
+      version: this.version || '1.2.13',
+      license: 'CC0 1.0 Universal / MIT',
+      licenseUrl: 'https://github.com/gilbarbara/logos/blob/master/LICENSE.txt',
+      sourceUrl: 'https://github.com/gilbarbara/logos',
+      collection: 'logos',
+      trustPolicy: 'trusted',
+      totalAssets: this.icons.size
+    };
+  }
 }

@@ -156,8 +156,9 @@ async function auditFile(filePath) {
     if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) continue;
     if (line.startsWith('import ') || line.startsWith('export type') || line.startsWith('export interface')) continue;
 
-    // 1. Check raw JSX text: >Some Text< (excluding brackets and variables)
-    const jsxTextMatches = line.match(/>([^<>{}\r\n]+)</g);
+    // 1. Check raw JSX text: >Some Text< (excluding brackets and variables) - only in TSX files
+    const isTsx = filePath.endsWith('.tsx');
+    const jsxTextMatches = isTsx ? line.match(/>([^<>{}\r\n]+)</g) : null;
     if (jsxTextMatches) {
       for (const m of jsxTextMatches) {
         const text = m.slice(1, -1).trim();

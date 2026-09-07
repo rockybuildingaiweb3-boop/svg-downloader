@@ -203,6 +203,7 @@ export interface BrandAsset {
   categories?: string[];
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
+  categoryEvidence?: string[];
 }
 
 export interface ConcreteAssetItem extends BrandAsset {
@@ -214,6 +215,7 @@ export interface ConcreteAssetItem extends BrandAsset {
   categories?: string[];
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
+  categoryEvidence?: string[];
   matchScore?: number;
   matchChecklist?: string[];
   matchReason?: string;
@@ -240,6 +242,7 @@ export interface BrandIdentity {
   categories?: string[];
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
+  categoryEvidence?: string[];
   brandColor?: string;
   aliases?: string[];
   tags?: string[];
@@ -301,6 +304,7 @@ export interface IconRecord {
   categories?: string[];
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
+  categoryEvidence?: string[];
   sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
@@ -342,6 +346,7 @@ export interface IconItem {
   categories?: string[];
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
   categoryConfidence?: number;
+  categoryEvidence?: string[];
   sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;

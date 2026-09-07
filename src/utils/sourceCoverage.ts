@@ -142,3 +142,69 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
     },
   };
 }
+
+export interface RegistryHealthMetrics {
+  healthScore: number;
+  verifiedIdentities: number;
+  sparseSourceIdentities: number;
+  unresolvedIdentities: number;
+  unknownLicenseCount: number;
+  isPerfect: boolean;
+}
+
+/**
+ * Honest Registry Health Calculator (Part 16)
+ * Calculates true health score based on actual validation invariants and data quality.
+ */
+export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics {
+  const total = items.length;
+  if (total === 0) {
+    return {
+      healthScore: 100,
+      verifiedIdentities: 0,
+      sparseSourceIdentities: 0,
+      unresolvedIdentities: 0,
+      unknownLicenseCount: 0,
+      isPerfect: true,
+    };
+  }
+
+  let verifiedCount = 0;
+  let unresolvedCount = 0;
+  let sparseCount = 0;
+  let unknownLicenseCount = 0;
+
+  for (const item of items) {
+    if (item.verificationStatus === 'verified' || item.verified) {
+      verifiedCount++;
+    } else if (item.verificationStatus === 'unresolved') {
+      unresolvedCount++;
+    }
+
+    if (!item.license || item.licenseStatus === 'unknown') {
+      unknownLicenseCount++;
+    }
+
+    const sources = item.sourceCoverage
+      ? Object.values(item.sourceCoverage).filter(s => s === 'available').length
+      : 1;
+    if (sources === 1) {
+      sparseCount++;
+    }
+  }
+
+  // Calculate honest score: penalize unresolved and unknown licenses
+  const score = Math.max(
+    0,
+    Math.min(100, Math.round(((verifiedCount - unresolvedCount) / total) * 1000) / 10)
+  );
+
+  return {
+    healthScore: score,
+    verifiedIdentities: verifiedCount,
+    sparseSourceIdentities: sparseCount,
+    unresolvedIdentities: unresolvedCount,
+    unknownLicenseCount,
+    isPerfect: score === 100 && unresolvedCount === 0 && unknownLicenseCount === 0,
+  };
+}

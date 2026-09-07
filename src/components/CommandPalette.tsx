@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../i18n/context';
 import { SupportedLanguage } from '../i18n/types';
-import { CURATED_ICONS } from '../data/curatedIcons';
+import { REGISTRY_IDENTITIES } from '../data/catalog';
 import { IconItem } from '../types';
 
 interface CommandPaletteProps {
@@ -118,9 +118,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       }
     });
 
-    // Brand icons matching query
+    // Brand identities matching query
     if (q) {
-      const matchedIcons = CURATED_ICONS.filter(icon => {
+      const matchedIcons = REGISTRY_IDENTITIES.filter(icon => {
         return (
           icon.title.toLowerCase().includes(q) ||
           icon.id.toLowerCase().includes(q) ||

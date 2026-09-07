@@ -31,7 +31,7 @@ import {
   ConcreteAssetItem,
   getSemanticSourceLabel
 } from './types';
-import { REGISTRY_ITEMS, REGISTRY_ASSETS, REGISTRY_STATS, ASSET_MAP, CURATED_ICONS, ICON_MAP } from './data/catalog';
+import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_STATS, ASSET_MAP, ICON_MAP } from './data/catalog';
 import { CATEGORY_DEFINITIONS } from './taxonomy/taxonomy';
 import { computeCategoryStats } from './taxonomy/categoryResolver';
 import { Header, ActiveTabType } from './components/Header';
@@ -97,11 +97,12 @@ export default function App() {
 
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [inspectedIcon, setInspectedIcon] = useState<IconItem | null>(null);
+  const [allIcons] = useState<IconItem[]>(REGISTRY_IDENTITIES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Dynamic Category Stats computed from the active registry
   const categoryStatsData = useMemo(() => {
-    return computeCategoryStats(REGISTRY_ITEMS);
+    return computeCategoryStats(REGISTRY_IDENTITIES);
   }, []);
 
   const showToast = (msg: string) => {
@@ -178,7 +179,7 @@ export default function App() {
 
   // Filtered icons
   const filteredIcons = useMemo(() => {
-    const baseFiltered = REGISTRY_ITEMS.map(icon => {
+    const baseFiltered = REGISTRY_IDENTITIES.map(icon => {
       const overrideAssetId = activeAssetOverrides[icon.id];
       if (overrideAssetId && icon.assets) {
         const found = icon.assets.find(a => a.assetId === overrideAssetId);
@@ -512,7 +513,7 @@ export default function App() {
 
   const handleDownloadSelectedZip = async () => {
     if (browseLevel === 'identities') {
-      const itemsToDownload = CURATED_ICONS.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
+      const itemsToDownload = REGISTRY_IDENTITIES.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
       if (itemsToDownload.length === 0) return;
       await downloadZip(itemsToDownload, `brand-icons-${itemsToDownload.length}.zip`);
       showToast(`Downloading ${itemsToDownload.length} verified SVG assets...`);
@@ -527,7 +528,7 @@ export default function App() {
   };
 
   const handleDownloadSelectedBundle = async () => {
-    const itemsToDownload = CURATED_ICONS.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
+    const itemsToDownload = REGISTRY_IDENTITIES.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
     if (itemsToDownload.length === 0) return;
     await downloadEngineeringZip(
       itemsToDownload,
@@ -537,13 +538,13 @@ export default function App() {
   };
 
   const handleDownloadMainstreamZip = async () => {
-    const validItems = CURATED_ICONS.filter(i => i.verificationStatus !== 'unresolved');
+    const validItems = REGISTRY_IDENTITIES.filter(i => i.verificationStatus !== 'unresolved');
     await downloadZip(validItems, 'authoritative-brand-tech-svg-pack.zip');
     showToast(`Downloading full set of ${validItems.length} verified SVGs...`);
   };
 
   const handleDownloadMainstreamBundle = async () => {
-    const validItems = CURATED_ICONS.filter(i => i.verificationStatus !== 'unresolved');
+    const validItems = REGISTRY_IDENTITIES.filter(i => i.verificationStatus !== 'unresolved');
     await downloadEngineeringZip(
       validItems,
       'authoritative-engineering-bundle.zip'
@@ -571,7 +572,7 @@ export default function App() {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        totalIcons={REGISTRY_ITEMS.length}
+        totalIcons={REGISTRY_IDENTITIES.length}
         selectedCount={browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length}
         onDownloadMainstreamZip={handleDownloadMainstreamZip}
         onDownloadMainstreamBundle={handleDownloadMainstreamBundle}
@@ -628,7 +629,7 @@ export default function App() {
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5">
                   {browseLevel === 'identities'
-                    ? `${t.header.browseIdentitiesTitle} (${REGISTRY_ITEMS.length.toLocaleString()})`
+                    ? `${t.header.browseIdentitiesTitle} (${REGISTRY_IDENTITIES.length.toLocaleString()})`
                     : `${t.header.browseAssetsTitle} (${REGISTRY_ASSETS.length.toLocaleString()})`}
                 </p>
               </div>
@@ -645,7 +646,7 @@ export default function App() {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>{t.header.browseIdentitiesTitle} ({REGISTRY_ITEMS.length.toLocaleString()})</span>
+                  <span>{t.header.browseIdentitiesTitle} ({REGISTRY_IDENTITIES.length.toLocaleString()})</span>
                 </button>
                 <button
                   id="btn-browse-assets"
@@ -784,7 +785,7 @@ export default function App() {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>{t.filters.collections.all} ({REGISTRY_ITEMS.length})</span>
+                  <span>{t.filters.collections.all} ({REGISTRY_IDENTITIES.length})</span>
                 </button>
 
                 <button
@@ -835,7 +836,7 @@ export default function App() {
                   const stat = categoryStatsData.categoryStats[cat.id];
                   const count =
                     cat.id === 'all'
-                      ? REGISTRY_ITEMS.length
+                      ? REGISTRY_IDENTITIES.length
                       : (stat ? stat.identitiesCount : 0);
 
                   if (count === 0 && cat.id !== 'all') return null;

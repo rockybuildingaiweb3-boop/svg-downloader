@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onDownloadMainstreamBundle,
   onOpenCommandPalette,
 }) => {
-  const { t, language, setLanguage, availableLanguages } = useTranslation();
+  const { t, language, setLanguage, availableLanguages, format } = useTranslation();
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
 
@@ -67,7 +67,11 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 </div>
                 <p className="text-2xs text-slate-500 mt-0.5 hidden sm:block">
-                  {t.header.registrySubtitle}
+                  {format(t.header.registryStatsBanner, {
+                    identities: totalIcons.toLocaleString(),
+                    assets: '8,052',
+                    sources: '5'
+                  })}
                 </p>
               </div>
             </div>
@@ -96,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-indigo-500" />
-              <span>{t.header.tabIcons} ({totalIcons})</span>
+              <span>{t.header.tabIdentities} ({totalIcons})</span>
             </button>
 
             <button

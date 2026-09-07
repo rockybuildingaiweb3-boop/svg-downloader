@@ -32,6 +32,8 @@ export interface TranslationDictionary {
     sourceInventoryFirst: string;
     browseIdentitiesTitle: string;
     browseAssetsTitle: string;
+    tabIdentities: string;
+    sourcesWord: string;
   };
   systemBanner: {
     registryTitle: string;
@@ -211,6 +213,22 @@ export interface TranslationDictionary {
     orLabel: string;
     chooseSvgFile: string;
     analyzedLocally: string;
+    whyThisAsset: string;
+    whyThisAssetSubtitle: string;
+    decisionScoreLabel: string;
+    decisionPolicyLabel: string;
+    decisionReasonsTitle: string;
+    sourceAvailability: string;
+    sourceAvailabilitySubtitle: string;
+    availableStatus: string;
+    notFoundStatus: string;
+    classificationTitle: string;
+    classificationSubtitle: string;
+    primaryCategoryLabel: string;
+    secondaryCategoriesLabel: string;
+    confidenceLabel: string;
+    evidenceTitle: string;
+    noEvidence: string;
   };
   sourcesView: {
     title: string;
@@ -279,6 +297,12 @@ export interface TranslationDictionary {
     coverageRatioCol: string;
     identitiesWord: string;
     assetsWord: string;
+    honestHealthScore: string;
+    issuesDetected: string;
+    noIssuesDetected: string;
+    sparseSourceIdentities: string;
+    unknownLicenseIdentities: string;
+    calculatedHealth: string;
   };
   conflictsView: {
     title: string;

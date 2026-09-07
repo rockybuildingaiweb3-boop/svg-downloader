@@ -1,0 +1,64 @@
+{
+  "sources": [
+    {
+      "id": "official",
+      "name": "Official Vendor Brand Guidelines",
+      "adapter": "official",
+      "collection": "official",
+      "enabled": true,
+      "version": "1.0.0",
+      "license": "Trademark / Brand Guidelines",
+      "licenseUrl": "https://brand.google/guidelines/",
+      "sourceUrl": "https://github.com/rockybuildingaiweb3-boop/svg-downloader",
+      "trustPolicy": "trusted"
+    },
+    {
+      "id": "simple-icons",
+      "name": "Simple Icons",
+      "adapter": "simple-icons",
+      "collection": "simple-icons",
+      "enabled": true,
+      "version": "16.30.0",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md",
+      "sourceUrl": "https://github.com/simple-icons/simple-icons",
+      "trustPolicy": "trusted"
+    },
+    {
+      "id": "devicon",
+      "name": "Devicon",
+      "adapter": "devicon",
+      "collection": "devicon",
+      "enabled": true,
+      "version": "2.17.0",
+      "license": "MIT License",
+      "licenseUrl": "https://github.com/devicons/devicon/blob/master/LICENSE",
+      "sourceUrl": "https://github.com/devicons/devicon",
+      "trustPolicy": "community"
+    },
+    {
+      "id": "svg-logos",
+      "name": "SVG Logos (Gilbarbara)",
+      "adapter": "svg-logos",
+      "collection": "logos",
+      "enabled": true,
+      "version": "1.2.13",
+      "license": "CC0 1.0 Universal / MIT",
+      "licenseUrl": "https://github.com/gilbarbara/logos/blob/master/LICENSE.txt",
+      "sourceUrl": "https://github.com/gilbarbara/logos",
+      "trustPolicy": "trusted"
+    },
+    {
+      "id": "wikimedia",
+      "name": "Wikimedia Commons",
+      "adapter": "wikimedia",
+      "collection": "wikimedia",
+      "enabled": true,
+      "version": "Archive",
+      "license": "Public Domain / CC BY-SA",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+      "sourceUrl": "https://commons.wikimedia.org",
+      "trustPolicy": "community"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ export const CANONICAL_CATALOG: IconRecord[] = (rawRegistry as any).identities a
 /**
  * Maps canonical record to UI IconItem with full BrandIdentity and AssetFamily support
  */
-export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
+export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
   const sourceProvider = (rec.sourceProvider || (rec.source === 'svg-logos' ? 'iconify' : rec.source)) as any;
   const sourceCollection = rec.sourceCollection || (rec.source === 'svg-logos' ? 'logos' : rec.source);
   const role = (rec.role || 'logo') as any;
@@ -86,6 +86,7 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
       : [rec.primaryCategory || rec.category || 'technology'],
     categorySource: rec.categorySource || 'derived',
     categoryConfidence: rec.categoryConfidence ?? 0.8,
+    categoryEvidence: rec.categoryEvidence || [],
     sourceCoverage: rec.sourceCoverage,
     sourceCoverageFound: rec.sourceCoverageFound,
     sourceCoverageChecked: rec.sourceCoverageChecked,
@@ -133,17 +134,17 @@ export const REGISTRY_ITEMS: IconItem[] = CANONICAL_CATALOG.map((rec) => {
   };
 });
 
-// Backward-compatible alias (Principle 34)
-export const CURATED_ICONS: IconItem[] = REGISTRY_ITEMS;
+// Transitional compatibility alias
+export const REGISTRY_ITEMS: IconItem[] = REGISTRY_IDENTITIES;
 
-export const ICON_MAP: Record<string, IconItem> = REGISTRY_ITEMS.reduce((acc, icon) => {
+export const ICON_MAP: Record<string, IconItem> = REGISTRY_IDENTITIES.reduce((acc, icon) => {
   acc[icon.slug] = icon;
   return acc;
 }, {} as Record<string, IconItem>);
 
 // Flattened concrete assets list for "Browse by Assets" mode
 export const REGISTRY_ASSETS: ConcreteAssetItem[] = [];
-for (const icon of REGISTRY_ITEMS) {
+for (const icon of REGISTRY_IDENTITIES) {
   for (const asset of icon.assets || []) {
     REGISTRY_ASSETS.push({
       ...asset,
@@ -155,6 +156,7 @@ for (const icon of REGISTRY_ITEMS) {
       categories: icon.categories,
       categorySource: icon.categorySource,
       categoryConfidence: icon.categoryConfidence,
+      categoryEvidence: icon.categoryEvidence,
     });
   }
 }

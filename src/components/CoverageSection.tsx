@@ -14,14 +14,14 @@ import { useTranslation } from '../i18n/context';
 import { REGISTRY_ITEMS } from '../data/registry';
 import { computeCategoryStats } from '../taxonomy/categoryResolver';
 import { CATEGORY_DEFINITIONS } from '../taxonomy/taxonomy';
-import { computeRegistryCoverageSummary } from '../utils/sourceCoverage';
+import { computeRegistryCoverageSummary, computeRegistryHealth } from '../utils/sourceCoverage';
 import conflictsData from '../../generated/conflicts.json';
 
 export const CoverageSection: React.FC = () => {
   const { t } = useTranslation();
 
   // Compute live statistics dynamically from actual active registry
-  const { stats, coverageSummary, categoryData } = React.useMemo(() => {
+  const { stats, coverageSummary, categoryData, health } = React.useMemo(() => {
     const categoryStats = computeCategoryStats(REGISTRY_ITEMS);
     const coverageSummary = computeRegistryCoverageSummary(REGISTRY_ITEMS);
 
@@ -62,6 +62,7 @@ export const CoverageSection: React.FC = () => {
       },
       coverageSummary,
       categoryData: categoryStats.categoryStats,
+      health: computeRegistryHealth(REGISTRY_ITEMS),
     };
   }, []);
 
@@ -78,7 +79,7 @@ export const CoverageSection: React.FC = () => {
               </h2>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                {t.coverageView.healthTitle}
+                <span>{health.healthScore}% {t.coverageView.calculatedHealth}</span>
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
@@ -86,9 +87,13 @@ export const CoverageSection: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+          <div className="flex items-center gap-2 text-xs text-slate-700 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold">{t.coverageView.allPassed}</span>
+            <span className="font-semibold">
+              {health.isPerfect
+                ? t.coverageView.noIssuesDetected
+                : `${health.sparseSourceIdentities} ${t.coverageView.sparseSourceIdentities}`}
+            </span>
           </div>
         </div>
       </div>
