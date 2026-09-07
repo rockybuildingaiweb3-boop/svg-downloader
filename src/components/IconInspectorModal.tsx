@@ -941,19 +941,32 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
               {ENABLED_SOURCES.map(provider => {
                 const providerName = getLocalizedSourceLabel(provider.id, t) || provider.name;
-                const isAvailable =
-                  icon.sourceCoverage?.[provider.id] === 'available' ||
-                  (icon.assets && icon.assets.some(a => (a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider) === provider.id)) ||
-                  (icon.sourceProvider === 'iconify' ? 'svg-logos' : icon.sourceProvider) === provider.id;
+                const status = icon.sourceCoverage?.[provider.id] || (
+                  ((icon.assets && icon.assets.some(a => (a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider) === provider.id)) ||
+                   (icon.sourceProvider === 'iconify' ? 'svg-logos' : icon.sourceProvider) === provider.id)
+                    ? 'available'
+                    : 'not-found'
+                );
+
+                const isAvailable = status === 'available';
+                const isError = status === 'error';
+                const isTimeout = status === 'timeout';
+                const isDisabled = status === 'disabled';
+
+                const cardClass = isAvailable
+                  ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                  : isError
+                  ? 'bg-rose-50/60 border-rose-200 text-rose-950'
+                  : isTimeout
+                  ? 'bg-amber-50/60 border-amber-200 text-amber-950'
+                  : isDisabled
+                  ? 'bg-slate-50 border-slate-200 text-slate-400'
+                  : 'bg-slate-100/60 border-slate-200 text-slate-500';
 
                 return (
                   <div
                     key={provider.id}
-                    className={`p-2 rounded-xl border text-2xs flex flex-col justify-between ${
-                      isAvailable
-                        ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
-                        : 'bg-slate-100/60 border-slate-200 text-slate-500'
-                    }`}
+                    className={`p-2 rounded-xl border text-2xs flex flex-col justify-between ${cardClass}`}
                   >
                     <span className="font-semibold block truncate">{providerName}</span>
                     <div className="flex items-center gap-1 mt-1.5 font-medium">
@@ -961,6 +974,21 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                         <>
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                           <span className="text-emerald-700 font-bold">{t.inspector.availableStatus}</span>
+                        </>
+                      ) : isError ? (
+                        <>
+                          <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                          <span className="text-rose-700 font-bold">{t.inspector.errorStatus}</span>
+                        </>
+                      ) : isTimeout ? (
+                        <>
+                          <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span className="text-amber-700 font-bold">{t.inspector.timeoutStatus}</span>
+                        </>
+                      ) : isDisabled ? (
+                        <>
+                          <XCircle className="w-3 h-3 text-slate-300 shrink-0" />
+                          <span className="text-slate-400">{t.inspector.disabledStatus}</span>
                         </>
                       ) : (
                         <>

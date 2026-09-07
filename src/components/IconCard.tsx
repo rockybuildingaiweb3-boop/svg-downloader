@@ -19,6 +19,7 @@ import {
   generateReactJsx,
   copyRawSvg
 } from '../utils/svgHelpers';
+import { getLocalizedCategoryLabel, getLocalizedEntityTypeLabel } from '../utils/localizedLabels';
 
 interface IconCardProps {
   icon: IconItem;
@@ -86,7 +87,7 @@ export const IconCard: React.FC<IconCardProps> = ({
         onDownloadReceipt(receipt);
       }
     } catch (err: any) {
-      setDownloadError(err.message || 'Download failed');
+      setDownloadError(err.message || t.toasts.downloadFailed);
       setTimeout(() => setDownloadError(null), 3000);
     }
   };
@@ -98,9 +99,13 @@ export const IconCard: React.FC<IconCardProps> = ({
     }
   };
 
-  // Truthful coverage without hardcoded default to 5 (Requirement 4)
+  // Truthful coverage without hardcoded default to 5 (Requirement T0.1)
   const sourceFound = icon.sourceCoverageFound || sourcesCount;
   const sourceChecked = icon.sourceCoverageChecked;
+  const erroredCount = icon.sourceCoverage
+    ? Object.values(icon.sourceCoverage).filter(s => s === 'error' || s === 'timeout').length
+    : 0;
+
   const coverageBadgeText = (sourceChecked && sourceChecked > 0)
     ? format(t.card.coverageBadge, {
         found: sourceFound,
@@ -108,9 +113,9 @@ export const IconCard: React.FC<IconCardProps> = ({
       })
     : (sourceFound && sourceFound > 0)
     ? `${sourceFound} ${sourceFound === 1 ? t.card.sourcesCountSingle : t.card.sourcesCountMulti}`
-    : (t.card.coverageUnavailable || '— / —');
+    : (t.card.coverageUnavailable || 'Coverage unavailable');
 
-  // Aspect-ratio-aware SVG preview dimensions (Phase 16)
+  // Aspect-ratio-aware SVG preview dimensions (Phase 16 & T1.15)
   const isWordmark = icon.role?.includes('wordmark') || icon.canonicalAsset?.role?.includes('wordmark');
   const isLogo = icon.role === 'logo' || icon.canonicalAsset?.role === 'logo';
 
@@ -120,10 +125,8 @@ export const IconCard: React.FC<IconCardProps> = ({
     ? 'max-w-[140px] max-h-[40px] w-auto h-10'
     : 'max-w-[48px] max-h-[48px] w-11 h-11';
 
-  const entityTypeLabel =
-    t.filters.entityTypes?.[icon.entityType || 'technology'] || icon.entityType || 'Technology';
-  const categoryLabel =
-    t.filters.categories[icon.primaryCategory || icon.category] || icon.primaryCategory || icon.category;
+  const entityTypeLabel = getLocalizedEntityTypeLabel(icon.entityType || 'technology', t);
+  const categoryLabel = getLocalizedCategoryLabel(icon.primaryCategory || icon.category || 'uncategorized', t);
 
   return (
     <div
@@ -218,7 +221,7 @@ export const IconCard: React.FC<IconCardProps> = ({
         </div>
 
         {/* Clean Pill: "4 / 5 providers · N assets" */}
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center gap-1">
           <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80">
             <Layers className="w-2.5 h-2.5 text-indigo-500" />
             <span className="font-semibold text-slate-700">{coverageBadgeText}</span>
@@ -226,6 +229,12 @@ export const IconCard: React.FC<IconCardProps> = ({
               <span className="text-slate-500">· {format(t.card.assetCountText, { count: totalAssetsCount })}</span>
             )}
           </span>
+          {erroredCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-3xs font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+              <AlertTriangle className="w-2.5 h-2.5 text-rose-500" />
+              <span>{erroredCount === 1 ? t.card.providerErrorSingle : format(t.card.providerErrorMulti, { count: erroredCount })}</span>
+            </span>
+          )}
         </div>
 
         {downloadError && (

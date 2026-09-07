@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{t.header.tabIdentities} ({totalIcons.toLocaleString()})</span>
+              <span>{t.header.tabIdentities}</span>
             </button>
 
             <button

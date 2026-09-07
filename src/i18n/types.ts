@@ -149,6 +149,8 @@ export interface TranslationDictionary {
     inspectAssetFamily: string;
     imageLoadError: string;
     coverageUnavailable: string;
+    providerErrorSingle: string;
+    providerErrorMulti: string;
   };
   inspector: {
     canonicalMainAsset: string;
@@ -244,6 +246,9 @@ export interface TranslationDictionary {
     sourceAvailabilitySubtitle: string;
     availableStatus: string;
     notFoundStatus: string;
+    errorStatus: string;
+    timeoutStatus: string;
+    disabledStatus: string;
     classificationTitle: string;
     classificationSubtitle: string;
     primaryCategoryLabel: string;
@@ -383,6 +388,23 @@ export interface TranslationDictionary {
     navigateWith: string;
     selectWith: string;
     enterKey: string;
+    currentLanguage: string;
+  };
+  toasts: {
+    addedToFavorites: string;
+    removedFromFavorites: string;
+    downloadedFile: string;
+    selectedAllIdentities: string;
+    selectedAllAssets: string;
+    clearedSelection: string;
+    filtersReset: string;
+    downloadingAssets: string;
+    downloadingConcreteAssets: string;
+    exportedBundle: string;
+    downloadingFullPack: string;
+    exportedEngineeringBundle: string;
+    setPrimaryAsset: string;
+    downloadFailed: string;
   };
   pagination: {
     showing: string;

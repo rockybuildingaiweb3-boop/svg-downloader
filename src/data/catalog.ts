@@ -1,6 +1,6 @@
 import rawRegistry from '../../generated/registry.json';
 import buildMetadata from '../../generated/build-metadata.json';
-import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem } from '../types';
+import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem, SourceProvider } from '../types';
 import { getSemanticSourceLabel } from '../types';
 import { inferEntityType } from '../taxonomy/taxonomy';
 

@@ -180,7 +180,7 @@ export default function App() {
       try {
         localStorage.setItem('svg_registry_favorite_identities', JSON.stringify(next));
       } catch {}
-      showToast(next.includes(id) ? `Added ${id} to favorites` : `Removed ${id} from favorites`);
+      showToast(next.includes(id) ? format(t.toasts.addedToFavorites, { name: id }) : format(t.toasts.removedFromFavorites, { name: id }));
       return next;
     });
   };
@@ -191,7 +191,7 @@ export default function App() {
       try {
         localStorage.setItem('svg_registry_favorite_assets', JSON.stringify(next));
       } catch {}
-      showToast(next.includes(assetId) ? `Added ${assetId} to favorites` : `Removed ${assetId} from favorites`);
+      showToast(next.includes(assetId) ? format(t.toasts.addedToFavorites, { name: assetId }) : format(t.toasts.removedFromFavorites, { name: assetId }));
       return next;
     });
   };
@@ -215,7 +215,7 @@ export default function App() {
         return next;
       });
     }
-    showToast(`Downloaded ${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)`);
+    showToast(format(t.toasts.downloadedFile, { name: `${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)` }));
   };
 
   // Reset page when filters or collection change
@@ -536,7 +536,7 @@ export default function App() {
         sourcePlatform: getSemanticSourceLabel(targetAsset.sourceProvider, targetAsset.sourceCollection)
       };
     });
-    showToast(`Set ${identityId} primary asset variant`);
+    showToast(format(t.toasts.setPrimaryAsset, { name: identityId }));
   };
 
   const handleToggleSelect = (slug: string) => {
@@ -559,20 +559,20 @@ export default function App() {
         .filter(i => i.verificationStatus !== 'unresolved')
         .map(i => i.slug);
       setSelectedSlugs(prev => Array.from(new Set([...prev, ...filteredSlugs])));
-      showToast(`Selected all ${filteredSlugs.length} filtered identities`);
+      showToast(format(t.toasts.selectedAllIdentities, { count: filteredSlugs.length }));
     } else {
       const filteredIds = filteredAssets
         .filter(a => a.verificationStatus !== 'unresolved')
         .map(a => a.assetId);
       setSelectedAssetIds(prev => Array.from(new Set([...prev, ...filteredIds])));
-      showToast(`Selected all ${filteredIds.length} filtered assets`);
+      showToast(format(t.toasts.selectedAllAssets, { count: filteredIds.length }));
     }
   };
 
   const handleClearSelection = () => {
     setSelectedSlugs([]);
     setSelectedAssetIds([]);
-    showToast('Cleared selection');
+    showToast(t.toasts.clearedSelection);
   };
 
   const handleResetFilters = () => {
@@ -585,7 +585,7 @@ export default function App() {
     setSelectedVariant('all');
     setSelectedTrustState('all');
     setCurrentPage(1);
-    showToast('Filters reset to default');
+    showToast(t.toasts.filtersReset);
   };
 
   const handleDownloadSelectedZip = async () => {
@@ -593,14 +593,14 @@ export default function App() {
       const itemsToDownload = REGISTRY_IDENTITIES.filter(i => selectedSlugs.includes(i.slug) && i.verificationStatus !== 'unresolved');
       if (itemsToDownload.length === 0) return;
       await downloadZip(itemsToDownload, `brand-icons-${itemsToDownload.length}.zip`);
-      showToast(`Downloading ${itemsToDownload.length} verified SVG assets...`);
+      showToast(format(t.toasts.downloadingAssets, { count: itemsToDownload.length }));
     } else {
       const assetsToDownload = selectedAssetIds
         .map(id => ASSET_MAP[id] || REGISTRY_ASSETS.find(a => a.assetId === id))
         .filter(Boolean);
       if (assetsToDownload.length === 0) return;
       await downloadConcreteAssetsZip(assetsToDownload as any[], `selected-svg-assets-${assetsToDownload.length}.zip`);
-      showToast(`Downloading ${assetsToDownload.length} verified concrete SVG assets...`);
+      showToast(format(t.toasts.downloadingConcreteAssets, { count: assetsToDownload.length }));
     }
   };
 
@@ -611,13 +611,13 @@ export default function App() {
       itemsToDownload,
       `icons-bundle-${itemsToDownload.length}.zip`
     );
-    showToast(`Exported ${itemsToDownload.length} assets with React/Vue definitions and manifest!`);
+    showToast(format(t.toasts.exportedBundle, { count: itemsToDownload.length }));
   };
 
   const handleDownloadMainstreamZip = async () => {
     const validItems = REGISTRY_IDENTITIES.filter(i => i.verificationStatus !== 'unresolved');
     await downloadZip(validItems, 'authoritative-brand-tech-svg-pack.zip');
-    showToast(`Downloading full set of ${validItems.length} verified SVGs...`);
+    showToast(format(t.toasts.downloadingFullPack, { count: validItems.length }));
   };
 
   const handleDownloadMainstreamBundle = async () => {
@@ -626,7 +626,7 @@ export default function App() {
       validItems,
       'authoritative-engineering-bundle.zip'
     );
-    showToast(`Exported full engineering package with ${validItems.length} verified brand assets!`);
+    showToast(format(t.toasts.exportedEngineeringBundle, { count: validItems.length }));
   };
 
   // Helper category label mapping
@@ -679,7 +679,7 @@ export default function App() {
                   <span key={sourceId} className="inline-flex items-center gap-1">
                     {idx > 0 && <span className="text-slate-600 mr-1">·</span>}
                     <span className="text-slate-300 font-medium">{label}</span>
-                    <span className="text-slate-400">({count.toLocaleString()})</span>
+                    <span className="text-slate-400">· {count.toLocaleString()} {t.coverageView.assetsWord}</span>
                   </span>
                 );
               })}

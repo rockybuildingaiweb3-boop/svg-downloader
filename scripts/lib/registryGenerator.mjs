@@ -111,7 +111,7 @@ export class RegistryGenerator {
 
     const totalProviders = (this.metadata.sources && this.metadata.sources.length > 0)
       ? this.metadata.sources.filter(s => s.enabled !== false).length
-      : Object.keys(sourceIdentityCounts).length || 5;
+      : Object.keys(sourceIdentityCounts).length;
 
     const sourceDistribution = {
       oneProvider,
@@ -453,7 +453,7 @@ export class RegistryGenerator {
 
     const totalProviders = (this.metadata.sources && this.metadata.sources.length > 0)
       ? this.metadata.sources.filter(s => s.enabled !== false).length
-      : Object.keys(sourceIdentityCounts).length || 5;
+      : Object.keys(sourceIdentityCounts).length;
 
     const sourceDistribution = {
       oneProvider,

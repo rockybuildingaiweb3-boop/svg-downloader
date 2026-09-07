@@ -16,6 +16,7 @@ import { useTranslation } from '../i18n/context';
 import { SupportedLanguage } from '../i18n/types';
 import { REGISTRY_IDENTITIES } from '../data/catalog';
 import { IconItem } from '../types';
+import { getLocalizedCategoryLabel } from '../utils/localizedLabels';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onNavigateTab,
   onInspectIcon,
 }) => {
-  const { t, language, setLanguage, availableLanguages } = useTranslation();
+  const { t, format, language, setLanguage, availableLanguages } = useTranslation();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +108,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         result.push({
           id: `lang-${lang.code}`,
           title: `${lang.flag} ${lang.label} (${lang.code})`,
-          subtitle: lang.code === language ? 'Current language' : undefined,
+          subtitle: lang.code === language ? t.commandPalette.currentLanguage : undefined,
           category: 'lang',
           icon: <Languages className="w-4 h-4 text-violet-500" />,
           action: () => {
@@ -129,10 +130,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       }).slice(0, 10);
 
       matchedIcons.forEach(icon => {
+        const catLabel = getLocalizedCategoryLabel(icon.primaryCategory || icon.category, t);
+        const assetsCount = icon.assets?.length || 1;
+        const assetsText = format(t.card.assetCountText, { count: assetsCount });
+
         result.push({
           id: `icon-${icon.id}`,
           title: `${icon.title}`,
-          subtitle: `${icon.category} · ${icon.assets?.length || 1} assets`,
+          subtitle: `${catLabel} · ${assetsText}`,
           category: 'icon',
           icon: (
             <div className="w-4 h-4 flex items-center justify-center">

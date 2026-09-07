@@ -105,7 +105,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         });
       }
     } catch (err: any) {
-      setDownloadError(err.message || 'Download failed');
+      setDownloadError(err.message || t.toasts.downloadFailed);
       setTimeout(() => setDownloadError(null), 3000);
     }
   };

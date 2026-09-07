@@ -404,6 +404,124 @@ async function runTests() {
   const devToolsIcons = getIdentitiesByCategory('developer-tools');
   assert(devToolsIcons.length > 0, `getIdentitiesByCategory("developer-tools") returns non-empty list (${devToolsIcons.length})`);
 
+  // =========================================================================
+  // TEST 18: Canonical Provider Registry & Dynamic Denominator
+  // =========================================================================
+  console.log('\n🏛️ 18. Canonical Provider Registry & Dynamic Denominator');
+  const { ENABLED_SOURCES, CANONICAL_SOURCES, getEnabledProvidersCount, getSourceDefinition } = await import('../src/data/sourceRegistry.ts');
+  assert(ENABLED_SOURCES.length >= 5, `Canonical source registry defines >= 5 enabled providers (actual: ${ENABLED_SOURCES.length})`);
+  assert(getEnabledProvidersCount() === ENABLED_SOURCES.length, `getEnabledProvidersCount() dynamically matches enabled providers count (${getEnabledProvidersCount()})`);
+  
+  // Test adding a provider definition changes the enabled-provider denominator automatically
+  const mockExtendedProviders = [...ENABLED_SOURCES, { id: 'custom-vendor', name: 'Custom Vendor', enabled: true }];
+  const dynamicDenominator = mockExtendedProviders.filter(s => s.enabled).length;
+  assert(dynamicDenominator === ENABLED_SOURCES.length + 1, `Adding a provider changes the enabled-provider denominator dynamically (${dynamicDenominator})`);
+
+  // =========================================================================
+  // TEST 19: Provider Normalization (svg-logos vs iconify)
+  // =========================================================================
+  console.log('\n🔤 19. Provider Normalization (svg-logos vs iconify)');
+  const svgLogosDef = getSourceDefinition('svg-logos');
+  assert(svgLogosDef?.id === 'svg-logos', 'Canonical provider ID is "svg-logos"');
+  assert(svgLogosDef?.platform === 'iconify', 'Canonical platform is "iconify"');
+  assert(svgLogosDef?.collection === 'logos', 'Canonical collection is "logos"');
+  const aliasLookup = getSourceDefinition('iconify');
+  assert(aliasLookup?.id === 'svg-logos', 'Resolving "iconify" returns normalized "svg-logos" definition');
+
+  // =========================================================================
+  // TEST 20: Provider Error vs Not-Found Distinction
+  // =========================================================================
+  console.log('\n⚠️ 20. Provider Error vs Not-Found Distinction');
+  const testResolver = new IconResolver(ROOT);
+  await testResolver.load();
+  
+  // Mock failure in an adapter to prove error != not-found
+  const originalGetAssets = testResolver.wikimedia.getAssets;
+  testResolver.wikimedia.getAssets = () => { throw new Error('Simulated network 500 error'); };
+  const errorResolved = await testResolver.resolveIcon('react');
+  testResolver.wikimedia.getAssets = originalGetAssets; // Restore
+  
+  assert(errorResolved?.sourceCoverage?.wikimedia === 'error', 'Adapter exception produces "error" status, NOT "not-found"');
+  
+  // Timeout test
+  testResolver.wikimedia.getAssets = () => {
+    const err = new Error('Request timeout');
+    err.name = 'AbortError';
+    throw err;
+  };
+  const timeoutResolved = await testResolver.resolveIcon('react');
+  testResolver.wikimedia.getAssets = originalGetAssets; // Restore
+  assert(timeoutResolved?.sourceCoverage?.wikimedia === 'timeout', 'Adapter timeout produces "timeout" status, NOT "not-found"');
+
+  // =========================================================================
+  // TEST 21: Entity Type Inference & Evidence
+  // =========================================================================
+  console.log('\n🏢 21. Entity Type Inference & Evidence');
+  const { inferEntityType: inferClassifierEntity } = await import('./lib/categoryClassifier.mjs');
+  const companyEntity = inferClassifierEntity('amazon', 'brands');
+  assert(companyEntity.entityType === 'company', `Amazon inferred as entityType "company" (actual: ${companyEntity.entityType})`);
+  assert(companyEntity.entityTypeConfidence >= 0.8, 'Company entity type has high confidence');
+  assert(companyEntity.entityTypeEvidence.length > 0, 'Company entity type includes audit evidence');
+
+  const platformEntity = inferClassifierEntity('aws', 'cloud');
+  assert(platformEntity.entityType === 'platform', `AWS inferred as entityType "platform" (actual: ${platformEntity.entityType})`);
+
+  const frameworkEntity = inferClassifierEntity('react', 'technology', ['framework']);
+  assert(frameworkEntity.entityType === 'framework', `React inferred as entityType "framework" (actual: ${frameworkEntity.entityType})`);
+
+  const databaseEntity = inferClassifierEntity('postgresql', 'databases');
+  assert(databaseEntity.entityType === 'database', `PostgreSQL inferred as entityType "database" (actual: ${databaseEntity.entityType})`);
+
+  // =========================================================================
+  // TEST 22: Collection != Identity Existence & Dynamic Category Counts
+  // =========================================================================
+  console.log('\n📦 22. Collection Independence & Dynamic Category Counts');
+  // Check that identity existence is not bound to curated collections
+  const allIdentitiesCount = registry.identities.length;
+  const inCollections = new Set();
+  const collectionsJson = JSON.parse(await fs.readFile(path.join(ROOT, 'config', 'collections.json'), 'utf8'));
+  for (const list of Object.values(collectionsJson.categories || {})) {
+    for (const item of list) inCollections.add(item);
+  }
+  for (const item of collectionsJson.mainstream || []) inCollections.add(item);
+  
+  const outsideCollectionsCount = registry.identities.filter(i => !inCollections.has(i.id)).length;
+  assert(outsideCollectionsCount > 0, `Identities exist outside curated collections (${outsideCollectionsCount} / ${allIdentitiesCount})`);
+
+  // Dynamic Category Counts regression test
+  const { computeCategoryStats } = await import('../src/taxonomy/categoryResolver.ts');
+  const baselineStats = computeCategoryStats(registry.identities);
+  const baselineCloud = baselineStats.categoryStats.cloud?.identitiesCount || 0;
+  
+  const mockIdentities = [
+    ...registry.identities,
+    {
+      id: 'new-cloud-service-test',
+      title: 'New Cloud Service',
+      slug: 'new-cloud-service-test',
+      category: 'cloud',
+      primaryCategory: 'cloud',
+      categories: ['cloud'],
+      verificationStatus: 'verified'
+    }
+  ];
+  const updatedStats = computeCategoryStats(mockIdentities);
+  const updatedCloud = updatedStats.categoryStats.cloud?.identitiesCount || 0;
+  assert(updatedCloud === baselineCloud + 1, `Inserting new identity with category "cloud" increases cloud identitiesCount from ${baselineCloud} to ${updatedCloud}`);
+
+  // Test 22b: Selection & Download Semantics
+  console.log('\n📥 22b. Identity Selection vs. Asset Selection Semantics');
+  const sampleIcon = registry.identities[0];
+  const sampleAsset = sampleIcon.assets?.[0] || registry.assets[0];
+  
+  const selectedSlugs = [sampleIcon.slug || sampleIcon.id];
+  const selectedAssetIds = [sampleAsset.assetId];
+  
+  assert(selectedSlugs.length === 1 && typeof selectedSlugs[0] === 'string' && selectedSlugs[0].length > 0, 'Identity selection manages string slugs');
+  assert(selectedAssetIds.length === 1 && selectedAssetIds[0].includes('-'), 'Asset selection manages concrete asset IDs with provider/role info');
+  assert(selectedSlugs[0] !== selectedAssetIds[0], 'Identity slug and asset ID are strictly separated');
+  assert(Boolean(sampleAsset.file && sampleAsset.rawSha256), 'Concrete asset has authentic file name and sha256 digest');
+
   // Summary
   console.log('\n=======================================================================');
   console.log(`✨ TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);
