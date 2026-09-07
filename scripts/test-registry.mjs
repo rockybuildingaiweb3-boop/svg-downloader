@@ -10,6 +10,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import crypto from 'node:crypto';
+import { execSync } from 'node:child_process';
 import { IconResolver } from './lib/resolver.mjs';
 import { classifyIdentity, VALID_CATEGORIES } from './lib/categoryClassifier.mjs';
 import { assignCategories } from '../src/taxonomy/categoryAssigner.ts';
@@ -342,6 +343,28 @@ async function runTests() {
 
   const legacyViolations = await scanDirForDeprecated(appSrcDir);
   assert(legacyViolations.length === 0, `No active application files reference CURATED_ICONS (violations: ${legacyViolations.join(', ') || '0'})`);
+
+  // =========================================================================
+  // TEST 15: Static Analysis & Architectural Quality Gate (Phase 37)
+  // =========================================================================
+  console.log('\n🛡️ 15. Static Analysis & Architectural Quality Gate');
+  let staticAnalysisPassed = false;
+  try {
+    execSync('node scripts/static-analysis.mjs', { cwd: ROOT, stdio: 'pipe' });
+    staticAnalysisPassed = true;
+  } catch (err) {
+    staticAnalysisPassed = false;
+  }
+  assert(staticAnalysisPassed, 'Static analysis script passes with 0 architectural violations');
+
+  // =========================================================================
+  // TEST 16: Category Engine Safe Fallbacks (Phases 3 & 4)
+  // =========================================================================
+  console.log('\n🏷️ 16. Category Engine Safe Fallbacks');
+  const unknownClassification = classifyIdentity({ id: 'xyz-completely-unknown-token-1234' });
+  assert(unknownClassification.primaryCategory === 'needs-review' || unknownClassification.primaryCategory === 'uncategorized', 'Unknown token falls back to needs-review or uncategorized');
+  assert(unknownClassification.primaryCategory !== 'technology', 'Unknown token does NOT silently fallback to technology');
+  assert(unknownClassification.primaryCategory !== 'brands', 'Unknown token does NOT silently fallback to brands');
 
   // Summary
   console.log('\n=======================================================================');

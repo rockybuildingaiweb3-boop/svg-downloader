@@ -254,19 +254,11 @@ export function classifyIdentity({ id, title = '', aliases = [], deviconTags = [
   if (collections.categories) {
     for (const [catName, list] of Object.entries(collections.categories)) {
       if (Array.isArray(list) && (list.includes(cleanId) || allAliases.some(a => list.includes(a)))) {
-        const canonicalCat = CURATED_CATEGORY_MAP[catName] || 'brands';
+        const canonicalCat = CURATED_CATEGORY_MAP[catName] || 'uncategorized';
         const ev = `Curated catalog category hint: ${catName}`;
         candidateCategories.set(canonicalCat, { confidence: 0.98, source: 'curated', evidence: ev });
         evidenceList.push(ev);
       }
-    }
-  }
-
-  if (collections.mainstream && collections.mainstream.includes(cleanId)) {
-    if (!candidateCategories.has('technology') && !candidateCategories.has('brands')) {
-      const ev = 'Curated mainstream collection';
-      candidateCategories.set('technology', { confidence: 0.92, source: 'curated', evidence: ev });
-      evidenceList.push(ev);
     }
   }
 

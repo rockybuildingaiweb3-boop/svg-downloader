@@ -338,7 +338,7 @@ export const en: TranslationDictionary = {
     unresolvedDesc: 'Zero unverified gaps in catalog',
     deduplicatedStat: 'Unique Identifiers',
     deduplicatedDesc: 'Zero suffix collision (-2.svg)',
-    healthTitle: 'Registry Health 100%',
+    healthTitle: 'Registry Health {score}%',
     allPassed: 'All Validation Invariants Passed',
     categoriesBreakdown: 'Category Taxonomy Breakdown',
     sourceMatrixTitle: 'Source Provider Coverage Matrix',

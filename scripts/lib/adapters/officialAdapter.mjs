@@ -39,7 +39,7 @@ export class OfficialAdapter {
           sourceUrl: spec.sourceUrl,
           license: spec.license || 'Public Domain / Corporate Trademark',
           licenseStatus: 'known',
-          category: spec.category || 'brands',
+          category: spec.category || 'uncategorized',
           notes: spec.notes || '',
           variant: 'official',
           localPath: hasLocal ? localPath : null

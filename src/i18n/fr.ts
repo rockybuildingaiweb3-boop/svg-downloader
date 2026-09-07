@@ -338,7 +338,7 @@ export const fr: TranslationDictionary = {
     unresolvedDesc: 'Zéro faille non vérifiée dans le catalogue',
     deduplicatedStat: 'Identifiants Uniques',
     deduplicatedDesc: 'Zéro collision de suffixe numérique (-2.svg)',
-    healthTitle: 'Santé du Registre 100%',
+    healthTitle: 'Santé du Registre {score}%',
     allPassed: 'Tous les Invariants de Validation sont Validés',
     categoriesBreakdown: 'Répartition Taxonomique par Catégories',
     sourceMatrixTitle: 'Matrice de Couverture des Fournisseurs',

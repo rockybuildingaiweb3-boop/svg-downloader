@@ -1,22 +1,6 @@
-export type IconCategory =
-  | 'all'
-  | 'mainstream'
-  | 'brands'
-  | 'technologies'
-  | 'apps'
-  | 'social'
-  | 'cloud'
-  | 'databases'
-  | 'design'
-  | 'developer-tools'
-  | 'gaming'
-  | 'web3'
-  | 'custom'
-  | 'bigtech'
-  | 'ai'
-  | 'frontend'
-  | 'languages'
-  | 'tools';
+import type { StandardCategoryId } from './taxonomy/taxonomy';
+
+export type IconCategory = StandardCategoryId;
 
 export type CollectionType = 'mainstream' | 'all' | 'custom';
 

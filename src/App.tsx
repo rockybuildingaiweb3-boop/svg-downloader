@@ -201,29 +201,7 @@ export default function App() {
 
   // Filtered icons
   const filteredIcons = useMemo(() => {
-    const baseFiltered = REGISTRY_IDENTITIES.map(icon => {
-      const overrideAssetId = activeAssetOverrides[icon.id];
-      if (overrideAssetId && icon.assets) {
-        const found = icon.assets.find(a => a.assetId === overrideAssetId);
-        if (found) {
-          return {
-            ...icon,
-            fileName: found.file,
-            sha256: found.rawSha256,
-            role: found.role,
-            graphicVariant: found.graphicVariant,
-            context: found.context,
-            sourceProvider: found.sourceProvider,
-            sourceCollection: found.sourceCollection,
-            canonicalAssetId: found.assetId,
-            canonicalAsset: found,
-            trustState: found.trustState || icon.trustState,
-            sourcePlatform: getSemanticSourceLabel(found.sourceProvider, found.sourceCollection)
-          };
-        }
-      }
-      return icon;
-    }).filter(icon => {
+    const rawFiltered = REGISTRY_IDENTITIES.filter(icon => {
       // 0. Local Collection filter
       if (selectedCollection === 'favorites') {
         if (!favorites.includes(icon.id)) return false;
@@ -298,6 +276,33 @@ export default function App() {
 
       return true;
     });
+
+    const hasOverrides = Object.keys(activeAssetOverrides).length > 0;
+    const baseFiltered = hasOverrides
+      ? rawFiltered.map(icon => {
+          const overrideAssetId = activeAssetOverrides[icon.id];
+          if (overrideAssetId && icon.assets) {
+            const found = icon.assets.find(a => a.assetId === overrideAssetId);
+            if (found) {
+              return {
+                ...icon,
+                fileName: found.file,
+                sha256: found.rawSha256,
+                role: found.role,
+                graphicVariant: found.graphicVariant,
+                context: found.context,
+                sourceProvider: found.sourceProvider,
+                sourceCollection: found.sourceCollection,
+                canonicalAssetId: found.assetId,
+                canonicalAsset: found,
+                trustState: found.trustState || icon.trustState,
+                sourcePlatform: getSemanticSourceLabel(found.sourceProvider, found.sourceCollection)
+              };
+            }
+          }
+          return icon;
+        })
+      : rawFiltered;
 
     // 8. Asset-Aware Search
     if (!searchTerm.trim()) {

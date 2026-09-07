@@ -338,7 +338,7 @@ export const ja: TranslationDictionary = {
     unresolvedDesc: 'カタログ内に未検証の欠損はありません',
     deduplicatedStat: '一意な識別子',
     deduplicatedDesc: '数値サフィックスの衝突ゼロ (-2.svg)',
-    healthTitle: 'レジストリ健全性 100%',
+    healthTitle: 'レジストリ健全性 {score}%',
     allPassed: 'すべてのシステム不変条件をクリア',
     categoriesBreakdown: 'カテゴリ分類体系の内訳',
     sourceMatrixTitle: 'ソースプロバイダーカバレッジマトリクス',

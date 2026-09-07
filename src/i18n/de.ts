@@ -338,7 +338,7 @@ export const de: TranslationDictionary = {
     unresolvedDesc: 'Keine unüberprüften Lücken im Katalog',
     deduplicatedStat: 'Eindeutige Bezeichner',
     deduplicatedDesc: 'Keine Dateinamen-Kollisionen (-2.svg)',
-    healthTitle: 'Registergesundheit 100%',
+    healthTitle: 'Registergesundheit {score}%',
     allPassed: 'Alle Validierungs-Invarianten bestanden',
     categoriesBreakdown: 'Kategorie-Taxonomie-Verteilung',
     sourceMatrixTitle: 'Quellanbieter-Abdeckungsmatrix',

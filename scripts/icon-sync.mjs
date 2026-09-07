@@ -291,9 +291,21 @@ async function main() {
     }
   }
 
-  // Catastrophic shrinkage detection (Requirement: fail build if < 4,000)
-  if (isFullScope && resolvedRecords.length < 4000) {
-    console.error(`\n❌ CATASTROPHIC SHRINKAGE DETECTED: Expected >= 4000 identities, but resolved only ${resolvedRecords.length}. Halting sync.`);
+  // Catastrophic shrinkage detection (Phase 35: Dynamic configurable threshold)
+  const allowShrinkage = args.includes('--allow-shrinkage');
+  let previousCount = 0;
+  try {
+    const prevRegistryRaw = await fs.readFile(path.join(GENERATED_DIR, 'registry.json'), 'utf8');
+    const prevRegistry = JSON.parse(prevRegistryRaw);
+    if (Array.isArray(prevRegistry.identities)) {
+      previousCount = prevRegistry.identities.length;
+    }
+  } catch {}
+
+  const dynamicThreshold = previousCount > 0 ? Math.floor(previousCount * 0.75) : 4000;
+  if (isFullScope && resolvedRecords.length < dynamicThreshold && !allowShrinkage) {
+    console.error(`\n❌ CATASTROPHIC SHRINKAGE DETECTED: Expected >= ${dynamicThreshold} identities (previous: ${previousCount}), but resolved only ${resolvedRecords.length}.`);
+    console.error(`To bypass intentional reductions, supply '--allow-shrinkage'. Halting sync.`);
     process.exit(1);
   }
 

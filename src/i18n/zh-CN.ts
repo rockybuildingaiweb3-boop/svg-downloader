@@ -338,7 +338,7 @@ export const zhCN: TranslationDictionary = {
     unresolvedDesc: '注册表中无未验证缺失缺口',
     deduplicatedStat: '唯一确定标识',
     deduplicatedDesc: '消除数字后缀重名冲突 (-2.svg)',
-    healthTitle: '注册表健康度 100%',
+    healthTitle: '注册表健康度 {score}%',
     allPassed: '全部系统校验不变量通过',
     categoriesBreakdown: '动态分类体系分布',
     sourceMatrixTitle: '数据源覆盖矩阵',
