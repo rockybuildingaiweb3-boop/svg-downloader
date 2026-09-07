@@ -62,6 +62,7 @@ export const en: TranslationDictionary = {
     clearSelection: 'Clear Selection',
     activeFilters: 'Active Filters',
     clearAll: 'Clear all',
+    moreCategories: 'More...',
     chipCategory: 'Category: {value}',
     chipSource: 'Source: {value}',
     chipStatus: 'Status: {value}',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Search,
   X,
@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   RotateCcw,
   Palette,
   Compass,
@@ -31,7 +32,7 @@ import {
   ConcreteAssetItem,
   getSemanticSourceLabel
 } from './types';
-import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_STATS, ASSET_MAP, ICON_MAP } from './data/catalog';
+import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_SOURCES, REGISTRY_STATS, ASSET_MAP, ICON_MAP } from './data/catalog';
 import { CATEGORY_DEFINITIONS } from './taxonomy/taxonomy';
 import { computeCategoryStats } from './taxonomy/categoryResolver';
 import { Header, ActiveTabType } from './components/Header';
@@ -49,11 +50,37 @@ import { downloadZip, downloadEngineeringZip, downloadConcreteAssetsZip } from '
 import { searchCatalogAssetAware, parseSearchIntent } from './utils/assetResolver';
 import { useTranslation } from './i18n/context';
 
+const PRIMARY_CATEGORY_IDS = [
+  'all',
+  'brands',
+  'technology',
+  'developer-tools',
+  'cloud',
+  'ai',
+  'web3',
+  'apps',
+  'social'
+] as const;
+
 export default function App() {
   const { t, format } = useTranslation();
   const [activeTab, setActiveTab] = useState<ActiveTabType>('icons');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isMoreCategoriesOpen, setIsMoreCategoriesOpen] = useState<boolean>(false);
+  const moreCategoriesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreCategoriesRef.current && !moreCategoriesRef.current.contains(event.target as Node)) {
+        setIsMoreCategoriesOpen(false);
+      }
+    }
+    if (isMoreCategoriesOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isMoreCategoriesOpen]);
   
   // Local Collections: Favorites and Recent Downloads
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -88,7 +115,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(36);
 
-  // Dual Browsing Level: 'identities' (4,654) vs 'assets' (8,052)
+  // Dual Browsing Level: 'identities' vs 'assets' (dynamic counts from registry)
   const [browseLevel, setBrowseLevel] = useState<BrowseLevel>('identities');
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
 
@@ -600,6 +627,8 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         totalIcons={REGISTRY_IDENTITIES.length}
+        totalAssets={REGISTRY_ASSETS.length}
+        totalSources={REGISTRY_SOURCES.length}
         selectedCount={browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length}
         onDownloadMainstreamZip={handleDownloadMainstreamZip}
         onDownloadMainstreamBundle={handleDownloadMainstreamBundle}
@@ -620,7 +649,7 @@ export default function App() {
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
             <span className="text-slate-400 font-mono text-2xs">
-              Simple Icons ({REGISTRY_STATS.sourceCounts['simple-icons']?.toLocaleString()}) · Devicon ({REGISTRY_STATS.sourceCounts['devicon']?.toLocaleString()}) · SVG Logos ({(REGISTRY_STATS.sourceCounts['iconify'] || REGISTRY_STATS.sourceCounts['svg-logos'])?.toLocaleString()}) · Official ({REGISTRY_STATS.sourceCounts['wikimedia'] || 6})
+              Simple Icons ({(REGISTRY_STATS.sourceCounts['simple-icons'] ?? 0).toLocaleString()}) · Devicon ({(REGISTRY_STATS.sourceCounts['devicon'] ?? 0).toLocaleString()}) · SVG Logos ({(REGISTRY_STATS.sourceCounts['svg-logos'] ?? REGISTRY_STATS.sourceCounts['iconify'] ?? 0).toLocaleString()}) · Official ({(REGISTRY_STATS.sourceCounts['wikimedia'] ?? 0).toLocaleString()})
             </span>
           </div>
 
@@ -642,50 +671,45 @@ export default function App() {
         {activeTab === 'icons' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
             
-            {/* Dual Browsing Mode Switcher Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-md border border-indigo-900/50">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-indigo-400" />
-                    <span>{t.header.browseModeLabel}</span>
-                  </h2>
-                  <span className="px-2 py-0.5 rounded-full text-3xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    {t.header.sourceInventoryFirst}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 mt-0.5">
+            {/* Compact Segmented Browse Level Control (Requirement 16) */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{t.header.browseModeLabel}:</span>
+                </span>
+                <span className="text-xs text-slate-500 font-medium">
                   {browseLevel === 'identities'
                     ? `${t.header.browseIdentitiesTitle} (${REGISTRY_IDENTITIES.length.toLocaleString()})`
                     : `${t.header.browseAssetsTitle} (${REGISTRY_ASSETS.length.toLocaleString()})`}
-                </p>
+                </span>
               </div>
 
-              {/* Toggle Switch */}
-              <div className="flex items-center p-1 bg-slate-800/90 rounded-xl border border-slate-700 shadow-inner shrink-0">
+              {/* Compact Segmented Control */}
+              <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0">
                 <button
                   id="btn-browse-identities"
                   onClick={() => { setBrowseLevel('identities'); setCurrentPage(1); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     browseLevel === 'identities'
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>{t.header.browseIdentitiesTitle} ({REGISTRY_IDENTITIES.length.toLocaleString()})</span>
+                  <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>{t.header.tabIdentities} <span className="font-mono text-2xs text-slate-500">({REGISTRY_IDENTITIES.length.toLocaleString()})</span></span>
                 </button>
                 <button
                   id="btn-browse-assets"
                   onClick={() => { setBrowseLevel('assets'); setCurrentPage(1); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     browseLevel === 'assets'
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{t.header.browseAssetsTitle} ({REGISTRY_ASSETS.length.toLocaleString()})</span>
+                  <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                  <span>{t.header.assetsWord} <span className="font-mono text-2xs text-slate-500">({REGISTRY_ASSETS.length.toLocaleString()})</span></span>
                 </button>
               </div>
             </div>
@@ -857,9 +881,9 @@ export default function App() {
                 )}
               </div>
 
-              {/* Row 2: Category Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-                {CATEGORY_DEFINITIONS.map(cat => {
+              {/* Row 2: Category Chips (Primary 9 + More Dropdown) */}
+              <div className="flex items-center gap-1.5 flex-wrap pb-1 text-xs">
+                {CATEGORY_DEFINITIONS.filter(cat => PRIMARY_CATEGORY_IDS.includes(cat.id as any)).map(cat => {
                   const stat = categoryStatsData.categoryStats[cat.id];
                   const count =
                     cat.id === 'all'
@@ -892,6 +916,78 @@ export default function App() {
                     </button>
                   );
                 })}
+
+                {/* More Categories Dropdown (Requirement 17) */}
+                {(() => {
+                  const secondaryCats = CATEGORY_DEFINITIONS.filter(cat => !PRIMARY_CATEGORY_IDS.includes(cat.id as any));
+                  const isSecondaryActive = secondaryCats.some(cat => cat.id === selectedCategory);
+                  const activeSecondaryCat = secondaryCats.find(cat => cat.id === selectedCategory);
+                  const activeStat = activeSecondaryCat ? categoryStatsData.categoryStats[activeSecondaryCat.id] : undefined;
+                  const activeCount = activeStat ? activeStat.identitiesCount : 0;
+
+                  return (
+                    <div className="relative inline-block" ref={moreCategoriesRef}>
+                      <button
+                        id="btn-more-categories"
+                        type="button"
+                        onClick={() => setIsMoreCategoriesOpen(prev => !prev)}
+                        className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isSecondaryActive
+                            ? 'bg-slate-900 text-white shadow-xs font-semibold'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                        }`}
+                      >
+                        <span>
+                          {isSecondaryActive && activeSecondaryCat
+                            ? getCategoryLabel(activeSecondaryCat.id)
+                            : t.filters.moreCategories}
+                        </span>
+                        {isSecondaryActive && (
+                          <span className="text-2xs px-1.5 py-0.2 rounded-full font-mono bg-slate-800 text-slate-200">
+                            {activeCount.toLocaleString()}
+                          </span>
+                        )}
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMoreCategoriesOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {isMoreCategoriesOpen && (
+                        <div className="absolute left-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-72 overflow-y-auto">
+                          <div className="space-y-1">
+                            {secondaryCats.map(cat => {
+                              const stat = categoryStatsData.categoryStats[cat.id];
+                              const count = stat ? stat.identitiesCount : 0;
+                              if (count === 0) return null;
+                              const isSelected = selectedCategory === cat.id;
+
+                              return (
+                                <button
+                                  key={cat.id}
+                                  id={`filter-cat-${cat.id}`}
+                                  onClick={() => {
+                                    setSelectedCategory(cat.id as any);
+                                    setIsMoreCategoriesOpen(false);
+                                  }}
+                                  className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-indigo-50 text-indigo-900 font-semibold'
+                                      : 'text-slate-700 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  <span>{getCategoryLabel(cat.id)}</span>
+                                  <span className={`text-2xs px-1.5 py-0.5 rounded-full font-mono ${
+                                    isSelected ? 'bg-indigo-200/80 text-indigo-800' : 'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {count.toLocaleString()}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Row 2.5: Active Filter Chips (Phase 28) */}

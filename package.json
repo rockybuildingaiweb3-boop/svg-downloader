@@ -12,7 +12,9 @@
     "sync": "node scripts/icon-sync.mjs",
     "doctor": "node scripts/icon-doctor.mjs",
     "verify": "node scripts/icon-sync.mjs verify",
-    "audit": "node scripts/static-analysis.mjs && node scripts/icon-sync.mjs audit",
+    "audit": "node scripts/audit-registry-consistency.mjs && node scripts/static-analysis.mjs && node scripts/icon-sync.mjs audit",
+    "audit-consistency": "node scripts/audit-registry-consistency.mjs",
+    "generate-metadata": "node scripts/generate-build-metadata.mjs",
     "static-analysis": "node scripts/static-analysis.mjs",
     "test": "tsx scripts/test-registry.mjs",
     "lint": "tsc --noEmit"

@@ -62,6 +62,7 @@ export interface TranslationDictionary {
     clearSelection: string;
     activeFilters: string;
     clearAll: string;
+    moreCategories: string;
     chipCategory: string;
     chipSource: string;
     chipStatus: string;

@@ -43,7 +43,7 @@ export class WikimediaAdapter {
             hex: spec.brandColor || '#111827',
             sourceUrl: spec.sourceUrl || `https://commons.wikimedia.org/wiki/File:${spec.sourceId || slug}`,
             license: spec.license || 'Public Domain / Trademark of respective owner',
-            category: spec.category || 'bigtech',
+            category: spec.category || 'uncategorized',
             notes: spec.notes || 'Curated Wikimedia Commons vector mark',
             variant: 'official',
             graphicVariant: 'color',

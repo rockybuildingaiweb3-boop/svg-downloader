@@ -62,6 +62,7 @@ export const ja: TranslationDictionary = {
     clearSelection: '選択を解除',
     activeFilters: '適用中のフィルター',
     clearAll: 'すべてクリア',
+    moreCategories: 'その他...',
     chipCategory: 'カテゴリ: {value}',
     chipSource: '提供元: {value}',
     chipStatus: 'ステータス: {value}',

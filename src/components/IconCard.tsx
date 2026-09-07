@@ -8,7 +8,8 @@ import {
   ShieldCheck,
   Layers,
   AlertTriangle,
-  Heart
+  Heart,
+  MoreHorizontal
 } from 'lucide-react';
 import { IconItem, DownloadReceipt } from '../types';
 import { useTranslation } from '../i18n/context';
@@ -41,6 +42,7 @@ export const IconCard: React.FC<IconCardProps> = ({
   const { t, format } = useTranslation();
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [showMoreActions, setShowMoreActions] = useState(false);
 
   const isUnresolved = icon.verificationStatus === 'unresolved';
   const totalAssetsCount = icon.totalAssets || icon.assets?.length || 1;
@@ -48,6 +50,7 @@ export const IconCard: React.FC<IconCardProps> = ({
 
   const handleCopySvg = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowMoreActions(false);
     if (isUnresolved) return;
     const raw = await fetchRawSvg(icon.fileName);
     if (!raw) return;
@@ -60,6 +63,7 @@ export const IconCard: React.FC<IconCardProps> = ({
 
   const handleCopyJsx = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowMoreActions(false);
     if (isUnresolved) return;
     const raw = await fetchRawSvg(icon.fileName);
     if (!raw) return;
@@ -93,16 +97,25 @@ export const IconCard: React.FC<IconCardProps> = ({
     }
   };
 
+  // Truthful coverage without hardcoded default to 5 (Requirement 4)
   const sourceFound = icon.sourceCoverageFound || sourcesCount;
-  const sourceChecked = icon.sourceCoverageChecked || 5;
-  const coverageBadgeText = format(t.card.coverageBadge, {
-    found: sourceFound,
-    total: sourceChecked,
-  });
-  const assetsAndSourcesText = format(t.card.assetsAndSources, {
-    assets: totalAssetsCount,
-    sources: `${sourceFound}/${sourceChecked}`,
-  });
+  const sourceChecked = icon.sourceCoverageChecked;
+  const coverageBadgeText = sourceChecked
+    ? format(t.card.coverageBadge, {
+        found: sourceFound,
+        total: sourceChecked,
+      })
+    : `${sourceFound} ${sourceFound === 1 ? t.card.sourcesCountSingle : t.card.sourcesCountMulti}`;
+
+  // Aspect-ratio-aware SVG preview dimensions (Requirement 18)
+  const isWordmark = icon.role?.includes('wordmark') || icon.canonicalAsset?.role?.includes('wordmark');
+  const isLogo = icon.role === 'logo' || icon.canonicalAsset?.role === 'logo';
+
+  const previewContainerClass = isWordmark
+    ? 'max-w-[120px] max-h-[36px] w-auto h-8'
+    : isLogo
+    ? 'max-w-[140px] max-h-[36px] w-auto h-9'
+    : 'max-w-[44px] max-h-[44px] w-10 h-10';
 
   return (
     <div
@@ -150,21 +163,19 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Center: Vector SVG Preview */}
-      <div className="flex items-center justify-center py-4 my-1 min-h-[56px]">
+      {/* Center: Responsive Vector SVG Preview */}
+      <div className="flex items-center justify-center py-3 my-1 min-h-[56px]">
         {isUnresolved ? (
           <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50 border border-amber-200 text-center">
             <AlertTriangle className="w-5 h-5 text-amber-500 mb-0.5" />
             <span className="text-2xs font-semibold text-amber-700">{t.card.unresolved}</span>
           </div>
         ) : (
-          <div className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center w-11 h-11">
+          <div className="transition-transform duration-200 group-hover:scale-105 flex items-center justify-center">
             <img
               src={`/icons/${icon.fileName}`}
               alt={`${icon.title} logo`}
-              width={36}
-              height={36}
-              className="w-9 h-9 object-contain"
+              className={`${previewContainerClass} object-contain`}
               loading="lazy"
               decoding="async"
               onError={(e) => {
@@ -183,7 +194,7 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Bottom Info: Title & Minimalist Badges */}
+      {/* Bottom Info: Title, Verification Shield & Coverage Pill */}
       <div className="text-center space-y-1">
         <div className="flex items-center justify-center gap-1">
           <h3 className="text-xs font-bold text-slate-800 truncate" title={icon.title}>
@@ -194,13 +205,13 @@ export const IconCard: React.FC<IconCardProps> = ({
           )}
         </div>
 
-        {/* Clean Pill: "4 / 5 sources · N assets" (Phase 29) */}
+        {/* Clean Pill: "4 / 5 sources · N assets" */}
         <div className="flex items-center justify-center">
-          <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80" title={assetsAndSourcesText}>
+          <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80">
             <Layers className="w-2.5 h-2.5 text-indigo-500" />
             <span className="font-semibold text-slate-700">{coverageBadgeText}</span>
             {totalAssetsCount > 1 && (
-              <span className="text-slate-500">· {totalAssetsCount}</span>
+              <span className="text-slate-500">· {totalAssetsCount} {t.card.assetsAndSources ? '' : 'assets'}</span>
             )}
           </span>
         </div>
@@ -212,61 +223,80 @@ export const IconCard: React.FC<IconCardProps> = ({
         )}
       </div>
 
-      {/* Hover Action Bar */}
+      {/* Action Bar: Primary Download & Inspect + Secondary More Menu (Requirement 20) */}
       <div
-        className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-around gap-1 opacity-90 group-hover:opacity-100 transition-opacity"
+        className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-1 relative"
         onClick={e => e.stopPropagation()}
       >
-        <button
-          id={`btn-copy-svg-${icon.slug}`}
-          onClick={handleCopySvg}
-          disabled={isUnresolved}
-          aria-label={t.card.copySvg}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          title={t.card.copySvg}
-        >
-          {copiedType === 'svg' ? (
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1 flex-1">
+          <button
+            id={`btn-download-svg-${icon.slug}`}
+            onClick={handleDownload}
+            disabled={isUnresolved}
+            aria-label={t.card.downloadSvg}
+            className="flex-1 inline-flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            title={t.card.downloadSvg}
+          >
+            <Download className="w-3 h-3" />
+            <span className="text-2xs">{t.card.downloadSvg}</span>
+          </button>
+
+          <button
+            id={`btn-inspect-svg-${icon.slug}`}
+            onClick={() => onInspect(icon)}
+            aria-label={t.card.inspectAsset}
+            className="inline-flex items-center justify-center p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            title={t.card.inspectAsset}
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Secondary Actions More Menu */}
+        <div className="relative">
+          <button
+            id={`btn-more-actions-${icon.slug}`}
+            onClick={() => setShowMoreActions(prev => !prev)}
+            aria-label={t.card.inspectAssetFamily}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+          </button>
+
+          {showMoreActions && (
+            <>
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setShowMoreActions(false)}
+              />
+              <div className="absolute right-0 bottom-full mb-1 w-36 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-40 text-xs">
+                <button
+                  onClick={handleCopySvg}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 cursor-pointer"
+                >
+                  {copiedType === 'svg' ? (
+                    <Check className="w-3 h-3 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3 h-3 text-slate-400" />
+                  )}
+                  <span>{t.card.copySvg}</span>
+                </button>
+
+                <button
+                  onClick={handleCopyJsx}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 cursor-pointer"
+                >
+                  {copiedType === 'jsx' ? (
+                    <Check className="w-3 h-3 text-emerald-600" />
+                  ) : (
+                    <Code className="w-3 h-3 text-slate-400" />
+                  )}
+                  <span>{t.card.copyJsx}</span>
+                </button>
+              </div>
+            </>
           )}
-        </button>
-
-        <button
-          id={`btn-copy-jsx-${icon.slug}`}
-          onClick={handleCopyJsx}
-          disabled={isUnresolved}
-          aria-label={t.card.copyJsx}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          title={t.card.copyJsx}
-        >
-          {copiedType === 'jsx' ? (
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
-          ) : (
-            <Code className="w-3.5 h-3.5" />
-          )}
-        </button>
-
-        <button
-          id={`btn-download-svg-${icon.slug}`}
-          onClick={handleDownload}
-          disabled={isUnresolved}
-          aria-label={t.card.downloadSvg}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          title={t.card.downloadSvg}
-        >
-          <Download className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          id={`btn-inspect-svg-${icon.slug}`}
-          onClick={() => onInspect(icon)}
-          aria-label={t.card.inspectAsset}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 text-xs transition-colors cursor-pointer"
-          title={t.card.inspectAsset}
-        >
-          <Maximize2 className="w-3.5 h-3.5" />
-        </button>
+        </div>
       </div>
     </div>
   );

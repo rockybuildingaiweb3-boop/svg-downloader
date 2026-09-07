@@ -46,6 +46,29 @@ async function main() {
       const parsedCat = JSON.parse(generatedCat);
       if (publicCat && publicCat.length === generatedCat.length && Array.isArray(parsedCat) && parsedCat.length >= 4000) {
         console.log(`✅ Verified catalog is fresh (${parsedCat.length} identities).`);
+        try {
+          const { execSync } = await import('child_process');
+          let gitCommit = 'unknown';
+          try {
+            gitCommit = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+          } catch {}
+          let regStats = { totalIdentities: parsedCat.length, totalAssets: 0 };
+          try {
+            const rawReg = JSON.parse(await fs.readFile(path.join(GENERATED_DIR, 'registry.json'), 'utf8'));
+            regStats = rawReg.stats || regStats;
+          } catch {}
+          const meta = {
+            registryGeneratedAt: new Date().toISOString(),
+            gitCommit,
+            buildId: `prod-${gitCommit.slice(0, 8)}`,
+            registryVersion: '2.0.0',
+            totalIdentities: regStats.totalIdentities || parsedCat.length,
+            totalAssets: regStats.totalAssets || 0,
+            totalProviders: 5
+          };
+          await fs.writeFile(path.join(GENERATED_DIR, 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
+          await fs.writeFile(path.join(PUBLIC_ICONS_DIR, '..', 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
+        } catch {}
         return;
       }
     } catch {}
@@ -368,6 +391,25 @@ async function main() {
     await fs.copyFile(coveragePath, path.join(PUBLIC_ICONS_DIR, '..', 'coverage.json'));
     await fs.copyFile(categoriesPath, path.join(PUBLIC_ICONS_DIR, '..', 'categories.json'));
     await fs.copyFile(statisticsPath, path.join(PUBLIC_ICONS_DIR, '..', 'statistics.json'));
+
+    try {
+      const { execSync } = await import('child_process');
+      let gitCommit = 'unknown';
+      try {
+        gitCommit = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+      } catch {}
+      const meta = {
+        registryGeneratedAt: metadata.generatedAt || new Date().toISOString(),
+        gitCommit,
+        buildId: `prod-${gitCommit.slice(0, 8)}`,
+        registryVersion: metadata.version || '2.0.0',
+        totalIdentities: recordsToPersist.length,
+        totalAssets: recordsToPersist.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
+        totalProviders: 5
+      };
+      await fs.writeFile(path.join(GENERATED_DIR, 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
+      await fs.writeFile(path.join(PUBLIC_ICONS_DIR, '..', 'build-metadata.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
+    } catch {}
   }
 
   // Output Standard Statistics Breakdown

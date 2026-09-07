@@ -62,6 +62,7 @@ export const zhCN: TranslationDictionary = {
     clearSelection: '清除选择',
     activeFilters: '已选筛选条件',
     clearAll: '清除全部',
+    moreCategories: '更多分类...',
     chipCategory: '分类：{value}',
     chipSource: '来源：{value}',
     chipStatus: '状态：{value}',

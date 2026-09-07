@@ -1,7 +1,9 @@
 import rawRegistry from '../../generated/registry.json';
+import buildMetadata from '../../generated/build-metadata.json';
 import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem } from '../types';
 import { getSemanticSourceLabel } from '../types';
 
+export const BUILD_METADATA = buildMetadata;
 export const REGISTRY_STATS: RegistryStats = (rawRegistry as any).stats;
 export const CANONICAL_CATALOG: IconRecord[] = (rawRegistry as any).identities as IconRecord[];
 

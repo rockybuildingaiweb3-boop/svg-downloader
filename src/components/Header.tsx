@@ -23,6 +23,8 @@ interface HeaderProps {
   activeTab: ActiveTabType;
   setActiveTab: (tab: ActiveTabType) => void;
   totalIcons: number;
+  totalAssets?: number;
+  totalSources?: number;
   selectedCount: number;
   onDownloadMainstreamZip: () => void;
   onDownloadMainstreamBundle: () => void;
@@ -33,6 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   totalIcons,
+  totalAssets,
+  totalSources,
   onDownloadMainstreamZip,
   onDownloadMainstreamBundle,
   onOpenCommandPalette,
@@ -46,140 +50,49 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-3.5 gap-3.5">
-          
+        {/* Tier 1: Top Bar (Brand + Quick Search + Language + Primary Action) */}
+        <div className="flex items-center justify-between py-2.5 gap-3 border-b border-slate-100">
           {/* Logo & Brand Identity */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
-                <svg className="w-5 h-5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                </svg>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-lg font-bold text-slate-900 tracking-tight">
-                    {t.header.registryTitle}
-                  </h1>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" />
-                    {t.header.multiSourceBadge}
-                  </span>
-                </div>
-                <p className="text-2xs text-slate-500 mt-0.5 hidden sm:block">
-                  {format(t.header.registryStatsBanner, {
-                    identities: totalIcons.toLocaleString(),
-                    assets: '8,052',
-                    sources: '5'
-                  })}
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
+              <svg className="w-5 h-5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
             </div>
-
-            {/* Mobile Command Palette shortcut */}
-            <div className="flex lg:hidden items-center gap-2">
-              <button
-                onClick={onOpenCommandPalette}
-                className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
-                aria-label={t.header.searchAndCommands}
-              >
-                <Search className="w-4 h-4" />
-              </button>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-base font-bold text-slate-900 tracking-tight leading-none">
+                  {t.header.registryTitle}
+                </h1>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <ShieldCheck className="w-2.5 h-2.5 mr-1 text-emerald-600" />
+                  {t.header.multiSourceBadge}
+                </span>
+              </div>
+              <p className="text-2xs text-slate-500 mt-0.5 hidden sm:block">
+                {format(t.header.registryStatsBanner, {
+                  identities: totalIcons.toLocaleString(),
+                  assets: (totalAssets ?? totalIcons).toLocaleString(),
+                  sources: (totalSources ?? 5).toLocaleString()
+                })}
+              </p>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80 overflow-x-auto">
-            <button
-              id="tab-icons"
-              onClick={() => setActiveTab('icons')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === 'icons'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-indigo-500" />
-              <span>{t.header.tabIdentities} ({totalIcons})</span>
-            </button>
-
-            <button
-              id="tab-sources"
-              onClick={() => setActiveTab('sources')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === 'sources'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{t.header.tabSources}</span>
-            </button>
-
-            <button
-              id="tab-coverage"
-              onClick={() => setActiveTab('coverage')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === 'coverage'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5 text-blue-500" />
-              <span>{t.header.tabCoverage}</span>
-            </button>
-
-            <button
-              id="tab-conflicts"
-              onClick={() => setActiveTab('conflicts')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === 'conflicts'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <GitCompare className="w-3.5 h-3.5 text-amber-500" />
-              <span>{t.header.tabConflicts}</span>
-            </button>
-
-            <button
-              id="tab-comparison"
-              onClick={() => setActiveTab('comparison')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === 'comparison'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-              <span>{t.header.tabComparison}</span>
-            </button>
-
-            <button
-              id="tab-script"
-              onClick={() => setActiveTab('script')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === 'script'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Terminal className="w-3.5 h-3.5 text-slate-500" />
-              <span>{t.header.tabScript}</span>
-            </button>
-          </div>
-
-          {/* Right Tools: Command Palette, Language Switcher & Export */}
+          {/* Right Controls: Quick Search, Language Switcher & Export */}
           <div className="flex items-center gap-2">
-            {/* Quick Command Palette Button */}
+            {/* Quick Command Palette Button - Responsive */}
             <button
               onClick={onOpenCommandPalette}
-              className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 bg-slate-100 hover:bg-slate-200/80 rounded-xl border border-slate-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 bg-slate-100 hover:bg-slate-200/80 rounded-xl border border-slate-200/80 transition-colors cursor-pointer min-w-[120px] justify-between"
               title={t.header.openCommandPalette}
+              aria-label={t.header.searchAndCommands}
             >
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>{t.header.quickSearch}</span>
-              <kbd className="font-mono text-2xs bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-400">
+              <div className="flex items-center gap-1.5 truncate">
+                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{t.header.quickSearch}</span>
+              </div>
+              <kbd className="hidden sm:inline-block font-mono text-2xs bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 shrink-0">
                 Ctrl+K
               </kbd>
             </button>
@@ -301,6 +214,89 @@ export const Header: React.FC<HeaderProps> = ({
 
           </div>
 
+        </div>
+
+        {/* Tier 2: Secondary Navigation Bar (Tabs) */}
+        <div className="py-2 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5">
+            <button
+              id="tab-icons"
+              onClick={() => setActiveTab('icons')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                activeTab === 'icons'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{t.header.tabIdentities} ({totalIcons.toLocaleString()})</span>
+            </button>
+
+            <button
+              id="tab-sources"
+              onClick={() => setActiveTab('sources')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                activeTab === 'sources'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t.header.tabSources}</span>
+            </button>
+
+            <button
+              id="tab-coverage"
+              onClick={() => setActiveTab('coverage')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                activeTab === 'coverage'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-blue-400" />
+              <span>{t.header.tabCoverage}</span>
+            </button>
+
+            <button
+              id="tab-conflicts"
+              onClick={() => setActiveTab('conflicts')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                activeTab === 'conflicts'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <GitCompare className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t.header.tabConflicts}</span>
+            </button>
+
+            <button
+              id="tab-comparison"
+              onClick={() => setActiveTab('comparison')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                activeTab === 'comparison'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+              <span>{t.header.tabComparison}</span>
+            </button>
+
+            <button
+              id="tab-script"
+              onClick={() => setActiveTab('script')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                activeTab === 'script'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5 text-slate-400" />
+              <span>{t.header.tabScript}</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
