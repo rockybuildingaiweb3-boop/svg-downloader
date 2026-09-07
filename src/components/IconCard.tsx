@@ -101,12 +101,14 @@ export const IconCard: React.FC<IconCardProps> = ({
   // Truthful coverage without hardcoded default to 5 (Requirement 4)
   const sourceFound = icon.sourceCoverageFound || sourcesCount;
   const sourceChecked = icon.sourceCoverageChecked;
-  const coverageBadgeText = sourceChecked
+  const coverageBadgeText = (sourceChecked && sourceChecked > 0)
     ? format(t.card.coverageBadge, {
         found: sourceFound,
         total: sourceChecked,
       })
-    : `${sourceFound} ${sourceFound === 1 ? t.card.sourcesCountSingle : t.card.sourcesCountMulti}`;
+    : (sourceFound && sourceFound > 0)
+    ? `${sourceFound} ${sourceFound === 1 ? t.card.sourcesCountSingle : t.card.sourcesCountMulti}`
+    : (t.card.coverageUnavailable || '— / —');
 
   // Aspect-ratio-aware SVG preview dimensions (Phase 16)
   const isWordmark = icon.role?.includes('wordmark') || icon.canonicalAsset?.role?.includes('wordmark');
@@ -221,7 +223,7 @@ export const IconCard: React.FC<IconCardProps> = ({
             <Layers className="w-2.5 h-2.5 text-indigo-500" />
             <span className="font-semibold text-slate-700">{coverageBadgeText}</span>
             {totalAssetsCount > 1 && (
-              <span className="text-slate-500">· {totalAssetsCount} {t.card.assetsAndSources ? '' : 'assets'}</span>
+              <span className="text-slate-500">· {format(t.card.assetCountText, { count: totalAssetsCount })}</span>
             )}
           </span>
         </div>

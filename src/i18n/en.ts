@@ -35,6 +35,9 @@ export const en: TranslationDictionary = {
     tabIdentities: 'Identities',
     sourcesWord: 'Sources',
     tabMore: 'More Tools',
+    providersWord: 'providers',
+    bundleExportSubtitle: 'Full JSON manifest, TypeScript types, and raw SVGs',
+    zipExportSubtitle: 'Pure verified raw SVG files only',
   },
   systemBanner: {
     registryTitle: 'Verified Multi-Source Brand & Technology SVG Asset Registry',
@@ -190,6 +193,7 @@ export const en: TranslationDictionary = {
     copyReactJsx: 'Copy React JSX',
     inspectAssetFamily: 'Inspect Asset Family',
     imageLoadError: 'Preview Unavailable',
+    coverageUnavailable: 'Coverage unavailable',
   },
   inspector: {
     canonicalMainAsset: 'Canonical Primary Asset',
@@ -292,6 +296,7 @@ export const en: TranslationDictionary = {
     confidenceLabel: 'Confidence Score',
     evidenceTitle: 'Audit Evidence Checklist',
     noEvidence: 'No explicit classification evidence recorded',
+    fetchUrlError: 'Failed to fetch SVG from URL. Check CORS or URL accessibility.',
   },
   sourcesView: {
     title: 'Verified Source Providers',
@@ -411,6 +416,11 @@ export const en: TranslationDictionary = {
     viewInInspector: 'Inspect in Modal',
     noConflictsMatch: 'No conflicting records match your search criteria.',
     resolutionExplanation: 'Arbitration Explanation',
+    slugLabel: 'slug: {value}',
+    idLabel: 'ID: {value}',
+    collectionLabel: 'collection: {value}',
+    contextLabel: 'context: {value}',
+    licenseLabel: 'license: {value}',
   },
   comparison: {
     title: 'Vector Asset Comparison Studio',

@@ -35,6 +35,9 @@ export const zhCN: TranslationDictionary = {
     tabIdentities: '品牌身份',
     sourcesWord: '数据源',
     tabMore: '更多工具',
+    providersWord: '家提供商',
+    bundleExportSubtitle: '包含完整 JSON 清单、TypeScript 类型及原始 SVG 矢量',
+    zipExportSubtitle: '仅包含已核验的纯原始 SVG 矢量文件',
   },
   systemBanner: {
     registryTitle: '多源校验品牌与技术 SVG 资产注册表',
@@ -190,6 +193,7 @@ export const zhCN: TranslationDictionary = {
     copyReactJsx: '复制 React 组件',
     inspectAssetFamily: '查看资产族谱',
     imageLoadError: '预览暂不可用',
+    coverageUnavailable: '覆盖度暂不可用',
   },
   inspector: {
     canonicalMainAsset: '官方规范主资产',
@@ -292,6 +296,7 @@ export const zhCN: TranslationDictionary = {
     confidenceLabel: '分类置信度',
     evidenceTitle: '审计证据清单',
     noEvidence: '暂无明确规则证据记录',
+    fetchUrlError: '无法从 URL 获取 SVG，请检查跨域 (CORS) 设置或链接有效性。',
   },
   sourcesView: {
     title: '已接入验证数据源',
@@ -411,6 +416,11 @@ export const zhCN: TranslationDictionary = {
     viewInInspector: '在检查器中打开',
     noConflictsMatch: '未找到符合条件的冲突记录。',
     resolutionExplanation: '仲裁判定理由',
+    slugLabel: '标识: {value}',
+    idLabel: '编号: {value}',
+    collectionLabel: '合集: {value}',
+    contextLabel: '场景: {value}',
+    licenseLabel: '许可证: {value}',
   },
   comparison: {
     title: '矢量资产对比工作台',

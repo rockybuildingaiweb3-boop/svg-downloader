@@ -436,9 +436,9 @@ export default function App() {
     return REGISTRY_ASSETS.filter(asset => {
       // 0. Selected collection filter
       if (selectedCollection === 'favorites') {
-        if (!favoriteAssetIds.includes(asset.assetId) && !favoriteIdentityIds.includes(asset.identityId)) return false;
+        if (!favoriteAssetIds.includes(asset.assetId)) return false;
       } else if (selectedCollection === 'recents') {
-        if (!recentAssetIds.includes(asset.file) && !recentAssetIds.includes(asset.assetId) && !recentIdentityIds.includes(asset.identityId)) return false;
+        if (!recentAssetIds.includes(asset.file) && !recentAssetIds.includes(asset.assetId)) return false;
       } else if (selectedCollection === 'selected') {
         if (!selectedAssetIds.includes(asset.assetId)) return false;
       }
@@ -540,36 +540,16 @@ export default function App() {
   };
 
   const handleToggleSelect = (slug: string) => {
-    const icon = ICON_MAP[slug];
-    const assetId = icon?.canonicalAssetId;
     setSelectedSlugs(prev => {
       const isSel = prev.includes(slug);
       return isSel ? prev.filter(s => s !== slug) : [...prev, slug];
     });
-    if (assetId) {
-      setSelectedAssetIds(prev => {
-        const isSel = prev.includes(assetId);
-        return isSel ? prev.filter(id => id !== assetId) : [...prev, assetId];
-      });
-    }
   };
 
   const handleToggleSelectAsset = (assetId: string) => {
     setSelectedAssetIds(prev => {
       const isSel = prev.includes(assetId);
-      const next = isSel ? prev.filter(id => id !== assetId) : [...prev, assetId];
-      const asset = ASSET_MAP[assetId];
-      if (asset?.identitySlug) {
-        setSelectedSlugs(sPrev => {
-          if (isSel) {
-            const hasOther = next.some(id => ASSET_MAP[id]?.identitySlug === asset.identitySlug);
-            return hasOther ? sPrev : sPrev.filter(s => s !== asset.identitySlug);
-          } else {
-            return sPrev.includes(asset.identitySlug!) ? sPrev : [...sPrev, asset.identitySlug!];
-          }
-        });
-      }
-      return next;
+      return isSel ? prev.filter(id => id !== assetId) : [...prev, assetId];
     });
   };
 
@@ -578,12 +558,7 @@ export default function App() {
       const filteredSlugs = filteredIcons
         .filter(i => i.verificationStatus !== 'unresolved')
         .map(i => i.slug);
-      const filteredAssetIds = filteredIcons
-        .filter(i => i.verificationStatus !== 'unresolved')
-        .map(i => i.canonicalAssetId)
-        .filter(Boolean);
       setSelectedSlugs(prev => Array.from(new Set([...prev, ...filteredSlugs])));
-      setSelectedAssetIds(prev => Array.from(new Set([...prev, ...filteredAssetIds])));
       showToast(`Selected all ${filteredSlugs.length} filtered identities`);
     } else {
       const filteredIds = filteredAssets
@@ -1332,21 +1307,22 @@ export default function App() {
                           onDownloadReceipt={handleDownloadReceipt}
                         />
                       ))
-                    : paginatedAssets.map(asset => (
-                        <ConcreteAssetCard
-                          key={asset.assetId}
-                          asset={asset}
-                          isSelected={selectedAssetIds.includes(asset.assetId)}
-                          onToggleSelect={handleToggleSelectAsset}
-                          onInspectIdentity={(slug) => {
-                            const icon = ICON_MAP[slug];
-                            if (icon) setInspectedIcon(icon);
-                          }}
-                          isFavorite={favoriteAssetIds.includes(asset.assetId)}
-                          onToggleFavorite={toggleFavoriteAsset}
-                          onDownloadReceipt={handleDownloadReceipt}
-                        />
-                      ))
+                    : paginatedAssets.map(asset => {
+                        const parent = ICON_MAP[asset.identitySlug || asset.identityId];
+                        return (
+                          <ConcreteAssetCard
+                            key={asset.assetId}
+                            asset={asset}
+                            parentIcon={parent}
+                            isSelected={selectedAssetIds.includes(asset.assetId)}
+                            onToggleSelect={handleToggleSelectAsset}
+                            onInspect={(icon) => setInspectedIcon(icon)}
+                            isFavorite={favoriteAssetIds.includes(asset.assetId)}
+                            onToggleFavorite={toggleFavoriteAsset}
+                            onDownloadReceipt={handleDownloadReceipt}
+                          />
+                        );
+                      })
                   }
                 </div>
 

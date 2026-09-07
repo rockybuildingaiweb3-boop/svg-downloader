@@ -29,7 +29,13 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { IconItem, BrandAsset, DownloadReceipt, getSemanticSourceLabel, getTrustStateBadge } from '../types';
+import { ENABLED_SOURCES } from '../data/sourceRegistry';
 import { useTranslation } from '../i18n/context';
+import {
+  getLocalizedRoleLabel,
+  getLocalizedVariantLabel,
+  getLocalizedSourceLabel
+} from '../utils/localizedLabels';
 import {
   fetchRawSvg,
   downloadSingleSvg,
@@ -279,7 +285,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
         setShowUploadModal(false);
       }
     } catch (err) {
-      alert('Failed to fetch SVG from URL. Check CORS or URL accessibility.');
+      alert(t.inspector.fetchUrlError);
     }
   };
 
@@ -417,7 +423,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block">{t.inspector.receiptRole}</span>
-                <span className="font-medium truncate block">{downloadReceipt.role} ({downloadReceipt.graphicVariant})</span>
+                <span className="font-medium truncate block">{getLocalizedRoleLabel(downloadReceipt.role, t)} ({getLocalizedVariantLabel(downloadReceipt.graphicVariant, t)})</span>
               </div>
               <div>
                 <span className="text-slate-400 block">{t.inspector.receiptProvider}</span>
@@ -494,11 +500,11 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <span className="text-xs font-bold text-slate-900 truncate">
-                            {asset.role} ({asset.graphicVariant || 'default'})
+                            {getLocalizedRoleLabel(asset.role, t)} ({getLocalizedVariantLabel(asset.graphicVariant || 'default', t)})
                           </span>
                           {asset.isCanonical && (
                             <span className="text-2xs px-1.5 py-0.2 rounded font-semibold bg-emerald-100 text-emerald-800">
-                              Main
+                              {t.comparison.canonicalBadge}
                             </span>
                           )}
                         </div>
@@ -933,13 +939,8 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-              {[
-                { id: 'official', name: 'Official Vendor' },
-                { id: 'simple-icons', name: 'Simple Icons' },
-                { id: 'svg-logos', name: 'SVG Logos' },
-                { id: 'devicon', name: 'Devicon' },
-                { id: 'wikimedia', name: 'Wikimedia Commons' },
-              ].map(provider => {
+              {ENABLED_SOURCES.map(provider => {
+                const providerName = getLocalizedSourceLabel(provider.id, t) || provider.name;
                 const isAvailable =
                   icon.sourceCoverage?.[provider.id] === 'available' ||
                   (icon.assets && icon.assets.some(a => (a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider) === provider.id)) ||
@@ -954,7 +955,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                         : 'bg-slate-100/60 border-slate-200 text-slate-500'
                     }`}
                   >
-                    <span className="font-semibold block truncate">{provider.name}</span>
+                    <span className="font-semibold block truncate">{providerName}</span>
                     <div className="flex items-center gap-1 mt-1.5 font-medium">
                       {isAvailable ? (
                         <>

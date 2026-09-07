@@ -34,7 +34,10 @@ export interface TranslationDictionary {
     browseAssetsTitle: string;
     tabIdentities: string;
     sourcesWord: string;
+    providersWord: string;
     tabMore: string;
+    bundleExportSubtitle: string;
+    zipExportSubtitle: string;
   };
   systemBanner: {
     registryTitle: string;
@@ -145,6 +148,7 @@ export interface TranslationDictionary {
     copyReactJsx: string;
     inspectAssetFamily: string;
     imageLoadError: string;
+    coverageUnavailable: string;
   };
   inspector: {
     canonicalMainAsset: string;
@@ -247,6 +251,7 @@ export interface TranslationDictionary {
     confidenceLabel: string;
     evidenceTitle: string;
     noEvidence: string;
+    fetchUrlError: string;
   };
   sourcesView: {
     title: string;
@@ -342,6 +347,11 @@ export interface TranslationDictionary {
     viewInInspector: string;
     noConflictsMatch: string;
     resolutionExplanation: string;
+    slugLabel: string;
+    idLabel: string;
+    collectionLabel: string;
+    contextLabel: string;
+    licenseLabel: string;
   };
   comparison: {
     title: string;

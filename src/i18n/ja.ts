@@ -35,6 +35,9 @@ export const ja: TranslationDictionary = {
     tabIdentities: 'ブランド',
     sourcesWord: 'ソース',
     tabMore: 'その他のツール',
+    providersWord: 'プロバイダー',
+    bundleExportSubtitle: '完全なJSONマニフェスト、TypeScript型定義、未加工SVG',
+    zipExportSubtitle: '検証済みの純粋な生SVGベクターファイルのみ',
   },
   systemBanner: {
     registryTitle: '検証済みブランド＆テクノロジーSVGアセットレジストリ',
@@ -190,6 +193,7 @@ export const ja: TranslationDictionary = {
     copyReactJsx: 'React JSXをコピー',
     inspectAssetFamily: 'アセットファミリーを調査',
     imageLoadError: 'プレビュー利用不可',
+    coverageUnavailable: 'カバレッジ情報なし',
   },
   inspector: {
     canonicalMainAsset: '標準プライマリアセット',
@@ -292,6 +296,7 @@ export const ja: TranslationDictionary = {
     confidenceLabel: '分類信頼度',
     evidenceTitle: '監査証拠チェックリスト',
     noEvidence: '明示的な分類証拠は記録されていません',
+    fetchUrlError: 'URLからSVGを取得できませんでした。CORS設定またはURLの有効性を確認してください。',
   },
   sourcesView: {
     title: '検証済みソースプロバイダー',
@@ -411,6 +416,11 @@ export const ja: TranslationDictionary = {
     viewInInspector: 'インスペクターで開く',
     noConflictsMatch: '条件に一致する競合レコードはありません。',
     resolutionExplanation: '調停理由の説明',
+    slugLabel: '識別名: {value}',
+    idLabel: 'ID: {value}',
+    collectionLabel: 'コレクション: {value}',
+    contextLabel: '用途: {value}',
+    licenseLabel: 'ライセンス: {value}',
   },
   comparison: {
     title: 'ベクター比較スタジオ',

@@ -35,6 +35,9 @@ export const de: TranslationDictionary = {
     tabIdentities: 'Identitäten',
     sourcesWord: 'Quellen',
     tabMore: 'Weitere Tools',
+    providersWord: 'Anbieter',
+    bundleExportSubtitle: 'Vollständiges JSON-Manifest, TypeScript-Typen und reine SVGs',
+    zipExportSubtitle: 'Nur verifizierte reine SVG-Vektordateien',
   },
   systemBanner: {
     registryTitle: 'Geprüftes Multi-Source-Register für Marken & Technologien',
@@ -190,6 +193,7 @@ export const de: TranslationDictionary = {
     copyReactJsx: 'React JSX kopieren',
     inspectAssetFamily: 'Asset-Familie prüfen',
     imageLoadError: 'Vorschau nicht verfügbar',
+    coverageUnavailable: 'Abdeckung nicht verfügbar',
   },
   inspector: {
     canonicalMainAsset: 'Kanonisches Haupt-Asset',
@@ -292,6 +296,7 @@ export const de: TranslationDictionary = {
     confidenceLabel: 'Konfidenzwert',
     evidenceTitle: 'Prüfungsnachweise',
     noEvidence: 'Keine expliziten Klassifizierungsnachweise vorhanden',
+    fetchUrlError: 'SVG konnte nicht von der URL geladen werden. Bitte CORS oder Erreichbarkeit prüfen.',
   },
   sourcesView: {
     title: 'Geprüfte Quellanbieter',
@@ -411,6 +416,11 @@ export const de: TranslationDictionary = {
     viewInInspector: 'Im Inspektor öffnen',
     noConflictsMatch: 'Keine Konflikte entsprechen den aktuellen Suchkriterien.',
     resolutionExplanation: 'Begründung des Schiedsverfahrens',
+    slugLabel: 'Slug: {value}',
+    idLabel: 'ID: {value}',
+    collectionLabel: 'Kollektion: {value}',
+    contextLabel: 'Kontext: {value}',
+    licenseLabel: 'Lizenz: {value}',
   },
   comparison: {
     title: 'Vektor-Vergleichs-Studio',

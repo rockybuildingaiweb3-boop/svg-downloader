@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <div>
                         <span className="font-semibold text-slate-900 block">{t.header.downloadMainstreamBundle}</span>
                         <span className="text-slate-500 text-2xs block">
-                          Full JSON manifest, TypeScript types, and raw SVGs
+                          {t.header.bundleExportSubtitle}
                         </span>
                       </div>
                     </button>
@@ -205,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <div>
                         <span className="font-semibold text-slate-900 block">{t.header.downloadMainstreamZip}</span>
                         <span className="text-slate-500 text-2xs block">
-                          Pure verified raw SVG files only
+                          {t.header.zipExportSubtitle}
                         </span>
                       </div>
                     </button>

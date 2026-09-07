@@ -35,6 +35,9 @@ export const fr: TranslationDictionary = {
     tabIdentities: 'Identités',
     sourcesWord: 'Sources',
     tabMore: 'Plus d\'outils',
+    providersWord: 'fournisseurs',
+    bundleExportSubtitle: 'Manifeste JSON complet, types TypeScript et fichiers SVG bruts',
+    zipExportSubtitle: 'Uniquement les fichiers vectoriels SVG bruts vérifiés',
   },
   systemBanner: {
     registryTitle: 'Registre d\'Actifs SVG de Marques et Technologies Vérifié',
@@ -190,6 +193,7 @@ export const fr: TranslationDictionary = {
     copyReactJsx: 'Copier React JSX',
     inspectAssetFamily: 'Inspecter la Famille d\'Actifs',
     imageLoadError: 'Aperçu non disponible',
+    coverageUnavailable: 'Couverture non disponible',
   },
   inspector: {
     canonicalMainAsset: 'Actif Principal Canonique',
@@ -292,6 +296,7 @@ export const fr: TranslationDictionary = {
     confidenceLabel: 'Indice de Confiance',
     evidenceTitle: 'Liste des Preuves d\'Audit',
     noEvidence: 'Aucune preuve explicite de classification enregistrée',
+    fetchUrlError: 'Impossible de récupérer le SVG depuis cette URL. Vérifiez les règles CORS ou la validité du lien.',
   },
   sourcesView: {
     title: 'Fournisseurs de Sources Vérifiés',
@@ -411,6 +416,11 @@ export const fr: TranslationDictionary = {
     viewInInspector: 'Inspecter dans la Boîte Modale',
     noConflictsMatch: 'Aucun enregistrement ne correspond à vos critères de recherche.',
     resolutionExplanation: 'Explication de l\'Arbitrage',
+    slugLabel: 'identifiant : {value}',
+    idLabel: 'ID : {value}',
+    collectionLabel: 'collection : {value}',
+    contextLabel: 'contexte : {value}',
+    licenseLabel: 'licence : {value}',
   },
   comparison: {
     title: 'Studio de Comparaison Vectorielle',

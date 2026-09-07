@@ -9,8 +9,14 @@ import {
   Layers,
   Heart
 } from 'lucide-react';
-import { ConcreteAssetItem, DownloadReceipt, IconItem, getSemanticSourceLabel } from '../types';
+import { ConcreteAssetItem, DownloadReceipt, IconItem } from '../types';
 import { useTranslation } from '../i18n/context';
+import {
+  getLocalizedRoleLabel,
+  getLocalizedVariantLabel,
+  getLocalizedEntityTypeLabel,
+  getLocalizedSourceLabel
+} from '../utils/localizedLabels';
 import {
   fetchRawSvg,
   generateReactJsx,
@@ -142,14 +148,14 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         </label>
 
         <div className="flex items-center gap-1">
-          <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase tracking-wider">
-            {asset.role}
+          <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 tracking-wider">
+            {getLocalizedRoleLabel(asset.role, t)}
           </span>
           {onToggleFavorite && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleFavorite(asset.identityId);
+                onToggleFavorite(asset.assetId);
               }}
               className={`p-1 rounded-lg text-xs transition-colors cursor-pointer ${
                 isFavorite
@@ -205,7 +211,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
           </h3>
           {asset.isCanonical && (
             <span className="text-3xs font-bold px-1 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200">
-              Canonical
+              {t.comparison.canonicalBadge}
             </span>
           )}
           {asset.verificationStatus === 'verified' && (
@@ -221,14 +227,14 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         <div className="flex items-center justify-center gap-1 flex-wrap pt-0.5">
           {asset.entityType && (
             <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200/60">
-              {t.filters.entityTypes?.[asset.entityType || 'technology'] || asset.entityType}
+              {getLocalizedEntityTypeLabel(asset.entityType, t)}
             </span>
           )}
           <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-            {getSemanticSourceLabel(asset.sourceProvider === 'iconify' ? 'svg-logos' : (asset.sourcePlatform || asset.sourceProvider))}
+            {getLocalizedSourceLabel(asset.sourceProvider === 'iconify' ? 'svg-logos' : (asset.sourcePlatform || asset.sourceProvider), t)}
           </span>
-          <span className="text-3xs font-mono px-1 py-0.5 rounded bg-slate-100 text-slate-600">
-            {asset.graphicVariant}
+          <span className="text-3xs px-1 py-0.5 rounded bg-slate-100 text-slate-600">
+            {getLocalizedVariantLabel(asset.graphicVariant, t)}
           </span>
           {asset.rawSha256 && (
             <span className="text-3xs font-mono px-1 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-100">

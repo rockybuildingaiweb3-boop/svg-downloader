@@ -14,25 +14,7 @@ import { useTranslation } from '../i18n/context';
 import { REGISTRY_IDENTITIES } from '../data/registry';
 import { computeRegistryCoverageSummary } from '../utils/sourceCoverage';
 
-import sourcesConfig from '../../config/sources.json';
-
-interface SourceMeta {
-  id: string;
-  name: string;
-  repoUrl: string;
-  version: string;
-  license: string;
-  trustPolicy?: string;
-}
-
-const SOURCES: SourceMeta[] = (sourcesConfig.sources || []).map((s: any) => ({
-  id: s.id,
-  name: s.name,
-  repoUrl: s.sourceUrl,
-  version: s.version,
-  license: s.license,
-  trustPolicy: s.trustPolicy
-}));
+import { ENABLED_SOURCES } from '../data/sourceRegistry';
 
 export const SourcesSection: React.FC = () => {
   const { t, format } = useTranslation();
@@ -87,7 +69,7 @@ export const SourcesSection: React.FC = () => {
 
       {/* Provider Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {SOURCES.map(source => {
+        {ENABLED_SOURCES.map(source => {
           const count = providerCounts[source.id]?.assets || 0;
           const identitiesCount = providerCounts[source.id]?.identities || 0;
           const domainText = t.sourcesView.sourceDomains[source.id] || '';
@@ -105,11 +87,14 @@ export const SourcesSection: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                       {source.name}
                     </h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                        {source.version}
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className="text-3xs font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                        {source.id}
                       </span>
-                      <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      <span className="text-3xs font-mono px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200/60">
+                        {source.platform} / {source.collection}
+                      </span>
+                      <span className="text-3xs font-mono px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
                         {source.license}
                       </span>
                     </div>
@@ -142,7 +127,7 @@ export const SourcesSection: React.FC = () => {
                   {identitiesCount.toLocaleString()} {t.coverageView.identitiesWord}
                 </span>
                 <a
-                  href={source.repoUrl}
+                  href={source.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"

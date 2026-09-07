@@ -13,7 +13,13 @@ import {
 import conflictsData from '../../generated/conflicts.json';
 import { REGISTRY_IDENTITIES } from '../data/catalog';
 import { IconItem } from '../types';
-import { useTranslation } from '../i18n/context';
+import { useTranslation, format } from '../i18n/context';
+import {
+  getLocalizedSourceLabel,
+  getLocalizedRoleLabel,
+  getLocalizedVariantLabel,
+  getLocalizedContextLabel
+} from '../utils/localizedLabels';
 
 interface ConflictsSectionProps {
   onInspectIcon?: (icon: IconItem) => void;
@@ -185,11 +191,11 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
                         {icon?.title || item.id}
                       </h3>
                       <span className="text-2xs font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        slug: {item.id}
+                        {format(t.conflictsView.slugLabel, { value: item.id })}
                       </span>
                       <span className="text-2xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100 flex items-center gap-1">
                         <Layers className="w-2.5 h-2.5" />
-                        <span>{item.totalAssetsInFamily} assets</span>
+                        <span>{format(t.card.assetCountText, { count: item.totalAssetsInFamily })}</span>
                       </span>
                     </div>
 
@@ -198,10 +204,10 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
                       <span className="text-slate-400 text-2xs">{t.conflictsView.selectedCanonical}:</span>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{item.resolvedSource}</span>
+                        <span>{getLocalizedSourceLabel(item.resolvedSource, t)}</span>
                       </span>
                       <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                        ID: {item.canonicalAssetId}
+                        {format(t.conflictsView.idLabel, { value: item.canonicalAssetId })}
                       </span>
                       <span className="text-2xs text-slate-400">
                         (file: <code className="font-mono text-slate-700">{icon?.fileName || `${item.id}.svg`}</code>)
@@ -243,17 +249,17 @@ export const ConflictsSection: React.FC<ConflictsSectionProps> = ({ onInspectIco
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <span className="font-bold text-slate-800">
-                            {comp.sourceProvider} ({comp.role}, {comp.graphicVariant})
+                            {getLocalizedSourceLabel(comp.sourceProvider === 'iconify' ? 'svg-logos' : comp.sourceProvider, t)} ({getLocalizedRoleLabel(comp.role, t)}, {getLocalizedVariantLabel(comp.graphicVariant, t)})
                           </span>
                           <span className="text-2xs font-mono text-slate-400 truncate">{comp.assetId}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-2xs text-slate-500">
-                          <span>collection: {comp.sourceCollection}</span>
+                          <span>{format(t.conflictsView.collectionLabel, { value: comp.sourceCollection })}</span>
                           <span>•</span>
-                          <span>context: {comp.context?.join(', ') || 'general'}</span>
+                          <span>{format(t.conflictsView.contextLabel, { value: (comp.context || ['general']).map(c => getLocalizedContextLabel(c, t)).join(', ') })}</span>
                         </div>
                         <p className="text-2xs text-slate-400 mt-0.5 truncate">
-                          license: {comp.license}
+                          {format(t.conflictsView.licenseLabel, { value: comp.license })}
                         </p>
                       </div>
                     </div>

@@ -1,6 +1,14 @@
 import { IconItem, SourceProvider } from '../types';
+import { ENABLED_SOURCES } from '../data/sourceRegistry';
 
-export type SourceAvailabilityState = 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown';
+export type SourceAvailabilityState =
+  | 'available'
+  | 'not-found'
+  | 'not-supported'
+  | 'error'
+  | 'timeout'
+  | 'disabled'
+  | 'unknown';
 
 export interface SourceCoverageMap {
   'simple-icons': SourceAvailabilityState;
@@ -8,6 +16,7 @@ export interface SourceCoverageMap {
   'svg-logos': SourceAvailabilityState;
   official: SourceAvailabilityState;
   wikimedia: SourceAvailabilityState;
+  [key: string]: SourceAvailabilityState;
 }
 
 export interface SourceDistributionStats {
@@ -17,10 +26,12 @@ export interface SourceDistributionStats {
   fourOrMoreSourcesCount: number;
   singleSourceItems: string[];
   twoSourceItems: string[];
+  multiSourcePercentage: number;
+  singleSourcePercentage: number;
 }
 
 export interface SourceProviderMatrix {
-  provider: SourceProvider | 'svg-logos';
+  provider: SourceProvider;
   label: string;
   identitiesFound: number;
   totalAssets: number;
@@ -35,13 +46,10 @@ export interface RegistryCoverageSummary {
   distribution: SourceDistributionStats;
 }
 
-export const ENABLED_SOURCE_PROVIDERS: Array<{ id: SourceProvider | 'svg-logos'; label: string }> = [
-  { id: 'official', label: 'Official Vendor' },
-  { id: 'simple-icons', label: 'Simple Icons' },
-  { id: 'svg-logos', label: 'SVG Logos' },
-  { id: 'devicon', label: 'Devicon' },
-  { id: 'wikimedia', label: 'Wikimedia Commons' },
-];
+export const ENABLED_SOURCE_PROVIDERS: Array<{ id: SourceProvider; label: string }> = ENABLED_SOURCES.map(s => ({
+  id: s.id,
+  label: s.name
+}));
 
 /**
  * Calculates deterministic source coverage summary for the entire registry
@@ -50,13 +58,10 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
   const totalIdentities = items.length;
   let totalAssets = 0;
 
-  const providerCounts: Record<string, { identities: number; assets: number }> = {
-    official: { identities: 0, assets: 0 },
-    'simple-icons': { identities: 0, assets: 0 },
-    'svg-logos': { identities: 0, assets: 0 },
-    devicon: { identities: 0, assets: 0 },
-    wikimedia: { identities: 0, assets: 0 },
-  };
+  const providerCounts: Record<string, { identities: number; assets: number }> = {};
+  for (const p of ENABLED_SOURCE_PROVIDERS) {
+    providerCounts[p.id] = { identities: 0, assets: 0 };
+  }
 
   let singleSourceCount = 0;
   let twoSourcesCount = 0;
@@ -127,6 +132,14 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
     percentage: totalIdentities > 0 ? Math.round(((providerCounts[p.id]?.identities || 0) / totalIdentities) * 100) : 0,
   }));
 
+  const multiSourceCount = twoSourcesCount + threeSourcesCount + fourOrMoreSourcesCount;
+  const multiSourcePercentage = totalIdentities > 0
+    ? Math.round((multiSourceCount / totalIdentities) * 1000) / 10
+    : 0;
+  const singleSourcePercentage = totalIdentities > 0
+    ? Math.round((singleSourceCount / totalIdentities) * 1000) / 10
+    : 0;
+
   return {
     totalIdentities,
     totalAssets,
@@ -139,6 +152,8 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
       fourOrMoreSourcesCount,
       singleSourceItems,
       twoSourceItems,
+      multiSourcePercentage,
+      singleSourcePercentage,
     },
   };
 }
@@ -149,11 +164,13 @@ export interface RegistryHealthMetrics {
   sparseSourceIdentities: number;
   unresolvedIdentities: number;
   unknownLicenseCount: number;
+  needsReviewIdentities: number;
+  uncategorizedIdentities: number;
   isPerfect: boolean;
 }
 
 /**
- * Honest Registry Health Calculator (Part 16)
+ * Honest Registry Health Calculator (Requirement T2.1)
  * Calculates true health score based on actual validation invariants and data quality.
  */
 export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics {
@@ -165,6 +182,8 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
       sparseSourceIdentities: 0,
       unresolvedIdentities: 0,
       unknownLicenseCount: 0,
+      needsReviewIdentities: 0,
+      uncategorizedIdentities: 0,
       isPerfect: true,
     };
   }
@@ -173,6 +192,8 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
   let unresolvedCount = 0;
   let sparseCount = 0;
   let unknownLicenseCount = 0;
+  let needsReviewCount = 0;
+  let uncategorizedCount = 0;
 
   for (const item of items) {
     if (item.verificationStatus === 'verified' || item.verified) {
@@ -185,6 +206,13 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
       unknownLicenseCount++;
     }
 
+    const cat = item.primaryCategory || item.category;
+    if (cat === 'needs-review') {
+      needsReviewCount++;
+    } else if (cat === 'uncategorized') {
+      uncategorizedCount++;
+    }
+
     const sources = item.sourceCoverage
       ? Object.values(item.sourceCoverage).filter(s => s === 'available').length
       : 1;
@@ -193,10 +221,13 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
     }
   }
 
-  // Calculate honest score: penalize unresolved and unknown licenses
+  // Calculate honest score: factor in unresolved items, unknown licenses, and classification gaps
+  const unresolvedPenalty = (unresolvedCount / total) * 100;
+  const unknownLicensePenalty = (unknownLicenseCount / total) * 15;
+  const classificationPenalty = ((needsReviewCount * 0.03 + uncategorizedCount * 0.08) / total) * 100;
   const score = Math.max(
     0,
-    Math.min(100, Math.round(((verifiedCount - unresolvedCount) / total) * 1000) / 10)
+    Math.min(100, Math.round((100 - unresolvedPenalty - unknownLicensePenalty - classificationPenalty) * 10) / 10)
   );
 
   return {
@@ -205,6 +236,8 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
     sparseSourceIdentities: sparseCount,
     unresolvedIdentities: unresolvedCount,
     unknownLicenseCount,
-    isPerfect: score === 100 && unresolvedCount === 0 && unknownLicenseCount === 0,
+    needsReviewIdentities: needsReviewCount,
+    uncategorizedIdentities: uncategorizedCount,
+    isPerfect: score === 100 && unresolvedCount === 0 && unknownLicenseCount === 0 && needsReviewCount === 0,
   };
 }

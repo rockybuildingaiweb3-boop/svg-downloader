@@ -40,6 +40,12 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
+export function format(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => {
+    return values[key] !== undefined ? String(values[key]) : `{${key}}`;
+  });
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
     // 1. Persisted user selection
@@ -100,12 +106,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   const t = DICTIONARIES[language] || en;
-
-  const format = (template: string, values: Record<string, string | number>): string => {
-    return template.replace(/\{(\w+)\}/g, (_, key) => {
-      return values[key] !== undefined ? String(values[key]) : `{${key}}`;
-    });
-  };
 
   return (
     <I18nContext.Provider
