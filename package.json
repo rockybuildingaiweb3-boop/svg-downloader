@@ -15,6 +15,7 @@
     "audit": "node scripts/audit-registry-consistency.mjs && node scripts/static-analysis.mjs && node scripts/icon-sync.mjs audit",
     "audit-consistency": "node scripts/audit-registry-consistency.mjs",
     "generate-metadata": "node scripts/generate-build-metadata.mjs",
+    "regenerate-artifacts": "node scripts/regenerate-artifacts.mjs",
     "static-analysis": "node scripts/static-analysis.mjs",
     "test": "tsx scripts/test-registry.mjs",
     "lint": "tsc --noEmit"

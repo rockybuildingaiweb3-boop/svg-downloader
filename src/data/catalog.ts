@@ -28,7 +28,7 @@ function normalizeProvider(prov: string | undefined): SourceProvider {
 /**
  * Maps canonical record to UI IconItem with full BrandIdentity and AssetFamily support
  */
-export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
+export function hydrateItem(rec: any): IconItem {
   const rawProv = rec.sourceProvider || rec.source;
   const sourceProvider = normalizeProvider(rawProv);
   const sourceCollection = rec.sourceCollection || (rec.source === 'svg-logos' || rec.source === 'iconify' ? 'logos' : rec.source) || 'unknown';
@@ -78,20 +78,9 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
         return {
           ...a,
           sourceProvider: aProv,
-          sourcePlatform: getSemanticSourceLabel(aProv, aColl),
           sourceCollection: aColl,
-          xmlValid: a.xmlValid ?? false,
-          svgRenderable: a.svgRenderable ?? a.renderable ?? false,
-          sourceTrusted: a.sourceTrusted ?? false,
-          canonicalResolved: a.canonicalResolved ?? false,
-          integrityVerified: a.integrityVerified ?? false,
-          variantVerified: a.variantVerified ?? false,
-          renderable: a.renderable ?? false,
-          verificationStatus: a.verificationStatus || (a.xmlValid && a.renderable && a.integrityVerified ? 'verified' : 'unresolved'),
-          trustState: a.trustState || trustState,
-          licenseStatus: classifyLicenseStatus(a.license || rec.license),
-          colorType: a.colorType || 'monochrome',
-          structuralMetrics: a.structuralMetrics
+          sourcePlatform: a.sourcePlatform || getSemanticSourceLabel(aProv, aColl),
+          licenseStatus: classifyLicenseStatus(a.license || rec.license)
         };
       })
     : [defaultAsset];
@@ -109,7 +98,9 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     ...sr,
     sourceProvider: normalizeProvider(sr.sourceProvider)
   }));
-  const sourcesCount = rec.sourceCoverageFound ?? (rec.sourceCoverage ? Object.values(rec.sourceCoverage).filter(v => v === 'available').length : assetProviderCount);
+  const sourcesCount = rec.sourceCoverageFound !== undefined
+    ? rec.sourceCoverageFound
+    : (rec.sourceCoverage ? Object.values(rec.sourceCoverage).filter(v => v === 'available').length : undefined);
 
   return {
     id: rec.id,
@@ -126,11 +117,18 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     categoryEvidence: rec.categoryEvidence || [],
     entityType: rec.entityType || inferEntityType(rec),
     sourceCoverage: rec.sourceCoverage,
-    sourceCoverageFound: rec.sourceCoverageFound ?? (rec.sourceCoverage ? Object.values(rec.sourceCoverage).filter(v => v === 'available').length : assetProviderCount),
-    sourceCoverageChecked: rec.sourceCoverageChecked ?? (rec.sourceCoverage ? Object.keys(rec.sourceCoverage).length : ENABLED_SOURCES.length),
-    sourceCoverageScore: rec.sourceCoverageScore,
-    providerCount: rec.sourceCoverageFound ?? sourcesCount,
+    sourceCoverageFound: rec.sourceCoverageFound !== undefined
+      ? rec.sourceCoverageFound
+      : (rec.sourceCoverage ? Object.values(rec.sourceCoverage).filter(v => v === 'available').length : undefined),
+    sourceCoverageChecked: rec.sourceCoverageChecked !== undefined
+      ? rec.sourceCoverageChecked
+      : (rec.sourceCoverage ? Object.keys(rec.sourceCoverage).length : undefined),
+    sourceCoverageScore: rec.sourceCoverageScore !== undefined
+      ? rec.sourceCoverageScore
+      : (rec.sourceCoverage ? `${Object.values(rec.sourceCoverage).filter(v => v === 'available').length} / ${Object.keys(rec.sourceCoverage).length}` : undefined),
+    providerCount: rec.providerCount !== undefined ? rec.providerCount : rec.sourceCoverageFound,
     assetProviderCount,
+    assetCount: assets.length,
     hex: (rec.brandColor || '#111827').replace('#', ''),
     source: normalizeProvider(rec.source),
     sourceProvider,
@@ -172,7 +170,9 @@ export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map((rec) => {
     assets,
     totalAssets: assets.length
   };
-});
+}
+
+export const REGISTRY_IDENTITIES: IconItem[] = CANONICAL_CATALOG.map(hydrateItem);
 
 // Transitional compatibility alias
 export const REGISTRY_ITEMS: IconItem[] = REGISTRY_IDENTITIES;

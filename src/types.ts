@@ -283,9 +283,10 @@ export interface BrandIdentity {
   canonicalAsset: BrandAsset;
   assets: BrandAsset[];
   totalAssets: number;
+  assetCount?: number;
   sourceRecords: SourceRecord[];
   sourcesAvailable: SourceProvider[];
-  sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
+  sourceCoverage?: Record<string, ProviderStatus>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
   sourceCoverageScore?: string;
@@ -341,7 +342,7 @@ export interface IconRecord {
   categoryConfidence?: number;
   categoryEvidence?: string[];
   entityType?: EntityType;
-  sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
+  sourceCoverage?: Record<string, ProviderStatus>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
   sourceCoverageScore?: string;
@@ -369,6 +370,7 @@ export interface IconRecord {
   canonicalAsset?: BrandAsset;
   assets?: BrandAsset[];
   totalAssets?: number;
+  assetCount?: number;
 }
 
 /**
@@ -386,12 +388,13 @@ export interface IconItem {
   categoryConfidence?: number;
   categoryEvidence?: string[];
   entityType?: EntityType;
-  sourceCoverage?: Record<string, 'available' | 'not-found' | 'not-supported' | 'error' | 'unknown'>;
+  sourceCoverage?: Record<string, ProviderStatus>;
   sourceCoverageFound?: number;
   sourceCoverageChecked?: number;
   sourceCoverageScore?: string;
   providerCount?: number;
   assetProviderCount?: number;
+  assetCount?: number;
   hex: string;
   svg?: string;
   source: 'simple-icons' | 'devicon' | 'official' | 'wikimedia' | 'svg-logos' | 'iconify';

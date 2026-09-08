@@ -250,7 +250,7 @@ export const CoverageSection: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-slate-900">
-                    {coverageSummary.distribution.singleSourceCount.toLocaleString()}
+                    {coverageSummary.distribution.oneProvider.toLocaleString()}
                   </div>
                   <div className="text-2xs text-slate-500">{t.coverageView.identitiesWord}</div>
                 </div>
@@ -263,7 +263,7 @@ export const CoverageSection: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-slate-900">
-                    {coverageSummary.distribution.twoSourcesCount.toLocaleString()}
+                    {coverageSummary.distribution.twoProviders.toLocaleString()}
                   </div>
                   <div className="text-2xs text-slate-500">{t.coverageView.identitiesWord}</div>
                 </div>
@@ -276,7 +276,7 @@ export const CoverageSection: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-slate-900">
-                    {coverageSummary.distribution.threeSourcesCount.toLocaleString()}
+                    {coverageSummary.distribution.threeProviders.toLocaleString()}
                   </div>
                   <div className="text-2xs text-slate-500">{t.coverageView.identitiesWord}</div>
                 </div>
@@ -284,12 +284,25 @@ export const CoverageSection: React.FC = () => {
 
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-medium text-slate-700">{t.coverageView.fourOrMoreSourcesLabel}</div>
-                  <div className="text-2xs text-slate-400">4+ {t.coverageView.providerCol}</div>
+                  <div className="text-xs font-medium text-slate-700">{t.coverageView.fourSourcesLabel || 'Four-Source Identities'}</div>
+                  <div className="text-2xs text-slate-400">4 {t.coverageView.providerCol}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-slate-900">
+                    {coverageSummary.distribution.fourProviders.toLocaleString()}
+                  </div>
+                  <div className="text-2xs text-slate-500">{t.coverageView.identitiesWord}</div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-medium text-slate-700">{t.coverageView.fiveOrMoreSourcesLabel || 'Five+ Source Identities'}</div>
+                  <div className="text-2xs text-slate-400">5+ {t.coverageView.providerCol}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-emerald-600">
-                    {coverageSummary.distribution.fourOrMoreSourcesCount.toLocaleString()}
+                    {coverageSummary.distribution.fiveOrMoreProviders.toLocaleString()}
                   </div>
                   <div className="text-2xs text-emerald-700 font-medium">{t.coverageView.identitiesWord}</div>
                 </div>

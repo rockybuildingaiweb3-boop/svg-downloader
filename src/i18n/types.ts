@@ -249,6 +249,8 @@ export interface TranslationDictionary {
     errorStatus: string;
     timeoutStatus: string;
     disabledStatus: string;
+    notSupportedStatus: string;
+    unknownStatus: string;
     classificationTitle: string;
     classificationSubtitle: string;
     primaryCategoryLabel: string;
@@ -311,6 +313,8 @@ export interface TranslationDictionary {
     singleSourceLabel: string;
     twoSourcesLabel: string;
     threeSourcesLabel: string;
+    fourSourcesLabel: string;
+    fiveOrMoreSourcesLabel: string;
     fourOrMoreSourcesLabel: string;
     uncategorizedStat: string;
     needsReviewStat: string;

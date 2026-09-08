@@ -57,7 +57,8 @@ import {
   getLocalizedVariantLabel,
   getLocalizedTrustLabel,
   getLocalizedStatusLabel,
-  getLocalizedEntityTypeLabel
+  getLocalizedEntityTypeLabel,
+  getLocalizedSourceLabel
 } from './utils/localizedLabels';
 
 const PRIMARY_CATEGORY_IDS = [
@@ -760,7 +761,7 @@ export default function App() {
                     { id: 'all', label: t.filters.allSources },
                     ...ENABLED_SOURCES.map(src => ({
                       id: src.id,
-                      label: src.name
+                      label: getLocalizedSourceLabel(src.id, t) || src.name
                     }))
                   ].map(src => (
                     <button

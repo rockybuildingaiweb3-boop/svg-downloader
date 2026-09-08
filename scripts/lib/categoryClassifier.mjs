@@ -300,32 +300,32 @@ export function inferEntityType(id = '', category = '', tags = []) {
       entityTypeEvidence: ['Developer tool/utility canonical match']
     };
   }
-  if (cat === 'cloud' || cat === 'infrastructure') {
+  if (cleanTags.includes('tool') || cleanTags.includes('cli') || cleanTags.includes('linter') || cleanTags.includes('bundler')) {
+    return {
+      entityType: 'tool',
+      entityTypeConfidence: 0.85,
+      entityTypeEvidence: ['Developer tool upstream tag or signature']
+    };
+  }
+  if (cleanTags.includes('platform') || cleanTags.includes('cloud-platform') || cleanTags.includes('paas') || cleanTags.includes('iaas')) {
     return {
       entityType: 'platform',
       entityTypeConfidence: 0.88,
-      entityTypeEvidence: ['Cloud / infrastructure domain platform']
+      entityTypeEvidence: ['Cloud or hosting platform upstream tag']
     };
   }
-  if (cat === 'apps' || ['slack', 'discord', 'telegram', 'whatsapp', 'signal', 'spotify', 'zoom', 'notion', 'figma', 'skype', 'teams', 'obsidian', 'trello', 'asana', 'airtable'].includes(cleanId)) {
+  if (['slack', 'discord', 'telegram', 'whatsapp', 'signal', 'spotify', 'zoom', 'notion', 'figma', 'skype', 'teams', 'obsidian', 'trello', 'asana', 'airtable'].includes(cleanId)) {
     return {
       entityType: 'app',
       entityTypeConfidence: 0.90,
       entityTypeEvidence: ['Application / desktop software classification']
     };
   }
-  if (cat === 'brands' || ['apple', 'google', 'microsoft', 'amazon', 'meta', 'tesla', 'nvidia', 'intel', 'amd', 'samsung', 'sony', 'adobe', 'ibm', 'oracle', 'salesforce', 'cisco', 'dell', 'hp', 'lenovo', 'nike', 'adidas', 'visa', 'mastercard', 'paypal', 'stripe', 'uber', 'airbnb'].includes(cleanId)) {
+  if (['apple', 'google', 'microsoft', 'amazon', 'meta', 'tesla', 'nvidia', 'intel', 'amd', 'samsung', 'sony', 'adobe', 'ibm', 'oracle', 'salesforce', 'cisco', 'dell', 'hp', 'lenovo', 'nike', 'adidas', 'visa', 'mastercard', 'paypal', 'stripe', 'uber', 'airbnb'].includes(cleanId)) {
     return {
       entityType: 'company',
       entityTypeConfidence: 0.92,
       entityTypeEvidence: ['Commercial enterprise or corporate brand match']
-    };
-  }
-  if (cleanTags.includes('tool') || cleanTags.includes('cli') || cleanTags.includes('linter') || cleanTags.includes('bundler')) {
-    return {
-      entityType: 'tool',
-      entityTypeConfidence: 0.85,
-      entityTypeEvidence: ['Developer tool upstream tag or signature']
     };
   }
   if (cleanTags.includes('social-network') || cleanTags.includes('chat') || cleanTags.includes('messaging')) {
@@ -345,7 +345,7 @@ export function inferEntityType(id = '', category = '', tags = []) {
   return {
     entityType: 'unknown',
     entityTypeConfidence: 0.1,
-    entityTypeEvidence: ['Unknown or unclassified entity type']
+    entityTypeEvidence: ['Insufficient entity-type signals; safely decoupled from category']
   };
 }
 

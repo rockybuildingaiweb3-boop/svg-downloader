@@ -941,17 +941,18 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
               {ENABLED_SOURCES.map(provider => {
                 const providerName = getLocalizedSourceLabel(provider.id, t) || provider.name;
-                const status = icon.sourceCoverage?.[provider.id] || (
-                  ((icon.assets && icon.assets.some(a => (a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider) === provider.id)) ||
-                   (icon.sourceProvider === 'iconify' ? 'svg-logos' : icon.sourceProvider) === provider.id)
-                    ? 'available'
-                    : 'not-found'
-                );
+                const hasAsset = ((icon.assets && icon.assets.some(a => (a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider) === provider.id)) ||
+                   (icon.sourceProvider === 'iconify' ? 'svg-logos' : icon.sourceProvider) === provider.id);
+                const status = icon.sourceCoverage
+                  ? (icon.sourceCoverage[provider.id] || 'not-found')
+                  : (hasAsset ? 'available' : 'unknown');
 
                 const isAvailable = status === 'available';
                 const isError = status === 'error';
                 const isTimeout = status === 'timeout';
                 const isDisabled = status === 'disabled';
+                const isNotSupported = status === 'not-supported';
+                const isUnknown = status === 'unknown';
 
                 const cardClass = isAvailable
                   ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
@@ -961,6 +962,10 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                   ? 'bg-amber-50/60 border-amber-200 text-amber-950'
                   : isDisabled
                   ? 'bg-slate-50 border-slate-200 text-slate-400'
+                  : isNotSupported
+                  ? 'bg-slate-50 border-slate-200 text-slate-400'
+                  : isUnknown
+                  ? 'bg-slate-50/70 border-slate-200 text-slate-500'
                   : 'bg-slate-100/60 border-slate-200 text-slate-500';
 
                 return (
@@ -989,6 +994,16 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                         <>
                           <XCircle className="w-3 h-3 text-slate-300 shrink-0" />
                           <span className="text-slate-400">{t.inspector.disabledStatus}</span>
+                        </>
+                      ) : isNotSupported ? (
+                        <>
+                          <XCircle className="w-3 h-3 text-slate-300 shrink-0" />
+                          <span className="text-slate-400">{t.inspector.notSupportedStatus || 'Not Supported'}</span>
+                        </>
+                      ) : isUnknown ? (
+                        <>
+                          <HelpCircle className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="text-slate-500">{t.inspector.unknownStatus || 'Unknown'}</span>
                         </>
                       ) : (
                         <>

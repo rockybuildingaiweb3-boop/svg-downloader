@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-07T02:05:56.438Z",
+  "generatedAt": "2026-09-08T02:15:42.728Z",
   "totalIdentities": 4654,
   "totalAssets": 8088,
   "totalProviders": 5,
@@ -18,6 +18,13 @@
     "wikimedia": 12
   },
   "sourceDistribution": {
+    "oneProvider": 3745,
+    "twoProviders": 621,
+    "threeProviders": 287,
+    "fourProviders": 1,
+    "fiveOrMoreProviders": 0,
+    "singleSourcePercentage": 80.5,
+    "multiSourcePercentage": 19.5,
     "singleSourceIdentities": 3745,
     "twoSourceIdentities": 621,
     "threeSourceIdentities": 287,

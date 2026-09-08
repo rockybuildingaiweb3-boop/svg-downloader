@@ -641,6 +641,48 @@ async function runTests() {
   assert(buildMetaGen.totalAssets === statsFromGenerated.totalAssets, 'Build metadata assets matches statistics.json');
   assert(buildMetaGen.totalProviders === statsFromGenerated.totalProviders, 'Build metadata totalProviders matches statistics.json');
 
+  // =========================================================================
+  // TEST 31: Exact 1, 2, 3, 4, 5+ Provider Distribution Partition (Requirement T0.7)
+  // =========================================================================
+  console.log('\n📐 31. Exact 1, 2, 3, 4, 5+ Provider Distribution Partition');
+  const covRep = JSON.parse(await fs.readFile(path.join(ROOT, 'generated', 'coverage.json'), 'utf8'));
+  const dist = covRep.sourceDistribution;
+  assert(typeof dist.oneProvider === 'number' && dist.oneProvider > 0, `1 provider count is positive (${dist.oneProvider})`);
+  assert(typeof dist.twoProviders === 'number' && dist.twoProviders > 0, `2 providers count is positive (${dist.twoProviders})`);
+  assert(typeof dist.threeProviders === 'number' && dist.threeProviders > 0, `3 providers count is positive (${dist.threeProviders})`);
+  assert(typeof dist.fourProviders === 'number' && dist.fourProviders >= 0, `4 providers count is non-negative (${dist.fourProviders})`);
+  assert(typeof dist.fiveOrMoreProviders === 'number' && dist.fiveOrMoreProviders >= 0, `5+ providers count is non-negative (${dist.fiveOrMoreProviders})`);
+  const exactSum = dist.oneProvider + dist.twoProviders + dist.threeProviders + dist.fourProviders + dist.fiveOrMoreProviders;
+  assert(exactSum === covRep.totalIdentities, `Sum of 1, 2, 3, 4, 5+ providers (${exactSum}) matches total identities (${covRep.totalIdentities})`);
+  assert(dist.singleSourcePercentage + dist.multiSourcePercentage >= 99.9, 'Percentages sum to 100%');
+
+  // =========================================================================
+  // TEST 32: Truthful Coverage Invariant: Never Fabricate Denominator (Requirement T1.11 & Check B)
+  // =========================================================================
+  console.log('\n🚫 32. Truthful Coverage Invariant: Never Fabricate Denominator');
+  const { hydrateItem } = await import('../src/data/catalog.ts');
+  const bareRecord = {
+    id: 'test-bare-icon',
+    file: 'test-bare-icon.svg',
+    title: 'Test Bare Icon',
+    source: 'svg-logos',
+    sourceProvider: 'svg-logos',
+    category: 'technology'
+  };
+  const hydratedBare = hydrateItem(bareRecord);
+  assert(hydratedBare.sourceCoverageChecked === undefined, 'Bare record without coverage has sourceCoverageChecked === undefined (never guessed)');
+  assert(hydratedBare.sourceCoverageFound === undefined, 'Bare record without coverage has sourceCoverageFound === undefined (never guessed)');
+  assert(hydratedBare.sourceCoverageScore === undefined, 'Bare record without coverage has sourceCoverageScore === undefined (never guessed)');
+
+  // =========================================================================
+  // TEST 33: Multi-Artifact Snapshot Total Providers Harmony (Requirement T0.8)
+  // =========================================================================
+  console.log('\n🌐 33. Multi-Artifact Snapshot Total Providers Harmony');
+  const srcMan = JSON.parse(await fs.readFile(path.join(ROOT, 'generated', 'source-manifest.json'), 'utf8'));
+  assert(srcMan.totalProviders === 5, `source-manifest totalProviders is 5 (actual: ${srcMan.totalProviders})`);
+  assert(srcMan.totalIdentities === covRep.totalIdentities, `source-manifest identities (${srcMan.totalIdentities}) matches coverage (${covRep.totalIdentities})`);
+  assert(srcMan.totalAssets === covRep.totalAssets, `source-manifest assets (${srcMan.totalAssets}) matches coverage (${covRep.totalAssets})`);
+
   // Summary
   console.log('\n=======================================================================');
   console.log(`✨ TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);

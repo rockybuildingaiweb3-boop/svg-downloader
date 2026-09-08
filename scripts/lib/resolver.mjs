@@ -778,6 +778,8 @@ export class IconResolver {
       sourceCoverageFound,
       sourceCoverageChecked,
       sourceCoverageScore,
+      providerCount: sourceCoverageFound !== undefined ? sourceCoverageFound : new Set(allFamilyAssets.map(a => a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider).filter(Boolean)).size,
+      assetProviderCount: new Set(allFamilyAssets.map(a => a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider).filter(Boolean)).size,
       // Granular verification fields: Must NOT default to true before actual SVG parsing & hashing
       xmlValid: false,
       svgRenderable: false,

@@ -20,6 +20,11 @@ export interface SourceCoverageMap {
 }
 
 export interface SourceDistributionStats {
+  oneProvider: number;
+  twoProviders: number;
+  threeProviders: number;
+  fourProviders: number;
+  fiveOrMoreProviders: number;
   singleSourceCount: number;
   twoSourcesCount: number;
   threeSourcesCount: number;
@@ -66,7 +71,8 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
   let singleSourceCount = 0;
   let twoSourcesCount = 0;
   let threeSourcesCount = 0;
-  let fourOrMoreSourcesCount = 0;
+  let fourSourcesCount = 0;
+  let fiveOrMoreSourcesCount = 0;
   const singleSourceItems: string[] = [];
   const twoSourceItems: string[] = [];
 
@@ -119,8 +125,10 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
       if (twoSourceItems.length < 50) twoSourceItems.push(item.id);
     } else if (sourcesCount === 3) {
       threeSourcesCount++;
-    } else if (sourcesCount >= 4) {
-      fourOrMoreSourcesCount++;
+    } else if (sourcesCount === 4) {
+      fourSourcesCount++;
+    } else if (sourcesCount >= 5) {
+      fiveOrMoreSourcesCount++;
     }
   }
 
@@ -132,7 +140,7 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
     percentage: totalIdentities > 0 ? Math.round(((providerCounts[p.id]?.identities || 0) / totalIdentities) * 100) : 0,
   }));
 
-  const multiSourceCount = twoSourcesCount + threeSourcesCount + fourOrMoreSourcesCount;
+  const multiSourceCount = twoSourcesCount + threeSourcesCount + fourSourcesCount + fiveOrMoreSourcesCount;
   const multiSourcePercentage = totalIdentities > 0
     ? Math.round((multiSourceCount / totalIdentities) * 1000) / 10
     : 0;
@@ -146,10 +154,15 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
     totalProviders: ENABLED_SOURCE_PROVIDERS.length,
     providerMatrix,
     distribution: {
+      oneProvider: singleSourceCount,
+      twoProviders: twoSourcesCount,
+      threeProviders: threeSourcesCount,
+      fourProviders: fourSourcesCount,
+      fiveOrMoreProviders: fiveOrMoreSourcesCount,
       singleSourceCount,
       twoSourcesCount,
       threeSourcesCount,
-      fourOrMoreSourcesCount,
+      fourOrMoreSourcesCount: fourSourcesCount + fiveOrMoreSourcesCount,
       singleSourceItems,
       twoSourceItems,
       multiSourcePercentage,

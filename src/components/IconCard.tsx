@@ -99,20 +99,19 @@ export const IconCard: React.FC<IconCardProps> = ({
     }
   };
 
-  // Truthful coverage without hardcoded default to 5 (Requirement T0.1)
-  const sourceFound = icon.sourceCoverageFound || sourcesCount;
+  // Truthful coverage without hardcoded fallback or arithmetic guessing (Requirement T0.1 & T1.11)
+  const sourceFound = icon.sourceCoverageFound;
   const sourceChecked = icon.sourceCoverageChecked;
+  const hasAuthoritativeCoverage = sourceFound !== undefined && sourceChecked !== undefined && sourceChecked > 0;
   const erroredCount = icon.sourceCoverage
     ? Object.values(icon.sourceCoverage).filter(s => s === 'error' || s === 'timeout').length
     : 0;
 
-  const coverageBadgeText = (sourceChecked && sourceChecked > 0)
+  const coverageBadgeText = hasAuthoritativeCoverage
     ? format(t.card.coverageBadge, {
         found: sourceFound,
         total: sourceChecked,
       })
-    : (sourceFound && sourceFound > 0)
-    ? `${sourceFound} ${sourceFound === 1 ? t.card.sourcesCountSingle : t.card.sourcesCountMulti}`
     : (t.card.coverageUnavailable || 'Coverage unavailable');
 
   // Aspect-ratio-aware SVG preview dimensions (Phase 16 & T1.15)

@@ -46,16 +46,36 @@ export class RegistryGenerator {
 
   cleanRecord(record) {
     const { _svgFetcher, ...rest } = record;
+    if (rest.sourceProvider === 'iconify') rest.sourceProvider = 'svg-logos';
+    if (rest.source === 'iconify') rest.source = 'svg-logos';
+
     if (rest.assets && Array.isArray(rest.assets)) {
       rest.assets = rest.assets.map(a => {
         const { _svgFetcher: _af, ...aRest } = a;
+        if (aRest.sourceProvider === 'iconify') aRest.sourceProvider = 'svg-logos';
         return aRest;
       });
     }
     if (rest.canonicalAsset) {
       const { _svgFetcher: _cf, ...cRest } = rest.canonicalAsset;
+      if (cRest.sourceProvider === 'iconify') cRest.sourceProvider = 'svg-logos';
       rest.canonicalAsset = cRest;
     }
+
+    if (rest.sourceCoverage) {
+      const normCov = {};
+      for (const [prov, status] of Object.entries(rest.sourceCoverage)) {
+        normCov[prov === 'iconify' ? 'svg-logos' : prov] = status;
+      }
+      rest.sourceCoverage = normCov;
+    }
+
+    const distinctProviders = new Set((rest.assets || []).map(a => a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider).filter(Boolean));
+    rest.assetProviderCount = distinctProviders.size;
+    rest.providerCount = rest.sourceCoverageFound !== undefined ? rest.sourceCoverageFound : (rest.sourceCoverage ? Object.values(rest.sourceCoverage).filter(s => s === 'available').length : undefined);
+    rest.assetCount = (rest.assets && rest.assets.length) ? rest.assets.length : 1;
+    rest.totalAssets = rest.assetCount;
+
     return rest;
   }
 
@@ -106,11 +126,11 @@ export class RegistryGenerator {
       }
 
       const count = availableProviders.size;
-      if (count <= 1) oneProvider++;
+      if (count === 1) oneProvider++;
       else if (count === 2) twoProviders++;
       else if (count === 3) threeProviders++;
       else if (count === 4) fourProviders++;
-      else fiveOrMoreProviders++;
+      else if (count >= 5) fiveOrMoreProviders++;
     }
 
     const multiSourceCount = twoProviders + threeProviders + fourProviders + fiveOrMoreProviders;
@@ -191,7 +211,7 @@ export class RegistryGenerator {
       sourceVersions: this.metadata.sourceVersions || {
         'simple-icons': '16.29.0',
         'devicon': '2.17.0',
-        'iconify-logos': '1.2.13',
+        'svg-logos': '1.2.13',
         'official-vendor': 'pinned-archive',
         'wikimedia-commons': 'pinned-archive'
       },
@@ -208,24 +228,29 @@ export class RegistryGenerator {
 
   async generateSourceManifestJson() {
     const cleanRecords = this.records.map(r => this.cleanRecord(r));
-    const sources = [...new Set(cleanRecords.map(r => r.sourceProvider || r.source))];
+    const canonicalSources = await this.getCanonicalSources();
+    const enabledSources = canonicalSources.filter(s => s.enabled !== false);
+    const sources = enabledSources.length > 0 ? enabledSources.map(s => s.id) : [...new Set(cleanRecords.map(r => r.sourceProvider || r.source))];
     const countsBySource = {};
     for (const s of sources) {
       countsBySource[s] = cleanRecords.filter(r => (r.sourceProvider || r.source) === s).length;
     }
 
+    const totalAssets = cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0);
+
     const manifest = {
       generatedAt: new Date().toISOString(),
       generator: 'Canonical SVG Sync Pipeline v2.0 (Authoritative)',
       sourceVersions: this.metadata.sourceVersions || {
-        'simple-icons': '16.29.0',
+        'simple-icons': '16.30.0',
         'devicon': '2.17.0',
-        'iconify-logos': '1.2.13',
-        'official-vendor': 'pinned-archive',
-        'wikimedia-commons': 'pinned-archive'
+        'svg-logos': '1.2.13',
+        'official': 'official-vendor',
+        'wikimedia': 'commons-archive'
       },
       totalIdentities: cleanRecords.length,
-      totalAssets: cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
+      totalAssets,
+      totalProviders: enabledSources.length || sources.length,
       sources,
       countsBySource,
       icons: cleanRecords
@@ -452,11 +477,11 @@ export class RegistryGenerator {
       }
 
       const count = availableProviders.size;
-      if (count <= 1) oneProvider++;
+      if (count === 1) oneProvider++;
       else if (count === 2) twoProviders++;
       else if (count === 3) threeProviders++;
       else if (count === 4) fourProviders++;
-      else fiveOrMoreProviders++;
+      else if (count >= 5) fiveOrMoreProviders++;
     }
 
     const multiSourceCount = twoProviders + threeProviders + fourProviders + fiveOrMoreProviders;
@@ -496,6 +521,8 @@ export class RegistryGenerator {
       sourceAssetCounts,
       sourceIdentityCounts,
       sourceDistribution,
+      canonicalCount: cleanRecords.length,
+      variantCount: Math.max(0, totalAssets - cleanRecords.length),
       verifiedIdentities: cleanRecords.filter(r => r.verified || r.verificationStatus === 'verified').length,
       conflictsCount: (this.metadata.conflicts || []).length
     };
@@ -556,7 +583,7 @@ export class RegistryGenerator {
       sourceVersions: this.metadata.sourceVersions || {
         'simple-icons': '16.29.0',
         'devicon': '2.17.0',
-        'iconify-logos': '1.2.13'
+        'svg-logos': '1.2.13'
       },
       totalSourcesRecorded: allSources.length,
       sources: allSources
