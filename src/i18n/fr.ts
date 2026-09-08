@@ -168,7 +168,8 @@ export const fr: TranslationDictionary = {
       desktop: 'Bureau',
       mobile: 'Mobile',
       'app-store': 'App Store',
-      social: 'Réseaux Sociaux & Avatar',
+      social: 'Réseaux Sociaux',
+      avatar: 'Avatar',
       general: 'Général',
     },
     variantOptions: {
@@ -186,6 +187,7 @@ export const fr: TranslationDictionary = {
       verified: 'Vérifié (Cryptographique SHA-256)',
       community: 'Communauté (Maintenu Open Source)',
       unverified: 'Non Vérifié',
+      unknown: 'Inconnu / Non évalué',
     },
     entityTypes: {
       company: 'Entreprise',
@@ -246,6 +248,10 @@ export const fr: TranslationDictionary = {
     urlCopied: 'URL copiée',
     downloadCanonical: 'Télécharger le SVG Canonique',
     downloadThisSvg: 'Télécharger ce SVG',
+    integrityVerifiedBadge: 'Intégrité vérifiée',
+    officialSourceBadge: 'Source officielle',
+    addToCollection: 'Ajouter à la collection',
+    removeFromCollection: 'Retirer de la collection',
   },
   inspector: {
     canonicalMainAsset: 'Actif Principal Canonique',
@@ -261,6 +267,9 @@ export const fr: TranslationDictionary = {
     downloadFamily: 'Télécharger la Famille Complète ({count})',
     copyCode: 'Copier le Code',
     codeCopied: 'Code Copié',
+    developerSnippets: 'Extraits pour développeurs',
+    copySvgDirect: 'Copier le SVG',
+    copyCurrentFormat: 'Copier le format actuel',
     packing: 'Création du paquet...',
     assetFamilyTitle: 'Membres de la Famille d\'Actifs',
     assetFamilySubtitle: 'Variations vectorielles authentiques fournies pour cette identité',

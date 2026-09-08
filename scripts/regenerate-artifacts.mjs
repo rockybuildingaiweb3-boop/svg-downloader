@@ -74,7 +74,7 @@ async function run() {
     buildId: `prod-${gitCommit.slice(0, 8)}`,
     registryVersion: '2.0.0',
     totalIdentities: records.length,
-    totalAssets: records.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
+    totalAssets: records.reduce((acc, r) => acc + (r.assets?.length || 0), 0),
     totalProviders: enabledProvidersCount
   };
 

@@ -72,8 +72,8 @@ export class RegistryGenerator {
 
     const distinctProviders = new Set((rest.assets || []).map(a => a.sourceProvider === 'iconify' ? 'svg-logos' : a.sourceProvider).filter(Boolean));
     rest.assetProviderCount = distinctProviders.size;
-    rest.providerCount = rest.sourceCoverageFound !== undefined ? rest.sourceCoverageFound : (rest.sourceCoverage ? Object.values(rest.sourceCoverage).filter(s => s === 'available').length : undefined);
-    rest.assetCount = (rest.assets && rest.assets.length) ? rest.assets.length : 1;
+    rest.providerCount = distinctProviders.size;
+    rest.assetCount = (rest.assets && rest.assets.length) ? rest.assets.length : 0;
     rest.totalAssets = rest.assetCount;
 
     return rest;
@@ -216,7 +216,7 @@ export class RegistryGenerator {
         'wikimedia-commons': 'pinned-archive'
       },
       totalIdentities: cleanRecords.length,
-      totalAssets: cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
+      totalAssets: cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 0), 0),
       sources,
       countsBySource,
       icons: cleanRecords
@@ -236,7 +236,7 @@ export class RegistryGenerator {
       countsBySource[s] = cleanRecords.filter(r => (r.sourceProvider || r.source) === s).length;
     }
 
-    const totalAssets = cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 1), 0);
+    const totalAssets = cleanRecords.reduce((acc, r) => acc + (r.assets?.length || 0), 0);
 
     const manifest = {
       generatedAt: new Date().toISOString(),
@@ -414,7 +414,7 @@ export class RegistryGenerator {
           };
         }
         categoriesMap[cat].identitiesCount++;
-        categoriesMap[cat].assetsCount += (r.assets?.length || 1);
+        categoriesMap[cat].assetsCount += (r.assets?.length || 0);
         if (categoriesMap[cat].identities.length < 50) {
           categoriesMap[cat].identities.push(r.id);
         }

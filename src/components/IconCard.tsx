@@ -11,7 +11,8 @@ import {
   Heart,
   MoreHorizontal,
   Link2,
-  Database
+  Database,
+  FolderPlus
 } from 'lucide-react';
 import { IconItem, DownloadReceipt } from '../types';
 import { ENABLED_SOURCES } from '../data/sourceRegistry';
@@ -33,6 +34,7 @@ interface IconCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
   onDownloadReceipt?: (receipt: DownloadReceipt) => void;
+  onAddToCollection?: (identityId: string) => void;
 }
 
 export const IconCard: React.FC<IconCardProps> = ({
@@ -43,6 +45,7 @@ export const IconCard: React.FC<IconCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
   onDownloadReceipt,
+  onAddToCollection,
 }) => {
   const { t, format } = useTranslation();
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | 'url' | null>(null);
@@ -52,9 +55,9 @@ export const IconCard: React.FC<IconCardProps> = ({
 
   const isUnresolved = icon.verificationStatus === 'unresolved';
 
-  // Strict absence of fallback to 1 (Requirement T0.2): missing data remains null/dash
-  const totalAssetsCount = icon.totalAssets || icon.assets?.length;
-  const displayAssetsCount = totalAssetsCount !== undefined && totalAssetsCount > 0 ? totalAssetsCount : null;
+  // Strict absence of fallback to 1: missing data remains null/dash
+  const totalAssetsCount = icon.assetCount ?? icon.totalAssets ?? icon.assets?.length;
+  const displayAssetsCount = (totalAssetsCount !== undefined && totalAssetsCount > 0) ? totalAssetsCount : null;
 
   const handleCopySvg = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -236,8 +239,16 @@ export const IconCard: React.FC<IconCardProps> = ({
             <h3 className="text-xs font-bold text-slate-800 truncate" title={icon.title}>
               {icon.title}
             </h3>
+            {icon.sourceProvider === 'official' && (
+              <span className="text-3xs font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200" title={t.card.officialSourceBadge}>
+                {t.card.officialSourceBadge}
+              </span>
+            )}
             {icon.verificationStatus === 'verified' && (
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t.card.verifiedSvg} />
+              <ShieldCheck
+                className="w-3.5 h-3.5 text-emerald-500 shrink-0"
+                title={icon.integrityVerified ? t.card.integrityVerifiedBadge : t.card.verifiedSvg}
+              />
             )}
           </div>
 
@@ -253,8 +264,10 @@ export const IconCard: React.FC<IconCardProps> = ({
             <div className="inline-flex items-center gap-1 text-2xs text-slate-600">
               <Layers className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
               <span className="font-semibold text-slate-700">{coverageBadgeText}</span>
-              {displayAssetsCount !== null && (
+              {displayAssetsCount !== null ? (
                 <span className="text-slate-500">· {format(t.card.assetCountText, { count: displayAssetsCount })}</span>
+              ) : (
+                <span className="text-slate-400">· —</span>
               )}
             </div>
 
@@ -400,6 +413,21 @@ export const IconCard: React.FC<IconCardProps> = ({
                   )}
                   <span>{copiedType === 'url' ? t.card.urlCopied : t.card.copyUrl}</span>
                 </button>
+
+                {onAddToCollection && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setShowMoreActions(false);
+                      onAddToCollection(icon.id);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 cursor-pointer"
+                  >
+                    <FolderPlus className="w-3 h-3 text-purple-600" />
+                    <span>{t.card.addToCollection}</span>
+                  </button>
+                )}
 
                 <div className="border-t border-slate-100 my-1" />
 

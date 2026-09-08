@@ -58,7 +58,7 @@ export type SourceProvider =
 
 export type IconSource = 'all' | SourceProvider;
 
-export type TrustState = 'trusted' | 'verified' | 'community' | 'unverified';
+export type TrustState = 'trusted' | 'verified' | 'community' | 'unverified' | 'unknown';
 
 export type VerificationStatus = 'all' | 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
 
@@ -227,7 +227,9 @@ export interface BrandAsset {
   notes?: string;
   rawSvg?: string;
   canonicalDecision?: CanonicalDecision;
+  licenseName?: string;
   licenseStatus?: string;
+  licenseEvidence?: string;
   primaryCategory?: string;
   categories?: string[];
   categorySource?: 'curated' | 'derived' | 'source' | 'fallback';
@@ -279,8 +281,8 @@ export interface BrandIdentity {
   brandColor?: string;
   aliases?: string[];
   tags?: string[];
-  canonicalAssetId: string;
-  canonicalAsset: BrandAsset;
+  canonicalAssetId?: string | null;
+  canonicalAsset?: BrandAsset;
   assets: BrandAsset[];
   totalAssets: number;
   assetCount?: number;
@@ -431,8 +433,8 @@ export interface IconItem {
   colorType?: SvgColorType;
   structuralMetrics?: SvgStructuralMetrics;
   // Full Asset Family support
-  canonicalAssetId: string;
-  canonicalAsset: BrandAsset;
+  canonicalAssetId?: string | null;
+  canonicalAsset?: BrandAsset;
   assets?: BrandAsset[];
   totalAssets?: number;
   // Search explainability
@@ -486,6 +488,8 @@ export function getTrustStateBadge(trustState: TrustState): { label: string; bgC
       return { label: 'Verified', bgClass: 'bg-blue-50', textClass: 'text-blue-700', borderClass: 'border-blue-200' };
     case 'community':
       return { label: 'Community', bgClass: 'bg-amber-50', textClass: 'text-amber-800', borderClass: 'border-amber-200' };
+    case 'unknown':
+      return { label: 'Unknown', bgClass: 'bg-slate-50', textClass: 'text-slate-600', borderClass: 'border-slate-200' };
     case 'unverified':
     default:
       return { label: 'Unverified', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200' };

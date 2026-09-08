@@ -76,12 +76,15 @@ export interface ParsedSearchIntent {
   roleConstraint: AssetRole | null;
   contextConstraint: UsageContext | null;
   variantPreference: string | null;
+  sourcePreference: string | null;
+  categoryConstraint: string | null;
+  entityTypeConstraint: string | null;
   mode: MatchingMode;
 }
 
 /**
  * Parses natural-language user queries into structured constraints
- * e.g., "Instagram icon for mobile navigation" -> { targetIdentity: 'instagram', role: 'symbol', context: 'mobile' }
+ * e.g., "official github mark for mobile" -> { targetIdentity: 'github', role: 'mark', context: 'mobile', sourcePreference: 'official' }
  */
 export function parseSearchIntent(query: string): ParsedSearchIntent {
   const trimmed = (query || '').trim();
@@ -134,9 +137,50 @@ export function parseSearchIntent(query: string): ParsedSearchIntent {
     line: 'line'
   };
 
+  const PROVIDER_MAP: Record<string, string> = {
+    official: 'official',
+    'simple-icons': 'simple-icons',
+    simpleicons: 'simple-icons',
+    devicon: 'devicon',
+    'svg-logos': 'svg-logos',
+    svglogos: 'svg-logos',
+    wikimedia: 'wikimedia',
+    commons: 'wikimedia'
+  };
+
+  const CATEGORY_MAP: Record<string, string> = {
+    ai: 'ai',
+    cloud: 'cloud',
+    database: 'databases',
+    databases: 'databases',
+    developer: 'developer-tools',
+    dev: 'developer-tools',
+    gaming: 'gaming',
+    games: 'gaming',
+    design: 'design',
+    social: 'social',
+    web3: 'web3',
+    crypto: 'web3',
+    brands: 'brands'
+  };
+
+  const ENTITY_MAP: Record<string, string> = {
+    framework: 'framework',
+    language: 'programming-language',
+    library: 'library',
+    company: 'company',
+    product: 'product',
+    service: 'service',
+    platform: 'platform',
+    tool: 'tool'
+  };
+
   let roleConstraint: AssetRole | null = null;
   let contextConstraint: UsageContext | null = null;
   let variantPreference: string | null = null;
+  let sourcePreference: string | null = null;
+  let categoryConstraint: string | null = null;
+  let entityTypeConstraint: string | null = null;
   const identityTokens: string[] = [];
 
   const stopWords = new Set(['for', 'the', 'a', 'an', 'in', 'on', 'with', 'and', 'only', 'strict']);
@@ -149,6 +193,12 @@ export function parseSearchIntent(query: string): ParsedSearchIntent {
       contextConstraint = CONTEXT_MAP[token];
     } else if (VARIANT_MAP[token]) {
       variantPreference = VARIANT_MAP[token];
+    } else if (PROVIDER_MAP[token]) {
+      sourcePreference = PROVIDER_MAP[token];
+    } else if (CATEGORY_MAP[token]) {
+      categoryConstraint = CATEGORY_MAP[token];
+    } else if (ENTITY_MAP[token]) {
+      entityTypeConstraint = ENTITY_MAP[token];
     } else if (!stopWords.has(token)) {
       identityTokens.push(token);
     }
@@ -164,6 +214,9 @@ export function parseSearchIntent(query: string): ParsedSearchIntent {
     roleConstraint,
     contextConstraint,
     variantPreference,
+    sourcePreference,
+    categoryConstraint,
+    entityTypeConstraint,
     mode: isStrict ? 'strict' : 'preferred'
   };
 }
@@ -270,10 +323,12 @@ export function resolveBestAsset(
 
   return {
     identity,
-    matchedAsset: finalAsset,
-    allAssets: identity.assets || [finalAsset],
+    matchedAsset: finalAsset || null,
+    allAssets: (identity.assets && identity.assets.length > 0) ? identity.assets : (finalAsset ? [finalAsset] : []),
     matchType: 'exact-identity',
-    matchReason: `Resolved identity "${identity.id}" with asset role "${finalAsset.role}" (${finalAsset.graphicVariant})`
+    matchReason: finalAsset
+      ? `Resolved identity "${identity.id}" with asset role "${finalAsset.role}" (${finalAsset.graphicVariant})`
+      : `Resolved identity "${identity.id}" (no assets available)`
   };
 }
 
@@ -294,7 +349,7 @@ export function searchCatalogAssetAware(query: string, catalog: IconItem[]): Ass
         roleMatch: false,
         contextMatch: false,
         variantMatch: false,
-        trustedSource: true
+        trustedSource: icon.trustState === 'verified' || icon.trustState === 'trusted'
       }
     }));
   }
@@ -335,22 +390,51 @@ export function searchCatalogAssetAware(query: string, catalog: IconItem[]): Ass
     } else if (iconId.includes(intent.targetIdentity)) {
       score += 25;
       reasons.push(`Match: ${icon.id}`);
-    } else if (intent.targetIdentity.length === 0 && (intent.roleConstraint || intent.contextConstraint || intent.variantPreference)) {
-      // Query specified only role/context without identity
+    } else if (intent.targetIdentity.length === 0 && (intent.roleConstraint || intent.contextConstraint || intent.variantPreference || intent.sourcePreference || intent.categoryConstraint || intent.entityTypeConstraint)) {
+      // Query specified structured constraints without explicit target identity
       score += 10;
     }
 
     if (score === 0) continue;
 
-    // 2. Asset matching within family
-    const family = icon.assets || [icon.canonicalAsset];
+    // 2. Structured source / category / entity constraints
+    if (intent.sourcePreference) {
+      const hasProvider = (icon.sourceProvider === intent.sourcePreference) || (icon.assets?.some(a => a.sourceProvider === intent.sourcePreference));
+      if (hasProvider) {
+        score += 20;
+        reasons.push(`Source: ${intent.sourcePreference}`);
+      } else if (intent.mode === 'strict') {
+        continue;
+      }
+    }
+
+    if (intent.categoryConstraint) {
+      if (icon.category === intent.categoryConstraint || icon.categories?.includes(intent.categoryConstraint)) {
+        score += 15;
+        reasons.push(`Category: ${intent.categoryConstraint}`);
+      } else if (intent.mode === 'strict') {
+        continue;
+      }
+    }
+
+    if (intent.entityTypeConstraint) {
+      if (icon.entityType === intent.entityTypeConstraint) {
+        score += 15;
+        reasons.push(`Entity: ${intent.entityTypeConstraint}`);
+      } else if (intent.mode === 'strict') {
+        continue;
+      }
+    }
+
+    // 3. Asset matching within family
     let matchedAsset = icon.canonicalAsset;
 
-    if (intent.roleConstraint || intent.contextConstraint || intent.variantPreference) {
+    if (intent.roleConstraint || intent.contextConstraint || intent.variantPreference || intent.sourcePreference) {
       const criteria: AssetCriteria = {
         role: intent.roleConstraint || undefined,
         context: intent.contextConstraint || undefined,
         variant: intent.variantPreference || undefined,
+        sourceProvider: intent.sourcePreference || undefined,
         mode: intent.mode
       };
 

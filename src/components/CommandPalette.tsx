@@ -131,8 +131,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
       matchedIcons.forEach(icon => {
         const catLabel = getLocalizedCategoryLabel(icon.primaryCategory || icon.category, t);
-        const assetsCount = icon.assets?.length || 1;
-        const assetsText = format(t.card.assetCountText, { count: assetsCount });
+        const assetsCount = icon.assetCount ?? icon.assets?.length ?? 0;
+        const assetsText = assetsCount > 0 ? format(t.card.assetCountText, { count: assetsCount }) : '—';
 
         result.push({
           id: `icon-${icon.id}`,

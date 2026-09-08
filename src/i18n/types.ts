@@ -176,6 +176,10 @@ export interface TranslationDictionary {
     urlCopied: string;
     downloadCanonical: string;
     downloadThisSvg: string;
+    integrityVerifiedBadge: string;
+    officialSourceBadge: string;
+    addToCollection: string;
+    removeFromCollection: string;
   };
   inspector: {
     canonicalMainAsset: string;
@@ -191,6 +195,9 @@ export interface TranslationDictionary {
     downloadFamily: string;
     copyCode: string;
     codeCopied: string;
+    developerSnippets: string;
+    copySvgDirect: string;
+    copyCurrentFormat: string;
     packing: string;
     assetFamilyTitle: string;
     assetFamilySubtitle: string;

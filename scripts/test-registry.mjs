@@ -683,6 +683,45 @@ async function runTests() {
   assert(srcMan.totalIdentities === covRep.totalIdentities, `source-manifest identities (${srcMan.totalIdentities}) matches coverage (${covRep.totalIdentities})`);
   assert(srcMan.totalAssets === covRep.totalAssets, `source-manifest assets (${srcMan.totalAssets}) matches coverage (${covRep.totalAssets})`);
 
+  // =========================================================================
+  // TEST 34: Zero Synthetic Default Asset Invariant (P0 Consolidation)
+  // =========================================================================
+  console.log('\n🧩 34. Zero Synthetic Default Asset Invariant');
+  const emptyAssetRecord = {
+    id: 'zero-asset-identity',
+    slug: 'zero-asset-identity',
+    title: 'Zero Asset Identity',
+    sourceProvider: 'svg-logos',
+    category: 'technology',
+    assets: []
+  };
+  const hydratedEmpty = hydrateItem(emptyAssetRecord);
+  assert(Array.isArray(hydratedEmpty.assets), 'Empty assets remains an array');
+  assert(hydratedEmpty.assets.length === 0, `Assets length is 0 (actual: ${hydratedEmpty.assets.length})`);
+  assert(hydratedEmpty.assetCount === 0, `assetCount is 0 (actual: ${hydratedEmpty.assetCount})`);
+  assert(hydratedEmpty.canonicalAssetId === null, `canonicalAssetId is null (actual: ${hydratedEmpty.canonicalAssetId})`);
+  assert(hydratedEmpty.canonicalAsset === undefined, 'canonicalAsset is undefined (no synthetic asset created)');
+
+  // =========================================================================
+  // TEST 35: Honest Metric Semantics & Unknown Trust State Invariant (P0 Consolidation)
+  // =========================================================================
+  console.log('\n🛡️ 35. Honest Metric Semantics & Unknown Trust State Invariant');
+  const unratedRecord = {
+    id: 'unrated-identity',
+    slug: 'unrated-identity',
+    title: 'Unrated Identity',
+    sourceProvider: 'svg-logos',
+    category: 'technology'
+    // no trustState specified
+  };
+  const hydratedUnrated = hydrateItem(unratedRecord);
+  assert(hydratedUnrated.trustState === 'unknown', `Missing trustState defaults to "unknown", NOT "community" (actual: ${hydratedUnrated.trustState})`);
+
+  // Verify that empty or missing assets yield assetCount === 0 and totalAssets === 0
+  assert(hydratedUnrated.assetCount === 0, `Bare identity assetCount is 0 (actual: ${hydratedUnrated.assetCount})`);
+  assert(hydratedUnrated.totalAssets === 0, `Bare identity totalAssets is 0 (actual: ${hydratedUnrated.totalAssets})`);
+  assert(hydratedUnrated.providerCount === 1, `Single provider identity providerCount is 1 (actual: ${hydratedUnrated.providerCount})`);
+
   // Summary
   console.log('\n=======================================================================');
   console.log(`✨ TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);

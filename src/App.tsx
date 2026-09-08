@@ -190,6 +190,8 @@ export default function App() {
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [inspectedIcon, setInspectedIcon] = useState<IconItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [collectionTarget, setCollectionTarget] = useState<{ type: 'identity' | 'asset'; id: string; title: string } | null>(null);
+  const [quickNewColName, setQuickNewColName] = useState<string>('');
 
   // Dynamic Category Stats computed from the active registry
   const categoryStatsData = useMemo(() => {
@@ -295,8 +297,58 @@ export default function App() {
     }
   };
 
+  const handleToggleItemInCollection = (colId: string, itemType: 'identity' | 'asset', itemId: string) => {
+    const targetCol = userCollections.find(c => c.id === colId);
+    if (!targetCol) return;
+    const isPresent = itemType === 'identity' ? targetCol.identityIds.includes(itemId) : targetCol.assetIds.includes(itemId);
+
+    const updated = userCollections.map(col => {
+      if (col.id !== colId) return col;
+      if (itemType === 'identity') {
+        return {
+          ...col,
+          identityIds: isPresent ? col.identityIds.filter(id => id !== itemId) : [...col.identityIds, itemId]
+        };
+      } else {
+        return {
+          ...col,
+          assetIds: isPresent ? col.assetIds.filter(id => id !== itemId) : [...col.assetIds, itemId]
+        };
+      }
+    });
+
+    setUserCollections(updated);
+    try {
+      localStorage.setItem('svg_registry_user_collections', JSON.stringify(updated));
+    } catch {}
+
+    const actionText = isPresent ? 'Removed from' : 'Added to';
+    showToast(`${actionText} ${targetCol.name}`);
+  };
+
+  const handleCreateCollectionWithItem = (name: string, itemType: 'identity' | 'asset', itemId: string) => {
+    if (!name.trim()) return;
+    const newCol: UserCollection = {
+      id: `col-${Date.now()}`,
+      name: name.trim(),
+      identityIds: itemType === 'identity' ? [itemId] : [],
+      assetIds: itemType === 'asset' ? [itemId] : [],
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...userCollections, newCol];
+    setUserCollections(updated);
+    try {
+      localStorage.setItem('svg_registry_user_collections', JSON.stringify(updated));
+    } catch {}
+    setQuickNewColName('');
+    showToast(`${newCol.name} (${t.workspace.collections})`);
+  };
+
   // Helper: Authoritative identity source provider count (no guessing, no || 1)
   const getIdentitySourceCount = (icon: IconItem): number => {
+    if (typeof icon.providerCount === 'number') {
+      return icon.providerCount;
+    }
     if (icon.sourceCoverage) {
       return Object.values(icon.sourceCoverage).filter(s => s === 'available').length;
     }
@@ -305,9 +357,9 @@ export default function App() {
       return provs.size;
     }
     if (icon.alternativeSources && icon.alternativeSources.length > 0) {
-      return icon.alternativeSources.length + 1;
+      return icon.alternativeSources.length + (icon.sourceProvider ? 1 : 0);
     }
-    return 1;
+    return icon.sourceProvider ? 1 : 0;
   };
 
   // Reset page when filters change
@@ -551,7 +603,7 @@ export default function App() {
           return (b.title || '').localeCompare(a.title || '');
         }
         if (selectedSort === 'most-assets') {
-          return (b.assets?.length || 1) - (a.assets?.length || 1);
+          return (b.assetCount ?? b.assets?.length ?? 0) - (a.assetCount ?? a.assets?.length ?? 0);
         }
         if (selectedSort === 'most-providers') {
           return getIdentitySourceCount(b) - getIdentitySourceCount(a);
@@ -983,7 +1035,7 @@ export default function App() {
               </div>
 
               {/* Clean Intent Chips (No raw debug score clutter) */}
-              {parsedIntent && (parsedIntent.roleConstraint || parsedIntent.contextConstraint || parsedIntent.variantPreference || (parsedIntent.sourcePreference && parsedIntent.sourcePreference !== 'all')) && (
+              {parsedIntent && (parsedIntent.roleConstraint || parsedIntent.contextConstraint || parsedIntent.variantPreference || (parsedIntent.sourcePreference && parsedIntent.sourcePreference !== 'all') || parsedIntent.categoryConstraint || parsedIntent.entityTypeConstraint) && (
                 <div className="flex items-center gap-2 text-xs text-indigo-950 font-medium flex-wrap pt-1">
                   <span className="text-2xs font-semibold text-indigo-700 flex items-center gap-1 uppercase tracking-wider">
                     <Sparkles className="w-3 h-3" />
@@ -1007,6 +1059,21 @@ export default function App() {
                   {parsedIntent.variantPreference && (
                     <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
                       {t.filters.variantPreference}: {parsedIntent.variantPreference}
+                    </span>
+                  )}
+                  {parsedIntent.sourcePreference && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {t.filters.sourcePlatform}: {parsedIntent.sourcePreference}
+                    </span>
+                  )}
+                  {parsedIntent.categoryConstraint && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {t.filters.chipCategory}: {parsedIntent.categoryConstraint}
+                    </span>
+                  )}
+                  {parsedIntent.entityTypeConstraint && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {t.filters.entityTypes?.[parsedIntent.entityTypeConstraint] || parsedIntent.entityTypeConstraint}
                     </span>
                   )}
                 </div>
@@ -1578,6 +1645,7 @@ export default function App() {
                       <option value="web">{t.filters.contextOptions.web}</option>
                       <option value="desktop">{t.filters.contextOptions.desktop}</option>
                       <option value="mobile">{t.filters.contextOptions.mobile}</option>
+                      <option value="avatar">{t.filters.contextOptions.avatar}</option>
                       <option value="app-store">{t.filters.contextOptions['app-store']}</option>
                       <option value="social">{t.filters.contextOptions.social}</option>
                       <option value="general">{t.filters.contextOptions.general}</option>
@@ -1623,6 +1691,7 @@ export default function App() {
                       <option value="verified">{t.filters.trustOptions.verified}</option>
                       <option value="community">{t.filters.trustOptions.community}</option>
                       <option value="unverified">{t.filters.trustOptions.unverified}</option>
+                      <option value="unknown">{t.filters.trustOptions.unknown || 'Unknown'}</option>
                     </select>
                   </div>
 
@@ -1635,7 +1704,7 @@ export default function App() {
                   <span>
                     {browseLevel === 'identities' ? (
                       <>
-                        <strong className="text-slate-900">{filteredIcons.length.toLocaleString()}</strong> {t.header.tabIdentities.toLowerCase()} · <strong className="text-slate-900">{filteredIcons.reduce((acc, icon) => acc + (icon.assets?.length || 1), 0).toLocaleString()}</strong> {t.header.browseAssetsTitle.toLowerCase()}
+                        <strong className="text-slate-900">{filteredIcons.length.toLocaleString()}</strong> {t.header.tabIdentities.toLowerCase()} · <strong className="text-slate-900">{filteredIcons.reduce((acc, icon) => acc + (icon.assetCount ?? icon.assets?.length ?? 0), 0).toLocaleString()}</strong> {t.header.browseAssetsTitle.toLowerCase()}
                       </>
                     ) : (
                       <>
@@ -1700,6 +1769,7 @@ export default function App() {
                             onInspect={setInspectedIcon}
                             isFavorite={favoriteIdentityIds.includes(icon.id)}
                             onToggleFavorite={toggleFavoriteIdentity}
+                            onAddToCollection={(id) => setCollectionTarget({ type: 'identity', id, title: icon.title })}
                             onDownloadReceipt={handleDownloadReceipt}
                           />
                         ))
@@ -1715,6 +1785,7 @@ export default function App() {
                               onInspect={(icon) => setInspectedIcon(icon)}
                               isFavorite={favoriteAssetIds.includes(asset.assetId)}
                               onToggleFavorite={toggleFavoriteAsset}
+                              onAddToCollection={(id) => setCollectionTarget({ type: 'asset', id, title: asset.title || asset.assetId })}
                               onDownloadReceipt={handleDownloadReceipt}
                             />
                           );
@@ -2352,6 +2423,95 @@ export default function App() {
                 className="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl cursor-pointer shadow-xs"
               >
                 {t.workspace.createCollection}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Item to Collection Modal */}
+      {collectionTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-indigo-600" />
+                <span>{t.card.addToCollection || 'Add to Collection'}</span>
+              </h3>
+              <button
+                onClick={() => setCollectionTarget(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              <strong className="text-slate-900">{collectionTarget.title}</strong>
+            </p>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {userCollections.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">{t.workspace.noCollectionsYet}</p>
+              ) : (
+                userCollections.map(col => {
+                  const isChecked = collectionTarget.type === 'identity'
+                    ? col.identityIds.includes(collectionTarget.id)
+                    : col.assetIds.includes(collectionTarget.id);
+                  return (
+                    <button
+                      key={col.id}
+                      type="button"
+                      onClick={() => handleToggleItemInCollection(col.id, collectionTarget.type, collectionTarget.id)}
+                      className={`w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between border transition-all cursor-pointer ${
+                        isChecked
+                          ? 'bg-indigo-50 border-indigo-300 text-indigo-900 font-semibold'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="truncate">{col.name}</span>
+                      <span className={`w-4 h-4 rounded flex items-center justify-center border text-2xs ${
+                        isChecked ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'
+                      }`}>
+                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Quick create collection */}
+            <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5">
+              <input
+                type="text"
+                value={quickNewColName}
+                onChange={e => setQuickNewColName(e.target.value)}
+                placeholder={t.workspace.collectionNamePlaceholder}
+                className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && quickNewColName.trim()) {
+                    handleCreateCollectionWithItem(quickNewColName, collectionTarget.type, collectionTarget.id);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                disabled={!quickNewColName.trim()}
+                onClick={() => handleCreateCollectionWithItem(quickNewColName, collectionTarget.type, collectionTarget.id)}
+                className="px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setCollectionTarget(null)}
+                className="px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
+              >
+                {t.inspector.closeBtn}
               </button>
             </div>
           </div>

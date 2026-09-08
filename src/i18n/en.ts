@@ -168,7 +168,8 @@ export const en: TranslationDictionary = {
       desktop: 'Desktop',
       mobile: 'Mobile',
       'app-store': 'App Store',
-      social: 'Social & Avatar',
+      social: 'Social',
+      avatar: 'Avatar',
       general: 'General',
     },
     variantOptions: {
@@ -186,6 +187,7 @@ export const en: TranslationDictionary = {
       verified: 'Verified (Cryptographic SHA-256)',
       community: 'Community (Open-source maintained)',
       unverified: 'Unverified',
+      unknown: 'Unknown / Unrated',
     },
     entityTypes: {
       company: 'Company',
@@ -246,6 +248,10 @@ export const en: TranslationDictionary = {
     urlCopied: 'URL Copied',
     downloadCanonical: 'Download Canonical SVG',
     downloadThisSvg: 'Download This SVG',
+    integrityVerifiedBadge: 'Integrity Verified',
+    officialSourceBadge: 'Official Source',
+    addToCollection: 'Add to Collection',
+    removeFromCollection: 'Remove from Collection',
   },
   inspector: {
     canonicalMainAsset: 'Canonical Primary Asset',
@@ -261,6 +267,9 @@ export const en: TranslationDictionary = {
     downloadFamily: 'Download Asset Family ({count})',
     copyCode: 'Copy Snippet',
     codeCopied: 'Code Copied',
+    developerSnippets: 'Developer Snippets',
+    copySvgDirect: 'Copy SVG',
+    copyCurrentFormat: 'Copy Current Format',
     packing: 'Packaging...',
     assetFamilyTitle: 'Asset Family Members',
     assetFamilySubtitle: 'Authentic upstream vector variations for this identity',

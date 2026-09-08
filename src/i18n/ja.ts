@@ -168,7 +168,8 @@ export const ja: TranslationDictionary = {
       desktop: 'デスクトップ',
       mobile: 'モバイル',
       'app-store': 'App Store',
-      social: 'ソーシャル & アイコン',
+      social: 'ソーシャル',
+      avatar: 'アバター',
       general: '一般',
     },
     variantOptions: {
@@ -186,6 +187,7 @@ export const ja: TranslationDictionary = {
       verified: '検証済み (暗号学的SHA-256)',
       community: 'コミュニティ (オープンソース保守)',
       unverified: '未検証',
+      unknown: '未評価 / 不明',
     },
     entityTypes: {
       company: '企業',
@@ -246,6 +248,10 @@ export const ja: TranslationDictionary = {
     urlCopied: 'URLをコピーしました',
     downloadCanonical: '正規SVGをダウンロード',
     downloadThisSvg: 'このSVGをダウンロード',
+    integrityVerifiedBadge: '完全性検証済み',
+    officialSourceBadge: '公式ソース',
+    addToCollection: 'コレクションに追加',
+    removeFromCollection: 'コレクションから削除',
   },
   inspector: {
     canonicalMainAsset: '標準プライマリアセット',
@@ -261,6 +267,9 @@ export const ja: TranslationDictionary = {
     downloadFamily: 'ファミリー全体をダウンロード ({count})',
     copyCode: 'コードをコピー',
     codeCopied: 'コードをコピーしました',
+    developerSnippets: '開発者向けスニペット',
+    copySvgDirect: 'SVGをコピー',
+    copyCurrentFormat: '現在の形式をコピー',
     packing: 'パッケージ作成中...',
     assetFamilyTitle: 'アセットファミリーの構成員',
     assetFamilySubtitle: 'この識別子に対応する各ソースの正規ベクターバリアント',

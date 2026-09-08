@@ -7,7 +7,8 @@ import {
   Maximize2,
   ShieldCheck,
   Layers,
-  Heart
+  Heart,
+  FolderPlus
 } from 'lucide-react';
 import { ConcreteAssetItem, DownloadReceipt, IconItem } from '../types';
 import { useTranslation } from '../i18n/context';
@@ -33,6 +34,7 @@ interface ConcreteAssetCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
   onDownloadReceipt?: (receipt: DownloadReceipt) => void;
+  onAddToCollection?: (assetId: string) => void;
 }
 
 export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
@@ -44,6 +46,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
   onDownloadReceipt,
+  onAddToCollection,
 }) => {
   const { t, format } = useTranslation();
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | null>(null);
@@ -222,8 +225,16 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
                 {t.comparison.canonicalBadge}
               </span>
             )}
+            {asset.sourceProvider === 'official' && (
+              <span className="text-3xs font-semibold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200" title={t.card.officialSourceBadge}>
+                {t.card.officialSourceBadge}
+              </span>
+            )}
             {asset.verificationStatus === 'verified' && (
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t.card.verifiedSvg} />
+              <ShieldCheck
+                className="w-3.5 h-3.5 text-emerald-500 shrink-0"
+                title={asset.integrityVerified ? t.card.integrityVerifiedBadge : t.card.verifiedSvg}
+              />
             )}
           </div>
 
@@ -303,6 +314,22 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         >
           <Download className="w-3.5 h-3.5" />
         </button>
+
+        {onAddToCollection && (
+          <button
+            type="button"
+            id={`btn-collect-${asset.assetId}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCollection(asset.assetId);
+            }}
+            aria-label={t.card.addToCollection}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 text-xs transition-colors cursor-pointer"
+            title={t.card.addToCollection}
+          >
+            <FolderPlus className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {parentIcon && (
           <button

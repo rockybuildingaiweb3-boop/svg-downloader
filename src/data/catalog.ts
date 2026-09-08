@@ -36,40 +36,7 @@ export function hydrateItem(rec: any): IconItem {
   const context = (rec.context && rec.context.length > 0) ? rec.context : (['unknown'] as any[]);
   const contextOrigin = (rec.contextOrigin || 'unknown') as any;
   const graphicVariant = rec.graphicVariant || rec.variant || 'unknown';
-  const trustState = rec.trustState || 'community';
-
-  const defaultAsset: BrandAsset = {
-    assetId: rec.canonicalAssetId || `${rec.id}-${sourceProvider}-${role}`,
-    identityId: rec.id,
-    sourceProvider,
-    sourcePlatform: getSemanticSourceLabel(sourceProvider, sourceCollection),
-    sourceCollection,
-    sourceId: rec.sourceId || rec.id,
-    sourceVersion: rec.sourceVersion || 'unknown',
-    role,
-    context,
-    contextOrigin,
-    graphicVariant,
-    file: rec.file,
-    rawSha256: rec.rawSha256,
-    license: rec.license || 'Unknown',
-    licenseStatus: classifyLicenseStatus(rec.license),
-    sourceUrl: rec.sourceUrl,
-    isCanonical: true,
-    xmlValid: rec.xmlValid ?? false,
-    svgRenderable: rec.svgRenderable ?? rec.renderable ?? false,
-    sourceTrusted: rec.sourceTrusted ?? false,
-    canonicalResolved: rec.canonicalResolved ?? false,
-    integrityVerified: rec.integrityVerified ?? false,
-    variantVerified: rec.variantVerified ?? false,
-    renderable: rec.renderable ?? false,
-    verificationStatus: rec.verificationStatus || (rec.verified ? 'verified' : 'unresolved'),
-    trustState,
-    colorType: rec.colorType || (rec.assets?.[0]?.colorType) || 'monochrome',
-    structuralMetrics: rec.structuralMetrics || (rec.assets?.[0]?.structuralMetrics),
-    notes: rec.notes,
-    canonicalDecision: (rec as any).canonicalDecision
-  };
+  const trustState = rec.trustState || 'unknown';
 
   const assets: BrandAsset[] = (rec.assets && rec.assets.length > 0)
     ? rec.assets.map(a => {
@@ -80,19 +47,37 @@ export function hydrateItem(rec: any): IconItem {
           sourceProvider: aProv,
           sourceCollection: aColl,
           sourcePlatform: a.sourcePlatform || getSemanticSourceLabel(aProv, aColl),
-          licenseStatus: classifyLicenseStatus(a.license || rec.license)
+          licenseName: a.licenseName || a.license,
+          licenseStatus: classifyLicenseStatus(a.license || rec.license),
+          licenseEvidence: a.licenseEvidence
         };
       })
-    : [defaultAsset];
+    : [];
 
-  const distinctProviders = new Set(assets.map(a => a.sourceProvider).filter(Boolean));
-  const assetProviderCount = distinctProviders.size;
+  const distinctAssetProviders = new Set(assets.map(a => a.sourceProvider).filter(Boolean));
+  const assetProviderCount = distinctAssetProviders.size;
 
-  const canonicalAsset = rec.canonicalAsset ? {
+  const distinctIdentityProviders = new Set<string>();
+  if (sourceProvider) distinctIdentityProviders.add(sourceProvider);
+  for (const a of assets) {
+    if (a.sourceProvider) distinctIdentityProviders.add(a.sourceProvider);
+  }
+  if (rec.sourceCoverage) {
+    for (const [p, s] of Object.entries(rec.sourceCoverage)) {
+      if (s === 'available') distinctIdentityProviders.add(p);
+    }
+  }
+  const providerCount = rec.providerCount !== undefined
+    ? rec.providerCount
+    : (distinctIdentityProviders.size || (sourceProvider ? 1 : 0));
+
+  const canonicalAsset: BrandAsset | undefined = rec.canonicalAsset ? {
     ...rec.canonicalAsset,
     sourceProvider: normalizeProvider(rec.canonicalAsset.sourceProvider || sourceProvider),
-    licenseStatus: classifyLicenseStatus(rec.canonicalAsset.license || rec.license)
-  } : (assets.find(a => a.isCanonical) || assets[0]);
+    licenseName: rec.canonicalAsset.licenseName || rec.canonicalAsset.license,
+    licenseStatus: classifyLicenseStatus(rec.canonicalAsset.license || rec.license),
+    licenseEvidence: rec.canonicalAsset.licenseEvidence
+  } : (assets.find(a => a.isCanonical) || assets[0] || undefined);
 
   const sourceRecords: SourceRecord[] = (rec.sourceRecords || []).map(sr => ({
     ...sr,
@@ -126,7 +111,7 @@ export function hydrateItem(rec: any): IconItem {
     sourceCoverageScore: rec.sourceCoverageScore !== undefined
       ? rec.sourceCoverageScore
       : (rec.sourceCoverage ? `${Object.values(rec.sourceCoverage).filter(v => v === 'available').length} / ${Object.keys(rec.sourceCoverage).length}` : undefined),
-    providerCount: rec.providerCount !== undefined ? rec.providerCount : rec.sourceCoverageFound,
+    providerCount,
     assetProviderCount,
     assetCount: assets.length,
     hex: (rec.brandColor || '#111827').replace('#', ''),
@@ -162,9 +147,9 @@ export function hydrateItem(rec: any): IconItem {
     verified: rec.verified ?? false,
     conflicts: rec.conflicts,
     notes: rec.notes,
-    colorType: canonicalAsset.colorType || rec.colorType || 'monochrome',
-    structuralMetrics: canonicalAsset.structuralMetrics || rec.structuralMetrics,
-    canonicalAssetId: canonicalAsset.assetId,
+    colorType: canonicalAsset?.colorType || rec.colorType || 'monochrome',
+    structuralMetrics: canonicalAsset?.structuralMetrics || rec.structuralMetrics,
+    canonicalAssetId: canonicalAsset?.assetId || rec.canonicalAssetId || null,
     canonicalAsset,
     canonicalDecision: (rec as any).canonicalDecision,
     assets,

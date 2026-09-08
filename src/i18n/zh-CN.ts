@@ -168,7 +168,8 @@ export const zhCN: TranslationDictionary = {
       desktop: '桌面端',
       mobile: '移动端',
       'app-store': '应用商店',
-      social: '社交头像',
+      social: '社交媒体',
+      avatar: '头像图标',
       general: '通用',
     },
     variantOptions: {
@@ -186,6 +187,7 @@ export const zhCN: TranslationDictionary = {
       verified: '密码学验证',
       community: '开源社区维护',
       unverified: '未验证',
+      unknown: '未评定 / 未知',
     },
     entityTypes: {
       company: '企业',
@@ -246,6 +248,10 @@ export const zhCN: TranslationDictionary = {
     urlCopied: '链接已复制',
     downloadCanonical: '下载规范 SVG',
     downloadThisSvg: '下载此 SVG',
+    integrityVerifiedBadge: '完整性验证',
+    officialSourceBadge: '官方来源',
+    addToCollection: '加入收藏集',
+    removeFromCollection: '从收藏集移除',
   },
   inspector: {
     canonicalMainAsset: '官方规范主资产',
@@ -261,6 +267,9 @@ export const zhCN: TranslationDictionary = {
     downloadFamily: '下载完整资产家族 ({count})',
     copyCode: '复制集成代码',
     codeCopied: '代码已复制',
+    developerSnippets: '开发者代码片段',
+    copySvgDirect: '复制 SVG 代码',
+    copyCurrentFormat: '复制当前格式',
     packing: '打包中...',
     assetFamilyTitle: '资产家族成员',
     assetFamilySubtitle: '此品牌标识在上游各数据源中的真实矢量变体',

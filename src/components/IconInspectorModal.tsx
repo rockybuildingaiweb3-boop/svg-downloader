@@ -74,6 +74,8 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const [activeCodeTab, setActiveCodeTab] = useState<'svg' | 'jsx' | 'vue' | 'html' | 'css' | 'tailwind' | 'markdown'>('svg');
   const [bgMode, setBgMode] = useState<'white' | 'dark' | 'grid'>('white');
   const [isCopied, setIsCopied] = useState(false);
+  const [isSvgCopied, setIsSvgCopied] = useState(false);
+  const [isSnippetCopied, setIsSnippetCopied] = useState(false);
   const [isUrlCopied, setIsUrlCopied] = useState(false);
   const [isAssetUsed, setIsAssetUsed] = useState(false);
   const [isPackDownloading, setIsPackDownloading] = useState(false);
@@ -193,7 +195,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const assetSourceProvider = currentAsset?.sourceProvider || icon.sourceProvider || icon.source;
   const assetCollection = currentAsset?.sourceCollection || icon.sourceCollection;
   const semanticSource = getSemanticSourceLabel(assetSourceProvider, assetCollection);
-  const trustBadge = getTrustStateBadge(currentAsset?.trustState || icon.trustState || 'verified');
+  const trustBadge = getTrustStateBadge(currentAsset?.trustState || icon.trustState || 'unknown');
 
   const activeIconItem: IconItem = {
     ...icon,
@@ -217,6 +219,22 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
       : activeCodeTab === 'tailwind'
       ? generateTailwindSnippet(activeIconItem, currentFileName || '')
       : generateMarkdownSnippet(activeIconItem, currentFileName || '');
+
+  const handleCopyDirectSvg = async () => {
+    const ok = await copyRawSvg(rawSvgCode);
+    if (ok) {
+      setIsSvgCopied(true);
+      setTimeout(() => setIsSvgCopied(false), 2000);
+    }
+  };
+
+  const handleCopyCurrentSnippet = async () => {
+    const ok = await copyRawSvg(currentCode);
+    if (ok) {
+      setIsSnippetCopied(true);
+      setTimeout(() => setIsSnippetCopied(false), 2000);
+    }
+  };
 
   const handleCopyAsset = async () => {
     const ok = await copyRawSvg(currentCode);
@@ -488,7 +506,7 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
                 {icon.assets.map((asset) => {
                   const isSelected = (asset.assetId === (currentAsset?.assetId || icon.canonicalAssetId));
                   const provLabel = getSemanticSourceLabel(asset.sourceProvider, asset.sourceCollection);
-                  const aTrust = getTrustStateBadge(asset.trustState || 'verified');
+                  const aTrust = getTrustStateBadge(asset.trustState || 'unknown');
 
                   return (
                     <button
@@ -1317,44 +1335,93 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
             </div>
           </div>
 
-          {/* Section 5: Engineering Code Tabs */}
+          {/* Section 5: Engineering Code & Developer Snippets */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-1 flex-wrap" role="tablist">
-                {(['svg', 'jsx', 'vue', 'html', 'css', 'tailwind', 'markdown'] as const).map(tab => (
-                  <button
-                    key={tab}
-                    role="tab"
-                    aria-selected={activeCodeTab === tab}
-                    onClick={() => setActiveCodeTab(tab)}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
-                      activeCodeTab === tab
-                        ? 'bg-slate-900 text-white'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    {t.inspector.tabs[tab]}
-                  </button>
-                ))}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap" role="tablist">
+                {/* Primary Code Tab: SVG */}
+                <button
+                  role="tab"
+                  id="tab-code-svg"
+                  aria-selected={activeCodeTab === 'svg'}
+                  onClick={() => setActiveCodeTab('svg')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                    activeCodeTab === 'svg'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t.inspector.tabs.svg}
+                </button>
+
+                {/* Developer Snippets Group */}
+                <div className="flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-lg border border-slate-200">
+                  <span className="text-3xs font-bold text-slate-400 px-1.5 uppercase tracking-wider">
+                    {t.inspector.developerSnippets}:
+                  </span>
+                  {(['jsx', 'vue', 'html', 'css', 'tailwind', 'markdown'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      role="tab"
+                      id={`tab-code-${tab}`}
+                      aria-selected={activeCodeTab === tab}
+                      onClick={() => setActiveCodeTab(tab)}
+                      className={`px-2 py-0.5 text-2xs font-semibold rounded transition-colors cursor-pointer ${
+                        activeCodeTab === tab
+                          ? 'bg-indigo-600 text-white shadow-2xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      }`}
+                    >
+                      {t.inspector.tabs[tab]}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <button
-                id="btn-copy-inspector-code"
-                onClick={handleCopyAsset}
-                className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold cursor-pointer"
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-600">{t.inspector.codeCopied}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>{t.inspector.copyCode}</span>
-                  </>
+              {/* Explicit Copy Controls: Never Ambiguous */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  id="btn-copy-svg-direct"
+                  type="button"
+                  onClick={handleCopyDirectSvg}
+                  className="inline-flex items-center gap-1 py-1 px-2.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                  title={t.inspector.copySvgDirect}
+                >
+                  {isSvgCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600 font-bold">{t.card.copied}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{t.inspector.copySvgDirect}</span>
+                    </>
+                  )}
+                </button>
+
+                {activeCodeTab !== 'svg' && (
+                  <button
+                    id="btn-copy-format-snippet"
+                    type="button"
+                    onClick={handleCopyCurrentSnippet}
+                    className="inline-flex items-center gap-1 py-1 px-2.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 transition-colors cursor-pointer"
+                    title={t.inspector.copyCurrentFormat}
+                  >
+                    {isSnippetCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">{t.inspector.codeCopied}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Code className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{t.inspector.copyCurrentFormat}</span>
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
 
             <pre className="p-3.5 bg-slate-900 text-slate-200 rounded-xl text-xs font-mono overflow-x-auto max-h-48">

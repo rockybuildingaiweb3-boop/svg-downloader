@@ -425,7 +425,7 @@ async function main() {
         buildId: `prod-${gitCommit.slice(0, 8)}`,
         registryVersion: metadata.version || '2.0.0',
         totalIdentities: recordsToPersist.length,
-        totalAssets: recordsToPersist.reduce((acc, r) => acc + (r.assets?.length || 1), 0),
+        totalAssets: recordsToPersist.reduce((acc, r) => acc + (r.assets?.length || 0), 0),
         totalProviders: (resolver.enabledSources && resolver.enabledSources.length > 0)
           ? resolver.enabledSources.length
           : (resolver.sources && resolver.sources.length > 0)
