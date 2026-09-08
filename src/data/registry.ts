@@ -11,6 +11,7 @@ import {
   ASSET_MAP,
   CATEGORY_INDEX,
   SOURCE_INDEX,
+  REGISTRY_SNAPSHOT,
 } from './catalog';
 
 export {
@@ -23,6 +24,7 @@ export {
   ASSET_MAP,
   CATEGORY_INDEX,
   SOURCE_INDEX,
+  REGISTRY_SNAPSHOT,
 };
 
 export const TOTAL_IDENTITIES = REGISTRY_IDENTITIES.length;

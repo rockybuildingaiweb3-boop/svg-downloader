@@ -38,8 +38,11 @@ import {
   IconItem,
   IconSource,
   AssetRole,
+  AssetRoleFilter,
   UsageContext,
+  UsageContextFilter,
   TrustState,
+  TrustStateFilter,
   DownloadReceipt,
   BrowseLevel,
   ConcreteAssetItem,
@@ -49,7 +52,7 @@ import {
   UserCollection,
   getSemanticSourceLabel
 } from './types';
-import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_SOURCES, REGISTRY_STATS, BUILD_METADATA, ASSET_MAP, ICON_MAP } from './data/catalog';
+import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_SOURCES, REGISTRY_STATS, REGISTRY_SNAPSHOT, BUILD_METADATA, ASSET_MAP, ICON_MAP } from './data/catalog';
 import { ENABLED_SOURCES, getEnabledProvidersCount } from './data/sourceRegistry';
 import { CATEGORY_DEFINITIONS, TAXONOMY_DOMAINS, StandardCategoryId } from './taxonomy/taxonomy';
 import { computeCategoryStats } from './taxonomy/categoryResolver';
@@ -163,10 +166,10 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<IconCategory>('all');
   const [selectedSource, setSelectedSource] = useState<IconSource>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'verified' | 'multi-source' | 'unresolved'>('all');
-  const [selectedRole, setSelectedRole] = useState<AssetRole>('all');
-  const [selectedContext, setSelectedContext] = useState<UsageContext>('all');
+  const [selectedRole, setSelectedRole] = useState<AssetRoleFilter>('all');
+  const [selectedContext, setSelectedContext] = useState<UsageContextFilter>('all');
   const [selectedVariant, setSelectedVariant] = useState<string>('all');
-  const [selectedTrustState, setSelectedTrustState] = useState<'all' | TrustState>('all');
+  const [selectedTrustState, setSelectedTrustState] = useState<TrustStateFilter>('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Sorting & Coverage filtering (Tier 1 & Tier 2)
@@ -257,6 +260,29 @@ export default function App() {
       });
     }
     showToast(format(t.toasts.downloadedFile, { name: `${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)` }));
+  };
+
+  const handleCoverageDrillDown = (filter: { provider?: string; sourcesCount?: number; category?: string; status?: string }) => {
+    setActiveTab('icons');
+    setBrowseLevel('identities');
+    setCurrentPage(1);
+
+    if (filter.category) {
+      setSelectedCategory(filter.category as IconCategory);
+    }
+    if (filter.provider) {
+      setSelectedSource(filter.provider as IconSource);
+    }
+    if (filter.sourcesCount !== undefined) {
+      if (filter.sourcesCount === 1) setSelectedCoverageFilter('single');
+      else if (filter.sourcesCount === 3) setSelectedCoverageFilter('three-plus');
+      else if (filter.sourcesCount === 4) setSelectedCoverageFilter('four-plus');
+      else if (filter.sourcesCount >= 5) setSelectedCoverageFilter('five');
+    }
+    if (filter.status) {
+      setSelectedStatus(filter.status as any);
+    }
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
   // Custom Collections CRUD
@@ -1099,7 +1125,7 @@ export default function App() {
                   >
                     <Layers className="w-3.5 h-3.5 text-indigo-600" />
                     <span>{t.header.tabIdentities}</span>
-                    <span className="font-mono text-2xs text-slate-500">({REGISTRY_IDENTITIES.length.toLocaleString()})</span>
+                    <span className="font-mono text-2xs text-slate-500">({REGISTRY_SNAPSHOT.totalIdentities.toLocaleString()})</span>
                   </button>
                   <button
                     id="btn-browse-assets"
@@ -1112,7 +1138,7 @@ export default function App() {
                   >
                     <Sparkles className="w-3.5 h-3.5 text-pink-600" />
                     <span>{t.header.assetsWord}</span>
-                    <span className="font-mono text-2xs text-slate-500">({REGISTRY_ASSETS.length.toLocaleString()})</span>
+                    <span className="font-mono text-2xs text-slate-500">({REGISTRY_SNAPSHOT.totalAssets.toLocaleString()})</span>
                   </button>
                 </div>
 
@@ -2340,7 +2366,7 @@ export default function App() {
         {/* Tab 3: Coverage & Health Section */}
         {activeTab === 'coverage' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <CoverageSection />
+            <CoverageSection onDrillDown={handleCoverageDrillDown} />
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import rawRegistry from '../../generated/registry.json';
 import buildMetadata from '../../generated/build-metadata.json';
-import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem, SourceProvider } from '../types';
+import type { IconRecord, IconItem, SourceRecord, BrandAsset, RegistryStats, ConcreteAssetItem, SourceProvider, RegistrySnapshot } from '../types';
 import { getSemanticSourceLabel } from '../types';
 import { inferEntityType } from '../taxonomy/taxonomy';
 
@@ -218,3 +218,19 @@ for (const icon of REGISTRY_IDENTITIES) {
     }
   }
 }
+
+export const REGISTRY_SNAPSHOT: RegistrySnapshot = {
+  totalIdentities: REGISTRY_IDENTITIES.length,
+  totalAssets: REGISTRY_ASSETS.length,
+  totalProviders: ENABLED_SOURCES.length,
+  canonicalCount: REGISTRY_IDENTITIES.length,
+  variantCount: Math.max(0, REGISTRY_ASSETS.length - REGISTRY_IDENTITIES.length),
+  verifiedIdentities: REGISTRY_IDENTITIES.filter(i => i.verificationStatus === 'verified').length,
+  sourceCounts: REGISTRY_STATS.sourceCounts as any,
+  sourceIdentityCounts: REGISTRY_STATS.sourceIdentityCounts as any,
+  sourceDistribution: REGISTRY_STATS.sourceDistribution,
+  sourceVersions: REGISTRY_STATS.sourceVersions,
+  generatedAt: REGISTRY_STATS.generatedAt,
+  identities: REGISTRY_IDENTITIES,
+  assets: REGISTRY_ASSETS,
+};

@@ -14,10 +14,14 @@ import { useTranslation } from '../i18n/context';
 import { REGISTRY_IDENTITIES } from '../data/registry';
 import { computeCategoryStats } from '../taxonomy/categoryResolver';
 import { CATEGORY_DEFINITIONS } from '../taxonomy/taxonomy';
-import { computeRegistryCoverageSummary, computeRegistryHealth } from '../utils/sourceCoverage';
+import { computeRegistryCoverageSummary, computeRegistryHealth, HealthDimension } from '../utils/sourceCoverage';
 import conflictsData from '../../generated/conflicts.json';
 
-export const CoverageSection: React.FC = () => {
+interface CoverageSectionProps {
+  onDrillDown?: (filter: { provider?: string; sourcesCount?: number; category?: string; status?: string }) => void;
+}
+
+export const CoverageSection: React.FC<CoverageSectionProps> = ({ onDrillDown }) => {
   const { t } = useTranslation();
 
   // Compute live statistics dynamically from actual active registry
@@ -98,6 +102,33 @@ export const CoverageSection: React.FC = () => {
         </div>
       </div>
 
+      {/* 5-Dimension Health Breakdown */}
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+        {(Object.values(health.dimensions) as HealthDimension[]).map(dim => (
+          <div key={dim.name} className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">{dim.name}</span>
+              <span className="text-2xs font-mono font-semibold text-slate-400">{dim.weight}% wt</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-xl font-black text-slate-900 font-mono">{dim.score}%</span>
+              <span className="text-3xs text-slate-400 font-mono">{dim.count.toLocaleString()} / {dim.total.toLocaleString()}</span>
+            </div>
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  dim.score >= 90 ? 'bg-emerald-500' : dim.score >= 70 ? 'bg-indigo-500' : 'bg-amber-500'
+                }`}
+                style={{ width: `${Math.max(dim.score, 2)}%` }}
+              />
+            </div>
+            <p className="text-3xs text-slate-400 leading-tight truncate" title={dim.description}>
+              {dim.description}
+            </p>
+          </div>
+        ))}
+      </div>
+
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <div className="bg-white rounded-xl p-4 border border-slate-200">
@@ -148,7 +179,10 @@ export const CoverageSection: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div
+          onClick={() => onDrillDown?.({ category: 'uncategorized' })}
+          className="bg-white rounded-xl p-4 border border-slate-200 cursor-pointer hover:border-indigo-300 hover:shadow-xs transition-all"
+        >
           <div className="text-2xs font-medium text-slate-500 uppercase tracking-wider">
             {t.coverageView.uncategorizedStat}
           </div>
@@ -160,7 +194,10 @@ export const CoverageSection: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div
+          onClick={() => onDrillDown?.({ category: 'needs-review' })}
+          className="bg-white rounded-xl p-4 border border-slate-200 cursor-pointer hover:border-indigo-300 hover:shadow-xs transition-all"
+        >
           <div className="text-2xs font-medium text-slate-500 uppercase tracking-wider">
             {t.coverageView.needsReviewStat}
           </div>
@@ -199,7 +236,11 @@ export const CoverageSection: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {coverageSummary.providerMatrix.map(provider => (
-                  <tr key={provider.provider} className="hover:bg-slate-50/50 transition-colors">
+                  <tr
+                    key={provider.provider}
+                    onClick={() => onDrillDown?.({ provider: provider.provider })}
+                    className="hover:bg-indigo-50/50 transition-colors cursor-pointer"
+                  >
                     <td className="py-3 font-semibold text-slate-800">
                       {provider.label}
                     </td>
@@ -243,7 +284,10 @@ export const CoverageSection: React.FC = () => {
             </p>
 
             <div className="space-y-3">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div
+                onClick={() => onDrillDown?.({ sourcesCount: 1 })}
+                className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all"
+              >
                 <div>
                   <div className="text-xs font-medium text-slate-700">{t.coverageView.singleSourceLabel}</div>
                   <div className="text-2xs text-slate-400">1 {t.coverageView.providerCol}</div>
@@ -256,7 +300,10 @@ export const CoverageSection: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div
+                onClick={() => onDrillDown?.({ sourcesCount: 2 })}
+                className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all"
+              >
                 <div>
                   <div className="text-xs font-medium text-slate-700">{t.coverageView.twoSourcesLabel}</div>
                   <div className="text-2xs text-slate-400">2 {t.coverageView.providerCol}</div>
@@ -269,7 +316,10 @@ export const CoverageSection: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div
+                onClick={() => onDrillDown?.({ sourcesCount: 3 })}
+                className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all"
+              >
                 <div>
                   <div className="text-xs font-medium text-slate-700">{t.coverageView.threeSourcesLabel}</div>
                   <div className="text-2xs text-slate-400">3 {t.coverageView.providerCol}</div>
@@ -282,7 +332,10 @@ export const CoverageSection: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div
+                onClick={() => onDrillDown?.({ sourcesCount: 4 })}
+                className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all"
+              >
                 <div>
                   <div className="text-xs font-medium text-slate-700">{t.coverageView.fourSourcesLabel || 'Four-Source Identities'}</div>
                   <div className="text-2xs text-slate-400">4 {t.coverageView.providerCol}</div>
@@ -295,7 +348,10 @@ export const CoverageSection: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div
+                onClick={() => onDrillDown?.({ sourcesCount: 5 })}
+                className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all"
+              >
                 <div>
                   <div className="text-xs font-medium text-slate-700">{t.coverageView.fiveOrMoreSourcesLabel || 'Five+ Source Identities'}</div>
                   <div className="text-2xs text-slate-400">5+ {t.coverageView.providerCol}</div>
@@ -332,9 +388,13 @@ export const CoverageSection: React.FC = () => {
               const label = t.filters.categories[cat.id] || cat.id;
 
               return (
-                <div key={cat.id} className="space-y-1">
+                <div
+                  key={cat.id}
+                  onClick={() => onDrillDown?.({ category: cat.id })}
+                  className="space-y-1 cursor-pointer group p-1 -m-1 rounded-lg hover:bg-slate-50 transition-colors"
+                >
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-700">{label}</span>
+                    <span className="font-medium text-slate-700 group-hover:text-indigo-600 transition-colors">{label}</span>
                     <span className="font-mono text-slate-500">
                       {count.toLocaleString()} {t.coverageView.identitiesWord} · {assetsCount.toLocaleString()} {t.coverageView.assetsWord} ({percent}%)
                     </span>

@@ -19,8 +19,12 @@ import { useTranslation } from '../i18n/context';
 
 interface SvgStats {
   viewBox: string;
+  aspectRatio: string;
   elementCount: number;
   pathCount: number;
+  fileSizeKb: number;
+  colorCount: number;
+  paletteType: string;
   sha256: string;
 }
 
@@ -151,21 +155,46 @@ export const AiVsOfficialSection: React.FC = () => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(svgText, 'image/svg+xml');
       const svgEl = doc.querySelector('svg');
-      const viewBox = svgEl?.getAttribute('viewBox') || svgEl?.getAttribute('viewbox') || 'None';
+      const viewBox = svgEl?.getAttribute('viewBox') || svgEl?.getAttribute('viewbox') || '0 0 24 24';
       const allElements = doc.querySelectorAll('*');
       const pathElements = doc.querySelectorAll('path');
 
+      const vbParts = viewBox.trim().split(/[\s,]+/).map(Number);
+      let aspectRatio = '1.00 : 1';
+      if (vbParts.length >= 4 && vbParts[2] > 0 && vbParts[3] > 0) {
+        aspectRatio = `${(vbParts[2] / vbParts[3]).toFixed(2)} : 1`;
+      }
+
+      const colors = new Set<string>();
+      for (const el of Array.from(allElements)) {
+        const fill = el.getAttribute('fill');
+        const stroke = el.getAttribute('stroke');
+        if (fill && fill !== 'none' && fill !== 'currentColor' && fill !== 'transparent') colors.add(fill.toLowerCase());
+        if (stroke && stroke !== 'none' && stroke !== 'currentColor' && stroke !== 'transparent') colors.add(stroke.toLowerCase());
+      }
+      const colorCount = Math.max(1, colors.size);
+      const paletteType = colorCount > 1 ? 'multi-color' : 'monochrome';
+      const fileSizeKb = Math.round((new Blob([svgText]).size / 1024) * 100) / 100;
+
       return {
         viewBox,
+        aspectRatio,
         elementCount: Math.max(0, allElements.length - 1),
         pathCount: pathElements.length,
+        fileSizeKb,
+        colorCount,
+        paletteType,
         sha256: ''
       };
     } catch {
       return {
         viewBox: 'N/A',
+        aspectRatio: '1.00 : 1',
         elementCount: 0,
         pathCount: 0,
+        fileSizeKb: 0,
+        colorCount: 1,
+        paletteType: 'monochrome',
         sha256: ''
       };
     }
@@ -375,6 +404,26 @@ export const AiVsOfficialSection: React.FC = () => {
                     <span>{t.comparison.nodesLabel} </span>
                     <span className="font-mono font-medium text-slate-800">{secondaryStats?.elementCount || 0}</span>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.pathsLabel} </span>
+                    <span className="font-mono font-medium text-slate-800">{secondaryStats?.pathCount || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Sliders className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.aspectRatioLabel} </span>
+                    <span className="font-mono font-medium text-slate-800">{secondaryStats?.aspectRatio || '1.00 : 1'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.paletteLabel} </span>
+                    <span className="font-mono font-medium text-slate-800 capitalize">{secondaryStats?.paletteType || 'monochrome'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Box className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.fileSizeLabel} </span>
+                    <span className="font-mono font-medium text-slate-800">{secondaryStats?.fileSizeKb ? `${secondaryStats.fileSizeKb} KB` : '< 1 KB'}</span>
+                  </div>
                   <div className="col-span-2 flex items-center gap-1 text-2xs text-slate-500 font-mono truncate">
                     <Hash className="w-3 h-3 text-slate-400 shrink-0" />
                     <span className="truncate">SHA: {secondaryStats?.sha256 ? secondaryStats.sha256.substring(0, 16) + '...' : 'N/A'}</span>
@@ -417,6 +466,26 @@ export const AiVsOfficialSection: React.FC = () => {
                     <span>{t.comparison.nodesLabel} </span>
                     <span className="font-mono font-medium text-slate-800">{officialStats?.elementCount || 0}</span>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.pathsLabel} </span>
+                    <span className="font-mono font-medium text-slate-800">{officialStats?.pathCount || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Sliders className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.aspectRatioLabel} </span>
+                    <span className="font-mono font-medium text-slate-800">{officialStats?.aspectRatio || '1.00 : 1'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.paletteLabel} </span>
+                    <span className="font-mono font-medium text-slate-800 capitalize">{officialStats?.paletteType || 'monochrome'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Box className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.comparison.fileSizeLabel} </span>
+                    <span className="font-mono font-medium text-slate-800">{officialStats?.fileSizeKb ? `${officialStats.fileSizeKb} KB` : '< 1 KB'}</span>
+                  </div>
                   <div className="col-span-2 flex items-center gap-1 text-2xs text-slate-500 font-mono truncate">
                     <Hash className="w-3 h-3 text-slate-400 shrink-0" />
                     <span className="truncate">SHA: {officialStats?.sha256 ? officialStats.sha256.substring(0, 16) + '...' : 'N/A'}</span>
@@ -453,6 +522,37 @@ export const AiVsOfficialSection: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Human Explanation Panel: What Differs? What is Canonical? Why? */}
+          <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="space-y-1">
+              <span className="font-bold text-slate-800 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                <span>{t.comparison.whatDiffersTitle}</span>
+              </span>
+              <p className="text-slate-600 text-2xs leading-relaxed">
+                {t.comparison.whatDiffersDesc}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="font-bold text-slate-800 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{t.comparison.whatIsCanonicalTitle}</span>
+              </span>
+              <p className="text-slate-600 text-2xs leading-relaxed">
+                {t.comparison.whatIsCanonicalDesc}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="font-bold text-slate-800 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>{t.comparison.whyTitle}</span>
+              </span>
+              <p className="text-slate-600 text-2xs leading-relaxed">
+                {t.comparison.whyDesc}
+              </p>
+            </div>
+          </div>
 
           {/* Factual Geometric Discrepancies Table for AI mode */}
           {comparisonMode === 'ai_vs_canonical' && (

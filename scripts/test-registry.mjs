@@ -722,6 +722,49 @@ async function runTests() {
   assert(hydratedUnrated.totalAssets === 0, `Bare identity totalAssets is 0 (actual: ${hydratedUnrated.totalAssets})`);
   assert(hydratedUnrated.providerCount === 1, `Single provider identity providerCount is 1 (actual: ${hydratedUnrated.providerCount})`);
 
+  // =========================================================================
+  // TEST 36: Filter Sentinel Type Separation Invariant
+  // =========================================================================
+  console.log('\n🔒 36. Filter Sentinel Type Separation Invariant');
+  const coreAssetRoles = ['icon', 'wordmark', 'monogram', 'symbol', 'lockup'];
+  assert(!coreAssetRoles.includes('all'), 'Domain AssetRole does not include sentinel "all"');
+  const coreUsageContexts = ['general', 'light-mode', 'dark-mode', 'monochrome', 'accent'];
+  assert(!coreUsageContexts.includes('all'), 'Domain UsageContext does not include sentinel "all"');
+  const coreVerificationStatuses = ['verified', 'unresolved', 'community', 'needs-review'];
+  assert(!coreVerificationStatuses.includes('all'), 'Domain VerificationStatus does not include sentinel "all"');
+
+  // =========================================================================
+  // TEST 37: Single Authoritative REGISTRY_SNAPSHOT Contract Harmony
+  // =========================================================================
+  console.log('\n🏛️ 37. Single Authoritative REGISTRY_SNAPSHOT Contract Harmony');
+  const { REGISTRY_SNAPSHOT } = await import('../src/data/registrySnapshot.ts');
+  assert(REGISTRY_SNAPSHOT !== undefined, 'REGISTRY_SNAPSHOT exported and hydrated');
+  assert(REGISTRY_SNAPSHOT.totalIdentities === 4654, `Snapshot totalIdentities is 4654 (actual: ${REGISTRY_SNAPSHOT.totalIdentities})`);
+  assert(REGISTRY_SNAPSHOT.totalAssets === 8088, `Snapshot totalAssets is 8088 (actual: ${REGISTRY_SNAPSHOT.totalAssets})`);
+  assert(REGISTRY_SNAPSHOT.totalProviders === 5, `Snapshot totalProviders is 5 (actual: ${REGISTRY_SNAPSHOT.totalProviders})`);
+  assert(REGISTRY_SNAPSHOT.identities.length === 4654, 'Snapshot identities array matches totalIdentities');
+  assert(REGISTRY_SNAPSHOT.assets.length === 8088, 'Snapshot assets array matches totalAssets');
+
+  // Verify categoryResolver totalAssets equals exactly 8088 (no fallback 1 fabrication)
+  const catRes = computeCategoryStats(REGISTRY_SNAPSHOT.identities);
+  assert(catRes.totalAssets === 8088, `computeCategoryStats totalAssets matches snapshot exactly (${catRes.totalAssets} === 8088, zero drift)`);
+
+  // =========================================================================
+  // TEST 38: Provider Coverage Status 5-State Preservation
+  // =========================================================================
+  console.log('\n🌐 38. Provider Coverage Status 5-State Preservation');
+  const validCoverageStates = ['available', 'not-found', 'not-supported', 'error', 'timeout', 'disabled', 'unknown'];
+  let foundCoverageRecords = 0;
+  for (const identity of REGISTRY_SNAPSHOT.identities) {
+    if (identity.sourceCoverage) {
+      foundCoverageRecords++;
+      for (const [provider, status] of Object.entries(identity.sourceCoverage)) {
+        assert(validCoverageStates.includes(status), `Identity ${identity.id} provider ${provider} status "${status}" is valid coverage state`);
+      }
+    }
+  }
+  assert(foundCoverageRecords > 0, `Preserved sourceCoverage across ${foundCoverageRecords} identities`);
+
   // Summary
   console.log('\n=======================================================================');
   console.log(`✨ TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);

@@ -78,7 +78,8 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
 
   for (const item of items) {
     const assets = item.assets && item.assets.length > 0 ? item.assets : [];
-    totalAssets += Math.max(assets.length, 1);
+    const concreteCount = item.assets?.length ?? (item.assetCount ?? 0);
+    totalAssets += concreteCount;
 
     // Identify distinct providers present in this identity
     const distinctProviders = new Set<string>();
@@ -171,8 +172,24 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
   };
 }
 
+export interface HealthDimension {
+  name: string;
+  score: number;
+  weight: number;
+  description: string;
+  count: number;
+  total: number;
+}
+
 export interface RegistryHealthMetrics {
   healthScore: number;
+  dimensions: {
+    coverage: HealthDimension;
+    integrity: HealthDimension;
+    classification: HealthDimension;
+    provenance: HealthDimension;
+    resolution: HealthDimension;
+  };
   verifiedIdentities: number;
   sparseSourceIdentities: number;
   unresolvedIdentities: number;
@@ -183,14 +200,34 @@ export interface RegistryHealthMetrics {
 }
 
 /**
- * Honest Registry Health Calculator (Requirement T2.1)
- * Calculates true health score based on actual validation invariants and data quality.
+ * Honest Registry Health Calculator (Requirement T2.1 & Phase 7)
+ * Calculates true composite health score and 5-dimension breakdown:
+ * 1. Coverage (20%): Multi-source verified coverage ratio
+ * 2. Integrity (25%): Cryptographically valid, renderable & well-formed
+ * 3. Classification (20%): Curated and verified taxonomy mapping
+ * 4. Provenance (15%): Direct upstream attribution & known licensing
+ * 5. Resolution (20%): Disambiguated and verified canonical identities
  */
 export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics {
   const total = items.length;
   if (total === 0) {
+    const emptyDim = (name: string, weight: number, desc: string): HealthDimension => ({
+      name,
+      score: 100,
+      weight,
+      description: desc,
+      count: 0,
+      total: 0,
+    });
     return {
       healthScore: 100,
+      dimensions: {
+        coverage: emptyDim('Coverage', 20, 'Multi-source verified coverage ratio'),
+        integrity: emptyDim('Integrity', 25, 'Cryptographic and structural vector integrity'),
+        classification: emptyDim('Classification', 20, 'Curated taxonomy categorization ratio'),
+        provenance: emptyDim('Provenance', 15, 'Direct upstream licensing and attribution'),
+        resolution: emptyDim('Resolution', 20, 'Disambiguated canonical resolution ratio'),
+      },
       verifiedIdentities: 0,
       sparseSourceIdentities: 0,
       unresolvedIdentities: 0,
@@ -204,6 +241,7 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
   let verifiedCount = 0;
   let unresolvedCount = 0;
   let sparseCount = 0;
+  let multiSourceCount = 0;
   let unknownLicenseCount = 0;
   let needsReviewCount = 0;
   let uncategorizedCount = 0;
@@ -228,29 +266,84 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
 
     const sources = item.sourceCoverage
       ? Object.values(item.sourceCoverage).filter(s => s === 'available').length
-      : 1;
+      : (item.assets && item.assets.length > 0 ? new Set(item.assets.map(a => a.sourceProvider)).size : 1);
+
     if (sources === 1) {
       sparseCount++;
+    } else if (sources > 1) {
+      multiSourceCount++;
     }
   }
 
-  // Calculate honest score: factor in unresolved items, unknown licenses, and classification gaps
-  const unresolvedPenalty = (unresolvedCount / total) * 100;
-  const unknownLicensePenalty = (unknownLicenseCount / total) * 15;
-  const classificationPenalty = ((needsReviewCount * 0.03 + uncategorizedCount * 0.08) / total) * 100;
-  const score = Math.max(
-    0,
-    Math.min(100, Math.round((100 - unresolvedPenalty - unknownLicensePenalty - classificationPenalty) * 10) / 10)
-  );
+  // 5 Explicit dimensions
+  const coverageScore = Math.round((multiSourceCount / total) * 1000) / 10;
+  const integrityScore = Math.round((verifiedCount / total) * 1000) / 10;
+  const classifiedCount = Math.max(0, total - uncategorizedCount - needsReviewCount);
+  const classificationScore = Math.round((classifiedCount / total) * 1000) / 10;
+  const knownLicenseCount = Math.max(0, total - unknownLicenseCount);
+  const provenanceScore = Math.round((knownLicenseCount / total) * 1000) / 10;
+  const resolvedCount = Math.max(0, total - unresolvedCount);
+  const resolutionScore = Math.round((resolvedCount / total) * 1000) / 10;
+
+  // Composite weighted score (weights: 20%, 25%, 20%, 15%, 20%)
+  const healthScore = Math.round(
+    (coverageScore * 0.20 +
+      integrityScore * 0.25 +
+      classificationScore * 0.20 +
+      provenanceScore * 0.15 +
+      resolutionScore * 0.20) * 10
+  ) / 10;
 
   return {
-    healthScore: score,
+    healthScore,
+    dimensions: {
+      coverage: {
+        name: 'Coverage',
+        score: coverageScore,
+        weight: 20,
+        description: 'Multi-source verified coverage ratio across 5 providers',
+        count: multiSourceCount,
+        total,
+      },
+      integrity: {
+        name: 'Integrity',
+        score: integrityScore,
+        weight: 25,
+        description: 'Cryptographic SHA-256 and XML schema verification ratio',
+        count: verifiedCount,
+        total,
+      },
+      classification: {
+        name: 'Classification',
+        score: classificationScore,
+        weight: 20,
+        description: 'Curated 19-category taxonomy categorization ratio',
+        count: classifiedCount,
+        total,
+      },
+      provenance: {
+        name: 'Provenance',
+        score: provenanceScore,
+        weight: 15,
+        description: 'Known license and direct upstream attribution ratio',
+        count: knownLicenseCount,
+        total,
+      },
+      resolution: {
+        name: 'Resolution',
+        score: resolutionScore,
+        weight: 20,
+        description: 'Disambiguated canonical resolution ratio',
+        count: resolvedCount,
+        total,
+      },
+    },
     verifiedIdentities: verifiedCount,
     sparseSourceIdentities: sparseCount,
     unresolvedIdentities: unresolvedCount,
     unknownLicenseCount,
     needsReviewIdentities: needsReviewCount,
     uncategorizedIdentities: uncategorizedCount,
-    isPerfect: score === 100 && unresolvedCount === 0 && unknownLicenseCount === 0 && needsReviewCount === 0,
+    isPerfect: healthScore >= 99.5 && unresolvedCount === 0 && unknownLicenseCount === 0,
   };
 }

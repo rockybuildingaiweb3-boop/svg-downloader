@@ -280,17 +280,22 @@ export const IconCard: React.FC<IconCardProps> = ({
                 const isAvailable = status === 'available';
                 const isError = status === 'error' || status === 'timeout';
 
+                const dotClass =
+                  status === 'available'
+                    ? 'bg-emerald-500'
+                    : status === 'error' || status === 'timeout'
+                    ? 'bg-rose-500'
+                    : status === 'not-supported'
+                    ? 'bg-amber-400'
+                    : status === 'disabled'
+                    ? 'bg-slate-300 ring-1 ring-slate-400/30'
+                    : 'bg-slate-200';
+
                 return (
                   <span
                     key={source.id}
-                    className={`inline-block rounded-full transition-all ${
-                      isAvailable
-                        ? 'w-1.5 h-1.5 bg-emerald-500'
-                        : isError
-                        ? 'w-1.5 h-1.5 bg-rose-500'
-                        : 'w-1.5 h-1.5 bg-slate-200'
-                    }`}
-                    title={`${source.name}: ${status || 'unknown'}`}
+                    className={`inline-block w-1.5 h-1.5 rounded-full transition-all ${dotClass}`}
+                    title={`${source.name}: ${status || (hasAsset ? 'available' : 'not-found')}`}
                   />
                 );
               })}

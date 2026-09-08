@@ -25,7 +25,6 @@ export type EntityType =
 
 
 export type AssetRole =
-  | 'all'
   | 'symbol'
   | 'logo'
   | 'wordmark'
@@ -36,8 +35,9 @@ export type AssetRole =
   | 'wordmark-horizontal'
   | 'wordmark-stacked';
 
+export type AssetRoleFilter = 'all' | AssetRole;
+
 export type UsageContext =
-  | 'all'
   | 'web'
   | 'desktop'
   | 'mobile'
@@ -46,6 +46,8 @@ export type UsageContext =
   | 'social'
   | 'avatar'
   | 'general';
+
+export type UsageContextFilter = 'all' | UsageContext;
 
 export type ContextOrigin = 'source-confirmed' | 'inferred' | 'unknown';
 
@@ -56,11 +58,47 @@ export type SourceProvider =
   | 'svg-logos'
   | 'wikimedia';
 
-export type IconSource = 'all' | SourceProvider;
+export type SourceProviderFilter = 'all' | SourceProvider;
+export type IconSource = SourceProviderFilter;
 
 export type TrustState = 'trusted' | 'verified' | 'community' | 'unverified' | 'unknown';
+export type TrustStateFilter = 'all' | TrustState;
 
-export type VerificationStatus = 'all' | 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
+export type VerificationStatus = 'verified' | 'warning' | 'conflict' | 'unresolved' | 'invalid';
+export type VerificationStatusFilter = 'all' | VerificationStatus;
+
+export type CategoryProvenance = 'curated' | 'source' | 'derived' | 'heuristic' | 'unknown';
+
+export interface RegistrySnapshot {
+  version?: string;
+  generatedAt?: string;
+  totalIdentities: number;
+  totalAssets: number;
+  totalProviders: number;
+  canonicalCount?: number;
+  variantCount?: number;
+  verifiedIdentities?: number;
+  verifiedIdentitiesCount?: number;
+  conflictsCount?: number;
+  sourceCounts: Record<string, number>;
+  sourceIdentityCounts: Record<string, number>;
+  sourceDistribution: {
+    oneProvider: number;
+    twoProviders: number;
+    threeProviders: number;
+    fourProviders: number;
+    fiveOrMoreProviders: number;
+    singleSourcePercentage: number;
+    multiSourcePercentage: number;
+    singleSourceCount?: number;
+    twoSourcesCount?: number;
+    threeSourcesCount?: number;
+    fourOrMoreSourcesCount?: number;
+  };
+  sourceVersions?: Record<string, string>;
+  identities: IconItem[];
+  assets: ConcreteAssetItem[];
+}
 
 export type BrowseLevel = 'identities' | 'assets';
 

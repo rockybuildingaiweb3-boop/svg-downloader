@@ -441,6 +441,16 @@ export interface TranslationDictionary {
     metricsTitle: string;
     viewBoxLabel: string;
     nodesLabel: string;
+    aspectRatioLabel: string;
+    fileSizeLabel: string;
+    pathsLabel: string;
+    paletteLabel: string;
+    whatDiffersTitle: string;
+    whatDiffersDesc: string;
+    whatIsCanonicalTitle: string;
+    whatIsCanonicalDesc: string;
+    whyTitle: string;
+    whyDesc: string;
     syntheticObservation: string;
     canonicalSpecification: string;
   };

@@ -28,6 +28,8 @@ export const CATEGORY_IDS = [
 
 export type StandardCategoryId = typeof CATEGORY_IDS[number];
 
+export type CategoryProvenance = 'curated' | 'source' | 'derived' | 'heuristic' | 'unknown';
+
 export interface CategoryDefinition {
   categoryId: StandardCategoryId;
   id: StandardCategoryId; // backwards-compatible alias
@@ -35,6 +37,9 @@ export interface CategoryDefinition {
   domain?: 'technology' | 'consumer' | 'business' | 'system'; // backwards-compatible alias
   parentId: StandardCategoryId | null;
   labelKey: string;
+  label: string;
+  priority: number;
+  featured: boolean;
   order: number;
   iconName: string;
 }
@@ -64,25 +69,25 @@ export const TAXONOMY_DOMAINS: TaxonomyDomain[] = [
 ];
 
 export const CATEGORY_DEFINITIONS: CategoryDefinition[] = [
-  { categoryId: 'all', id: 'all', domainId: 'system', domain: 'system', parentId: null, labelKey: 'filters.categories.all', order: 0, iconName: 'Layers' },
-  { categoryId: 'technology', id: 'technology', domainId: 'technology', domain: 'technology', parentId: null, labelKey: 'filters.categories.technology', order: 10, iconName: 'Cpu' },
-  { categoryId: 'developer-tools', id: 'developer-tools', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.developer-tools', order: 20, iconName: 'Wrench' },
-  { categoryId: 'cloud', id: 'cloud', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.cloud', order: 30, iconName: 'Cloud' },
-  { categoryId: 'databases', id: 'databases', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.databases', order: 40, iconName: 'Database' },
-  { categoryId: 'ai', id: 'ai', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.ai', order: 50, iconName: 'Bot' },
-  { categoryId: 'infrastructure', id: 'infrastructure', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.infrastructure', order: 60, iconName: 'Server' },
-  { categoryId: 'security', id: 'security', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.security', order: 70, iconName: 'ShieldCheck' },
-  { categoryId: 'apps', id: 'apps', domainId: 'consumer', domain: 'consumer', parentId: null, labelKey: 'filters.categories.apps', order: 100, iconName: 'Smartphone' },
-  { categoryId: 'social', id: 'social', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.social', order: 110, iconName: 'Share2' },
-  { categoryId: 'design', id: 'design', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.design', order: 120, iconName: 'Palette' },
-  { categoryId: 'gaming', id: 'gaming', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.gaming', order: 130, iconName: 'Gamepad2' },
-  { categoryId: 'productivity', id: 'productivity', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.productivity', order: 140, iconName: 'CheckSquare' },
-  { categoryId: 'media', id: 'media', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.media', order: 150, iconName: 'Film' },
-  { categoryId: 'communication', id: 'communication', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.communication', order: 160, iconName: 'MessageSquare' },
-  { categoryId: 'brands', id: 'brands', domainId: 'business', domain: 'business', parentId: null, labelKey: 'filters.categories.brands', order: 200, iconName: 'Building2' },
-  { categoryId: 'web3', id: 'web3', domainId: 'business', domain: 'business', parentId: 'brands', labelKey: 'filters.categories.web3', order: 210, iconName: 'Coins' },
-  { categoryId: 'uncategorized', id: 'uncategorized', domainId: 'system', domain: 'system', parentId: null, labelKey: 'filters.categories.uncategorized', order: 300, iconName: 'HelpCircle' },
-  { categoryId: 'needs-review', id: 'needs-review', domainId: 'system', domain: 'system', parentId: null, labelKey: 'filters.categories.needs-review', order: 310, iconName: 'AlertCircle' },
+  { categoryId: 'all', id: 'all', domainId: 'system', domain: 'system', parentId: null, labelKey: 'filters.categories.all', label: 'All Categories', priority: 100, featured: false, order: 0, iconName: 'Layers' },
+  { categoryId: 'technology', id: 'technology', domainId: 'technology', domain: 'technology', parentId: null, labelKey: 'filters.categories.technology', label: 'Technology', priority: 95, featured: true, order: 10, iconName: 'Cpu' },
+  { categoryId: 'developer-tools', id: 'developer-tools', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.developer-tools', label: 'Developer Tools', priority: 90, featured: true, order: 20, iconName: 'Wrench' },
+  { categoryId: 'cloud', id: 'cloud', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.cloud', label: 'Cloud & DevOps', priority: 85, featured: true, order: 30, iconName: 'Cloud' },
+  { categoryId: 'databases', id: 'databases', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.databases', label: 'Databases', priority: 80, featured: true, order: 40, iconName: 'Database' },
+  { categoryId: 'ai', id: 'ai', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.ai', label: 'AI & Machine Learning', priority: 88, featured: true, order: 50, iconName: 'Bot' },
+  { categoryId: 'infrastructure', id: 'infrastructure', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.infrastructure', label: 'Infrastructure', priority: 70, featured: false, order: 60, iconName: 'Server' },
+  { categoryId: 'security', id: 'security', domainId: 'technology', domain: 'technology', parentId: 'technology', labelKey: 'filters.categories.security', label: 'Security', priority: 65, featured: false, order: 70, iconName: 'ShieldCheck' },
+  { categoryId: 'apps', id: 'apps', domainId: 'consumer', domain: 'consumer', parentId: null, labelKey: 'filters.categories.apps', label: 'Apps & Software', priority: 75, featured: true, order: 100, iconName: 'Smartphone' },
+  { categoryId: 'social', id: 'social', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.social', label: 'Social & Community', priority: 72, featured: true, order: 110, iconName: 'Share2' },
+  { categoryId: 'design', id: 'design', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.design', label: 'Design & Creative', priority: 68, featured: true, order: 120, iconName: 'Palette' },
+  { categoryId: 'gaming', id: 'gaming', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.gaming', label: 'Gaming & Entertainment', priority: 60, featured: true, order: 130, iconName: 'Gamepad2' },
+  { categoryId: 'productivity', id: 'productivity', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.productivity', label: 'Productivity', priority: 55, featured: false, order: 140, iconName: 'CheckSquare' },
+  { categoryId: 'media', id: 'media', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.media', label: 'Media & Streaming', priority: 50, featured: false, order: 150, iconName: 'Film' },
+  { categoryId: 'communication', id: 'communication', domainId: 'consumer', domain: 'consumer', parentId: 'apps', labelKey: 'filters.categories.communication', label: 'Communication', priority: 45, featured: false, order: 160, iconName: 'MessageSquare' },
+  { categoryId: 'brands', id: 'brands', domainId: 'business', domain: 'business', parentId: null, labelKey: 'filters.categories.brands', label: 'Brands & Companies', priority: 78, featured: true, order: 200, iconName: 'Building2' },
+  { categoryId: 'web3', id: 'web3', domainId: 'business', domain: 'business', parentId: 'brands', labelKey: 'filters.categories.web3', label: 'Web3 & Crypto', priority: 62, featured: true, order: 210, iconName: 'Coins' },
+  { categoryId: 'uncategorized', id: 'uncategorized', domainId: 'system', domain: 'system', parentId: null, labelKey: 'filters.categories.uncategorized', label: 'Uncategorized', priority: 10, featured: false, order: 300, iconName: 'HelpCircle' },
+  { categoryId: 'needs-review', id: 'needs-review', domainId: 'system', domain: 'system', parentId: null, labelKey: 'filters.categories.needs-review', label: 'Needs Review', priority: 5, featured: false, order: 310, iconName: 'AlertCircle' },
 ];
 
 export interface MultiCategoryMetadata {

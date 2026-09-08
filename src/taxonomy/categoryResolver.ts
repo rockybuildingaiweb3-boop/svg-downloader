@@ -36,7 +36,7 @@ export function computeCategoryStats(items: IconItem[]): CategoryRegistryStats {
   let needsReviewCount = 0;
 
   for (const item of items) {
-    const assetCount = item.assets && item.assets.length > 0 ? item.assets.length : 1;
+    const assetCount = item.assets?.length ?? (item.assetCount ?? 0);
     totalAssets += assetCount;
 
     // Determine category membership

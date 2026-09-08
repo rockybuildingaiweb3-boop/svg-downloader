@@ -1,5 +1,5 @@
 import { StandardCategoryId, CATEGORY_IDS, inferEntityType } from './taxonomy.ts';
-import { EntityType } from '../types';
+import { EntityType } from '../types.ts';
 
 export interface IdentityCategoryInput {
   id: string;
