@@ -172,17 +172,26 @@ export function computeRegistryCoverageSummary(items: IconItem[]): RegistryCover
   };
 }
 
+export type HealthDimensionId = 'coverage' | 'integrity' | 'classification' | 'provenance' | 'resolution';
+
 export interface HealthDimension {
+  id: HealthDimensionId;
   name: string;
   score: number;
   weight: number;
   description: string;
-  count: number;
+  healthyCount: number;
+  warningCount: number;
+  unknownCount: number;
+  failedCount: number;
   total: number;
+  count: number; // backward-compatibility alias for healthyCount
+  formula: string;
 }
 
 export interface RegistryHealthMetrics {
   healthScore: number;
+  formula: string;
   dimensions: {
     coverage: HealthDimension;
     integrity: HealthDimension;
@@ -200,33 +209,43 @@ export interface RegistryHealthMetrics {
 }
 
 /**
- * Honest Registry Health Calculator (Requirement T2.1 & Phase 7)
- * Calculates true composite health score and 5-dimension breakdown:
- * 1. Coverage (20%): Multi-source verified coverage ratio
- * 2. Integrity (25%): Cryptographically valid, renderable & well-formed
- * 3. Classification (20%): Curated and verified taxonomy mapping
- * 4. Provenance (15%): Direct upstream attribution & known licensing
- * 5. Resolution (20%): Disambiguated and verified canonical identities
+ * Honest Registry Health Calculator
+ * Refactored measurement model where every dimension measures exactly what its name claims:
+ * 1. Coverage (20%): Authoritative source availability and multi-source redundancy across enabled providers.
+ * 2. Integrity (25%): Structural vector validity, SVG renderability, and cryptographic SHA-256 digest.
+ * 3. Classification (20%): Curated and upstream taxonomy mapping vs provisional or fallback categories.
+ * 4. Provenance (15%): Direct upstream attribution traceability and verified license evidence.
+ * 5. Resolution (20%): Deterministic canonical asset arbitration and collision resolution.
  */
 export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics {
   const total = items.length;
+  const enabledCount = ENABLED_SOURCE_PROVIDERS.length;
+  const healthFormula = 'Health = (Coverage × 20%) + (Integrity × 25%) + (Classification × 20%) + (Provenance × 15%) + (Resolution × 20%)';
+
   if (total === 0) {
-    const emptyDim = (name: string, weight: number, desc: string): HealthDimension => ({
+    const emptyDim = (id: HealthDimensionId, name: string, weight: number, desc: string, formula: string): HealthDimension => ({
+      id,
       name,
       score: 100,
       weight,
       description: desc,
+      healthyCount: 0,
+      warningCount: 0,
+      unknownCount: 0,
+      failedCount: 0,
       count: 0,
       total: 0,
+      formula,
     });
     return {
       healthScore: 100,
+      formula: healthFormula,
       dimensions: {
-        coverage: emptyDim('Coverage', 20, 'Multi-source verified coverage ratio'),
-        integrity: emptyDim('Integrity', 25, 'Cryptographic and structural vector integrity'),
-        classification: emptyDim('Classification', 20, 'Curated taxonomy categorization ratio'),
-        provenance: emptyDim('Provenance', 15, 'Direct upstream licensing and attribution'),
-        resolution: emptyDim('Resolution', 20, 'Disambiguated canonical resolution ratio'),
+        coverage: emptyDim('coverage', 'Coverage', 20, `Authoritative coverage across ${enabledCount} enabled providers`, 'Healthy (≥2 providers) + Warning (1 provider × 0.6)'),
+        integrity: emptyDim('integrity', 'Integrity', 25, 'Structural vector validity, SVG renderability, and cryptographic SHA-256 digest', 'xmlValid && svgRenderable && integrityVerified'),
+        classification: emptyDim('classification', 'Classification', 20, 'Curated and upstream taxonomy mapping vs provisional or fallback categories', 'Curated/Source (100%) + Derived/Heuristic (50%)'),
+        provenance: emptyDim('provenance', 'Provenance', 15, 'Direct upstream attribution traceability and verified license evidence', 'Traceable origin + verified license evidence'),
+        resolution: emptyDim('resolution', 'Resolution', 20, 'Deterministic canonical asset arbitration and collision resolution', 'Verified canonical resolution with zero unresolved risk'),
       },
       verifiedIdentities: 0,
       sparseSourceIdentities: 0,
@@ -238,52 +257,194 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
     };
   }
 
+  // 1. Coverage counters
+  let covHealthy = 0; // multi-source (>= 2 providers)
+  let covWarning = 0; // single-source (exactly 1 provider)
+  let covFailed = 0;  // 0 providers when probed
+  let covUnknown = 0; // no coverage probes or assets
+
+  // 2. Integrity counters
+  let intHealthy = 0; // xmlValid && svgRenderable && integrityVerified
+  let intWarning = 0; // xmlValid && svgRenderable && !integrityVerified
+  let intFailed = 0;  // !xmlValid || !svgRenderable
+  let intUnknown = 0; // missing validation fields
+
+  // 3. Classification counters
+  let catHealthy = 0; // curated or source (authoritative taxonomy)
+  let catWarning = 0; // derived or heuristic (inferred domain)
+  let catUnknown = 0; // fallback / needs-review / unconfirmed
+  let catFailed = 0;  // uncategorized
+
+  // 4. Provenance counters
+  let provHealthy = 0; // traceable origin AND verified license evidence
+  let provWarning = 0; // traceable origin without license, or vice-versa
+  let provFailed = 0;  // missing both origin and license
+  let provUnknown = 0; // unrecorded provenance
+
+  // 5. Resolution counters
+  let resHealthy = 0; // verified canonical resolution, 0 conflicts
+  let resWarning = 0; // warning or conflict (unresolved-risk)
+  let resFailed = 0;  // invalid resolution
+  let resUnknown = 0; // unresolved or missing canonical asset
+
+  // Auxiliary metrics for dashboard cards
   let verifiedCount = 0;
   let unresolvedCount = 0;
-  let sparseCount = 0;
-  let multiSourceCount = 0;
   let unknownLicenseCount = 0;
   let needsReviewCount = 0;
   let uncategorizedCount = 0;
 
   for (const item of items) {
-    if (item.verificationStatus === 'verified' || item.verified) {
-      verifiedCount++;
-    } else if (item.verificationStatus === 'unresolved') {
-      unresolvedCount++;
+    // -------------------------------------------------------------
+    // DIMENSION 1: COVERAGE
+    // Invariant: Missing data must NOT become single-source coverage.
+    // Count only authoritative sourceCoverage or concrete assets.
+    // -------------------------------------------------------------
+    let availableProviders = 0;
+    let hasAuthoritativeData = false;
+
+    if (item.sourceCoverage && typeof item.sourceCoverage === 'object') {
+      const probes = Object.values(item.sourceCoverage);
+      const knownProbes = probes.filter(s => s && s !== 'unknown');
+      if (knownProbes.length > 0) {
+        hasAuthoritativeData = true;
+        availableProviders = probes.filter(s => s === 'available').length;
+      }
     }
 
-    if (!item.license || item.licenseStatus === 'unknown') {
-      unknownLicenseCount++;
+    if (!hasAuthoritativeData && item.assets && item.assets.length > 0) {
+      const distinct = new Set(item.assets.map(a => a.sourceProvider).filter(Boolean));
+      if (distinct.size > 0) {
+        hasAuthoritativeData = true;
+        availableProviders = distinct.size;
+      }
     }
 
+    if (!hasAuthoritativeData) {
+      covUnknown++;
+    } else if (availableProviders >= 2) {
+      covHealthy++;
+    } else if (availableProviders === 1) {
+      covWarning++;
+    } else {
+      covFailed++;
+    }
+
+    // -------------------------------------------------------------
+    // DIMENSION 2: INTEGRITY
+    // Invariant: Derive strictly from granular fields (xmlValid,
+    // svgRenderable, integrityVerified). Do NOT use generic verified.
+    // -------------------------------------------------------------
+    const xmlValid = item.xmlValid === true;
+    const svgRenderable = item.svgRenderable === true;
+    const integrityVerified = item.integrityVerified === true;
+
+    if (item.xmlValid === undefined || item.svgRenderable === undefined) {
+      intUnknown++;
+    } else if (!xmlValid || !svgRenderable) {
+      intFailed++;
+    } else if (integrityVerified) {
+      intHealthy++;
+    } else {
+      intWarning++;
+    }
+
+    // -------------------------------------------------------------
+    // DIMENSION 3: CLASSIFICATION
+    // Invariant: Distinguish curated/source/derived/heuristic/unknown.
+    // Do NOT treat fallback/unknown as healthy.
+    // -------------------------------------------------------------
     const cat = item.primaryCategory || item.category;
+    const src = item.categorySource;
+
     if (cat === 'needs-review') {
       needsReviewCount++;
     } else if (cat === 'uncategorized') {
       uncategorizedCount++;
     }
 
-    const sources = item.sourceCoverage
-      ? Object.values(item.sourceCoverage).filter(s => s === 'available').length
-      : (item.assets && item.assets.length > 0 ? new Set(item.assets.map(a => a.sourceProvider)).size : 1);
+    if (cat === 'uncategorized') {
+      catFailed++;
+    } else if (cat === 'needs-review' || src === 'fallback' || !src) {
+      catUnknown++;
+    } else if (src === 'curated' || src === 'source') {
+      catHealthy++;
+    } else if (src === 'derived' || src === 'heuristic') {
+      catWarning++;
+    } else {
+      catUnknown++;
+    }
 
-    if (sources === 1) {
-      sparseCount++;
-    } else if (sources > 1) {
-      multiSourceCount++;
+    // -------------------------------------------------------------
+    // DIMENSION 4: PROVENANCE
+    // Invariant: Require source attribution/record AND license evidence.
+    // Separate "license known" from "provenance traceable".
+    // -------------------------------------------------------------
+    const isTraceable = !!(
+      (item.sourcePlatform || item.sourceProvider) &&
+      item.sourceUrl &&
+      ((item.sourceRecords && item.sourceRecords.length > 0) || item.sourceId)
+    );
+    const hasLicense = !!(item.license && item.license !== 'unknown' && item.licenseStatus !== 'unknown');
+    const hasLicenseEvidence = !!(
+      item.licenseEvidence ||
+      (item.sourceRecords && item.sourceRecords.some(r => r.license && r.license !== 'unknown'))
+    );
+
+    if (!hasLicense) {
+      unknownLicenseCount++;
+    }
+
+    if (isTraceable && hasLicense && hasLicenseEvidence) {
+      provHealthy++;
+    } else if (isTraceable || hasLicense) {
+      provWarning++;
+    } else if (!isTraceable && !hasLicense) {
+      provFailed++;
+    } else {
+      provUnknown++;
+    }
+
+    // -------------------------------------------------------------
+    // DIMENSION 5: RESOLUTION
+    // Invariant: Verified canonical resolution = healthy.
+    // Warning/conflict = unresolved-risk, not healthy.
+    // Invalid must NEVER count as resolved.
+    // -------------------------------------------------------------
+    const st = item.verificationStatus;
+    const hasCanonical = !!(item.canonicalAssetId || item.canonicalAsset);
+    const hasConflict = (item.conflicts && item.conflicts.length > 0) || st === 'conflict';
+
+    if (st === 'verified') {
+      verifiedCount++;
+    } else if (st === 'unresolved') {
+      unresolvedCount++;
+    }
+
+    if (st === 'invalid') {
+      resFailed++;
+    } else if (st === 'unresolved' || !hasCanonical) {
+      resUnknown++;
+    } else if (st === 'warning' || hasConflict) {
+      resWarning++;
+    } else if (st === 'verified' && hasCanonical) {
+      resHealthy++;
+    } else {
+      resUnknown++;
     }
   }
 
-  // 5 Explicit dimensions
-  const coverageScore = Math.round((multiSourceCount / total) * 1000) / 10;
-  const integrityScore = Math.round((verifiedCount / total) * 1000) / 10;
-  const classifiedCount = Math.max(0, total - uncategorizedCount - needsReviewCount);
-  const classificationScore = Math.round((classifiedCount / total) * 1000) / 10;
-  const knownLicenseCount = Math.max(0, total - unknownLicenseCount);
-  const provenanceScore = Math.round((knownLicenseCount / total) * 1000) / 10;
-  const resolvedCount = Math.max(0, total - unresolvedCount);
-  const resolutionScore = Math.round((resolvedCount / total) * 1000) / 10;
+  // Dimension Score Computations
+  // Coverage: Multi-source (1.0) + Single-source (0.6) - availability with single-point-of-failure warning
+  const coverageScore = Math.round(((covHealthy * 1.0 + covWarning * 0.6) / total) * 1000) / 10;
+  // Integrity: Valid + Renderable + Hash Verified (1.0) + Valid + Renderable without Hash (0.5)
+  const integrityScore = Math.round(((intHealthy * 1.0 + intWarning * 0.5) / total) * 1000) / 10;
+  // Classification: Curated/Source (1.0) + Derived/Heuristic (0.5); Fallback/Needs-Review (0.0)
+  const classificationScore = Math.round(((catHealthy * 1.0 + catWarning * 0.5) / total) * 1000) / 10;
+  // Provenance: Traceable & Verified License (1.0) + Partial (0.5)
+  const provenanceScore = Math.round(((provHealthy * 1.0 + provWarning * 0.5) / total) * 1000) / 10;
+  // Resolution: Disambiguated Canonical (1.0) + Warning/Conflict Risk (0.5); Invalid (0.0)
+  const resolutionScore = Math.round(((resHealthy * 1.0 + resWarning * 0.5) / total) * 1000) / 10;
 
   // Composite weighted score (weights: 20%, 25%, 20%, 15%, 20%)
   const healthScore = Math.round(
@@ -296,50 +457,81 @@ export function computeRegistryHealth(items: IconItem[]): RegistryHealthMetrics 
 
   return {
     healthScore,
+    formula: healthFormula,
     dimensions: {
       coverage: {
+        id: 'coverage',
         name: 'Coverage',
         score: coverageScore,
         weight: 20,
-        description: 'Multi-source verified coverage ratio across 5 providers',
-        count: multiSourceCount,
+        description: `Authoritative coverage across ${enabledCount} enabled providers`,
+        healthyCount: covHealthy,
+        warningCount: covWarning,
+        unknownCount: covUnknown,
+        failedCount: covFailed,
+        count: covHealthy,
         total,
+        formula: 'Multi-source (100%) + Single-source (60%)',
       },
       integrity: {
+        id: 'integrity',
         name: 'Integrity',
         score: integrityScore,
         weight: 25,
-        description: 'Cryptographic SHA-256 and XML schema verification ratio',
-        count: verifiedCount,
+        description: 'Structural vector validity, SVG renderability, and cryptographic SHA-256 digest',
+        healthyCount: intHealthy,
+        warningCount: intWarning,
+        unknownCount: intUnknown,
+        failedCount: intFailed,
+        count: intHealthy,
         total,
+        formula: 'xmlValid && svgRenderable && integrityVerified',
       },
       classification: {
+        id: 'classification',
         name: 'Classification',
         score: classificationScore,
         weight: 20,
-        description: 'Curated 19-category taxonomy categorization ratio',
-        count: classifiedCount,
+        description: 'Curated and upstream taxonomy mapping vs provisional or fallback categories',
+        healthyCount: catHealthy,
+        warningCount: catWarning,
+        unknownCount: catUnknown,
+        failedCount: catFailed,
+        count: catHealthy,
         total,
+        formula: 'Curated/Source (100%) + Derived/Heuristic (50%)',
       },
       provenance: {
+        id: 'provenance',
         name: 'Provenance',
         score: provenanceScore,
         weight: 15,
-        description: 'Known license and direct upstream attribution ratio',
-        count: knownLicenseCount,
+        description: 'Direct upstream attribution traceability and verified license evidence',
+        healthyCount: provHealthy,
+        warningCount: provWarning,
+        unknownCount: provUnknown,
+        failedCount: provFailed,
+        count: provHealthy,
         total,
+        formula: 'Traceable origin + verified license evidence',
       },
       resolution: {
+        id: 'resolution',
         name: 'Resolution',
         score: resolutionScore,
         weight: 20,
-        description: 'Disambiguated canonical resolution ratio',
-        count: resolvedCount,
+        description: 'Deterministic canonical asset arbitration and collision resolution',
+        healthyCount: resHealthy,
+        warningCount: resWarning,
+        unknownCount: resUnknown,
+        failedCount: resFailed,
+        count: resHealthy,
         total,
+        formula: 'Verified canonical resolution with zero unresolved risk',
       },
     },
     verifiedIdentities: verifiedCount,
-    sparseSourceIdentities: sparseCount,
+    sparseSourceIdentities: covWarning,
     unresolvedIdentities: unresolvedCount,
     unknownLicenseCount,
     needsReviewIdentities: needsReviewCount,

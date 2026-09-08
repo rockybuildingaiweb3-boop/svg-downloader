@@ -398,6 +398,14 @@ export interface TranslationDictionary {
     sparseSourceIdentities: string;
     unknownLicenseIdentities: string;
     calculatedHealth: string;
+    healthFormulaTitle: string;
+    healthFormulaSubtitle: string;
+    healthyLabel: string;
+    warningLabel: string;
+    unknownLabel: string;
+    failedLabel: string;
+    dimensionWeightsLabel: string;
+    mathematicalExplainability: string;
   };
   conflictsView: {
     title: string;

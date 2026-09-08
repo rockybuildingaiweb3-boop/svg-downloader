@@ -9,6 +9,7 @@ import {
   FileCheck2,
   Database,
   GitFork,
+  Scale,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/context';
 import { REGISTRY_IDENTITIES } from '../data/registry';
@@ -105,14 +106,14 @@ export const CoverageSection: React.FC<CoverageSectionProps> = ({ onDrillDown })
       {/* 5-Dimension Health Breakdown */}
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
         {(Object.values(health.dimensions) as HealthDimension[]).map(dim => (
-          <div key={dim.name} className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs space-y-1.5">
+          <div key={dim.name} className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">{dim.name}</span>
               <span className="text-2xs font-mono font-semibold text-slate-400">{dim.weight}% wt</span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-xl font-black text-slate-900 font-mono">{dim.score}%</span>
-              <span className="text-3xs text-slate-400 font-mono">{dim.count.toLocaleString()} / {dim.total.toLocaleString()}</span>
+              <span className="text-3xs text-slate-400 font-mono">{dim.healthyCount.toLocaleString()} / {dim.total.toLocaleString()}</span>
             </div>
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -122,11 +123,60 @@ export const CoverageSection: React.FC<CoverageSectionProps> = ({ onDrillDown })
                 style={{ width: `${Math.max(dim.score, 2)}%` }}
               />
             </div>
+            {/* Granular state breakdown */}
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200" title={`${dim.healthyCount} ${t.coverageView.healthyLabel}`}>
+                {dim.healthyCount.toLocaleString()} {t.coverageView.healthyLabel}
+              </span>
+              {dim.warningCount > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-medium bg-amber-50 text-amber-700 border border-amber-200" title={`${dim.warningCount} ${t.coverageView.warningLabel}`}>
+                  {dim.warningCount.toLocaleString()} {t.coverageView.warningLabel}
+                </span>
+              )}
+              {dim.unknownCount > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200" title={`${dim.unknownCount} ${t.coverageView.unknownLabel}`}>
+                  {dim.unknownCount.toLocaleString()} {t.coverageView.unknownLabel}
+                </span>
+              )}
+              {dim.failedCount > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-medium bg-rose-50 text-rose-700 border border-rose-200" title={`${dim.failedCount} ${t.coverageView.failedLabel}`}>
+                  {dim.failedCount.toLocaleString()} {t.coverageView.failedLabel}
+                </span>
+              )}
+            </div>
             <p className="text-3xs text-slate-400 leading-tight truncate" title={dim.description}>
               {dim.description}
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Mathematical Formula & Explainability Card */}
+      <div className="bg-gradient-to-r from-slate-50 to-indigo-50/40 rounded-xl p-4 border border-slate-200/80 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Scale className="w-4 h-4 text-indigo-600" />
+              <span className="text-xs font-bold text-slate-900 tracking-tight">
+                {t.coverageView.healthFormulaTitle}
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-3xs font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                {t.coverageView.mathematicalExplainability}
+              </span>
+            </div>
+            <p className="text-2xs text-slate-600">
+              {t.coverageView.healthFormulaSubtitle}
+            </p>
+          </div>
+          <div className="font-mono text-2xs bg-white/90 px-3 py-2 rounded-lg border border-slate-200 shadow-2xs text-slate-700">
+            <span className="font-bold text-slate-900">{health.healthScore}%</span> = (
+            <span className="text-indigo-600 font-semibold">{health.dimensions.coverage.score}%</span> × 0.20) + (
+            <span className="text-indigo-600 font-semibold">{health.dimensions.integrity.score}%</span> × 0.25) + (
+            <span className="text-indigo-600 font-semibold">{health.dimensions.classification.score}%</span> × 0.20) + (
+            <span className="text-indigo-600 font-semibold">{health.dimensions.provenance.score}%</span> × 0.15) + (
+            <span className="text-indigo-600 font-semibold">{health.dimensions.resolution.score}%</span> × 0.20)
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards Grid */}

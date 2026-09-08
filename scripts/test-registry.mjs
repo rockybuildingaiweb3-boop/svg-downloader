@@ -765,6 +765,131 @@ async function runTests() {
   }
   assert(foundCoverageRecords > 0, `Preserved sourceCoverage across ${foundCoverageRecords} identities`);
 
+  // =========================================================================
+  // TEST 39: Semantic Health Measurement Model & Dimension Invariants
+  // =========================================================================
+  console.log('\n🩺 39. Semantic Health Measurement Model & Dimension Invariants');
+  const liveHealth = computeRegistryHealth(REGISTRY_SNAPSHOT.identities);
+  assert(liveHealth.formula !== undefined, 'Registry health exposes mathematical formula');
+  assert(typeof liveHealth.healthScore === 'number' && !isNaN(liveHealth.healthScore), `Health score is numeric (${liveHealth.healthScore}%)`);
+
+  const expectedDimensions = ['coverage', 'integrity', 'classification', 'provenance', 'resolution'];
+  for (const dimKey of expectedDimensions) {
+    const dim = liveHealth.dimensions[dimKey];
+    assert(dim !== undefined, `Dimension "${dimKey}" exists in health metrics`);
+    assert(typeof dim.score === 'number' && dim.score >= 0 && dim.score <= 100, `Dimension "${dimKey}" score is in range [0, 100] (${dim.score}%)`);
+    assert(typeof dim.healthyCount === 'number', `Dimension "${dimKey}" has healthyCount (${dim.healthyCount})`);
+    assert(typeof dim.warningCount === 'number', `Dimension "${dimKey}" has warningCount (${dim.warningCount})`);
+    assert(typeof dim.unknownCount === 'number', `Dimension "${dimKey}" has unknownCount (${dim.unknownCount})`);
+    assert(typeof dim.failedCount === 'number', `Dimension "${dimKey}" has failedCount (${dim.failedCount})`);
+    assert(typeof dim.total === 'number' && dim.total === REGISTRY_SNAPSHOT.totalIdentities, `Dimension "${dimKey}" total matches registry total (${dim.total} === ${REGISTRY_SNAPSHOT.totalIdentities})`);
+
+    // Invariant: healthyCount + warningCount + unknownCount + failedCount === total
+    const sumCounts = dim.healthyCount + dim.warningCount + dim.unknownCount + dim.failedCount;
+    assert(sumCounts === dim.total, `Dimension "${dimKey}" sum of counts strictly equals total (${sumCounts} === ${dim.total})`);
+
+    // Invariant: Descriptions must derive from enabled providers, never hardcoded "across 5 providers"
+    assert(!dim.description.includes('across 5 providers'), `Dimension "${dimKey}" does not have hardcoded "across 5 providers" string`);
+  }
+
+  // Verify Coverage Rule: Missing data does NOT become single-source coverage
+  const mockMissingCoverage = [{
+    id: 'mock-no-cov',
+    slug: 'mock-no-cov',
+    title: 'Mock No Coverage',
+    category: 'technology',
+    assets: [],
+    // no sourceCoverage
+    xmlValid: true,
+    svgRenderable: true,
+    integrityVerified: true,
+    verificationStatus: 'verified'
+  }];
+  const healthNoCov = computeRegistryHealth(mockMissingCoverage);
+  assert(healthNoCov.dimensions.coverage.unknownCount === 1, 'Unknown coverage remains unknown (does NOT become single-source)');
+  assert(healthNoCov.dimensions.coverage.warningCount === 0, 'Missing coverage does NOT become single-source warning count');
+
+  // Verify Integrity Rule: Derive strictly from granular fields (xmlValid, svgRenderable, integrityVerified), NOT generic verified
+  const mockIntegrityGenericVerified = [{
+    id: 'mock-generic-verified',
+    slug: 'mock-generic-verified',
+    title: 'Mock Generic Verified',
+    category: 'technology',
+    verified: true,
+    verificationStatus: 'verified',
+    xmlValid: true,
+    svgRenderable: true,
+    integrityVerified: false
+  }];
+  const healthInt = computeRegistryHealth(mockIntegrityGenericVerified);
+  assert(healthInt.dimensions.integrity.healthyCount === 0, 'Generic verified does NOT shortcut integrity without integrityVerified');
+  assert(healthInt.dimensions.integrity.warningCount === 1, 'Valid renderable SVG with unverified hash is counted as warning');
+
+  // Verify Classification Rule: Fallback/needs-review does NOT count as healthy
+  const mockFallbackCat = [{
+    id: 'mock-fallback',
+    slug: 'mock-fallback',
+    title: 'Mock Fallback',
+    category: 'needs-review',
+    primaryCategory: 'needs-review',
+    categorySource: 'fallback',
+    xmlValid: true,
+    svgRenderable: true,
+    integrityVerified: true,
+    verificationStatus: 'verified'
+  }];
+  const healthCat = computeRegistryHealth(mockFallbackCat);
+  assert(healthCat.dimensions.classification.healthyCount === 0, 'Fallback classification never counts as healthy');
+  assert(healthCat.dimensions.classification.unknownCount === 1, 'Fallback classification is counted as unknown/needs-review');
+
+  // Verify Provenance Rule: Traceable origin AND verified license evidence
+  const mockPartialProv = [{
+    id: 'mock-lic-no-source',
+    slug: 'mock-lic-no-source',
+    title: 'Mock Lic No Source',
+    category: 'technology',
+    license: 'MIT',
+    licenseStatus: 'permissive',
+    xmlValid: true,
+    svgRenderable: true,
+    integrityVerified: true,
+    verificationStatus: 'verified'
+  }];
+  const healthProv = computeRegistryHealth(mockPartialProv);
+  assert(healthProv.dimensions.provenance.healthyCount === 0, 'License known without traceable source origin is NOT healthy provenance');
+  assert(healthProv.dimensions.provenance.warningCount === 1, 'License without origin is counted as warning');
+
+  // Verify Resolution Rule: Warning/conflict = unresolved risk; Invalid never resolved
+  const mockResolutionConflict = [{
+    id: 'mock-conflict',
+    slug: 'mock-conflict',
+    title: 'Mock Conflict',
+    category: 'technology',
+    canonicalAssetId: 'mock-asset',
+    verificationStatus: 'conflict',
+    conflicts: ['naming-collision'],
+    xmlValid: true,
+    svgRenderable: true,
+    integrityVerified: true
+  }];
+  const healthRes = computeRegistryHealth(mockResolutionConflict);
+  assert(healthRes.dimensions.resolution.healthyCount === 0, 'Conflict is NOT healthy resolution');
+  assert(healthRes.dimensions.resolution.warningCount === 1, 'Conflict is counted as unresolved-risk warning');
+
+  const mockResolutionInvalid = [{
+    id: 'mock-invalid',
+    slug: 'mock-invalid',
+    title: 'Mock Invalid',
+    category: 'technology',
+    verificationStatus: 'invalid',
+    xmlValid: true,
+    svgRenderable: true,
+    integrityVerified: true
+  }];
+  const healthResInv = computeRegistryHealth(mockResolutionInvalid);
+  assert(healthResInv.dimensions.resolution.healthyCount === 0, 'Invalid status is NOT healthy');
+  assert(healthResInv.dimensions.resolution.failedCount === 1, 'Invalid status is counted as failed resolution');
+
   // Summary
   console.log('\n=======================================================================');
   console.log(`✨ TEST SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);

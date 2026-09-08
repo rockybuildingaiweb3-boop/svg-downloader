@@ -482,6 +482,7 @@ export interface IconItem {
   aliases?: string[];
   canonicalDecision?: CanonicalDecision;
   licenseStatus?: string;
+  licenseEvidence?: string;
 }
 
 export type ScriptType = 'sync' | 'nodejs' | 'python' | 'bash';
