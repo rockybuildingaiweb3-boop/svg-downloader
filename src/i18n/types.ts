@@ -38,6 +38,12 @@ export interface TranslationDictionary {
     tabMore: string;
     bundleExportSubtitle: string;
     zipExportSubtitle: string;
+    downloadDropdownTitle: string;
+    downloadCanonicalTooltip: string;
+    downloadSelectedTooltip: string;
+    downloadBrandPackTooltip: string;
+    downloadComparisonPackTooltip: string;
+    downloadRegistryJson: string;
   };
   systemBanner: {
     registryTitle: string;
@@ -86,6 +92,12 @@ export interface TranslationDictionary {
     strictMatch: string;
     preferredMatch: string;
     matchedCount: string;
+    sortLabel: string;
+    sortOptions: Record<string, string>;
+    coverageFilterLabel: string;
+    coverageFilterOptions: Record<string, string>;
+    domainOptions: Record<string, string>;
+    viewModeOptions: Record<string, string>;
     collections: {
       all: string;
       favorites: string;
@@ -151,6 +163,19 @@ export interface TranslationDictionary {
     coverageUnavailable: string;
     providerErrorSingle: string;
     providerErrorMulti: string;
+    logoAlt: string;
+    moreActions: string;
+    verifiedSvg: string;
+    singleSource: string;
+    limitedCoverage: string;
+    strongCoverage: string;
+    fullCoverage: string;
+    viewSources: string;
+    useThisAsset: string;
+    copyUrl: string;
+    urlCopied: string;
+    downloadCanonical: string;
+    downloadThisSvg: string;
   };
   inspector: {
     canonicalMainAsset: string;
@@ -259,6 +284,37 @@ export interface TranslationDictionary {
     evidenceTitle: string;
     noEvidence: string;
     fetchUrlError: string;
+    compareSourcesBtn: string;
+    comparingSourcesFor: string;
+    comparisonSubtitle: string;
+  };
+  workspace: {
+    favorites: string;
+    recents: string;
+    collections: string;
+    createCollection: string;
+    collectionNamePlaceholder: string;
+    noCollectionsYet: string;
+    emptyCollection: string;
+    deleteCollection: string;
+    addToCollection: string;
+    itemsCount: string;
+  };
+  emptyStates: {
+    noResultsTitle: string;
+    noResultsDesc: string;
+    clearFilters: string;
+    noExactMatch: string;
+    viewAlternatives: string;
+  };
+  tableView: {
+    previewCol: string;
+    identityCol: string;
+    categoryCol: string;
+    coverageCol: string;
+    fileCol: string;
+    statusCol: string;
+    actionsCol: string;
   };
   sourcesView: {
     title: string;

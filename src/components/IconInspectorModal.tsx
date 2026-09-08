@@ -26,7 +26,9 @@ import {
   XCircle,
   Info,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  Sliders,
+  ArrowLeftRight
 } from 'lucide-react';
 import { IconItem, BrandAsset, DownloadReceipt, getSemanticSourceLabel, getTrustStateBadge } from '../types';
 import { ENABLED_SOURCES } from '../data/sourceRegistry';
@@ -90,6 +92,13 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
   const [customSvgInput, setCustomSvgInput] = useState('');
   const [customSvgFile, setCustomSvgFile] = useState<string | null>(null);
 
+  // Multi-source comparison state (comparing real registry assets)
+  const [isComparingSources, setIsComparingSources] = useState<boolean>(false);
+  const [comparisonViewMode, setComparisonViewMode] = useState<'side-by-side' | 'overlay'>('side-by-side');
+  const [compareAssetAId, setCompareAssetAId] = useState<string>('');
+  const [compareAssetBId, setCompareAssetBId] = useState<string>('');
+  const [overlayOpacity, setOverlayOpacity] = useState<number>(50);
+
   const modalRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -125,6 +134,12 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
       setCustomSvgInput('');
       setZoomLevel(100);
       setFitMode('contain');
+      if (icon.assets && icon.assets.length >= 2) {
+        setCompareAssetAId(icon.assets[0].assetId);
+        setCompareAssetBId(icon.assets[1].assetId);
+      } else {
+        setIsComparingSources(false);
+      }
     }
   }, [icon]);
 
@@ -929,15 +944,235 @@ export const IconInspectorModal: React.FC<IconInspectorModalProps> = ({
 
           {/* Section 4.2: Source Availability Matrix */}
           <div className="space-y-2.5 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
-            <div>
-              <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{t.inspector.sourceAvailability}</span>
-              </h3>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                {t.inspector.sourceAvailabilitySubtitle}
-              </p>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{t.inspector.sourceAvailability}</span>
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  {t.inspector.sourceAvailabilitySubtitle}
+                </p>
+              </div>
+              {icon.assets && icon.assets.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => setIsComparingSources(prev => !prev)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                    isComparingSources
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>{isComparingSources ? t.inspector.closeBtn : t.inspector.compareSourcesBtn}</span>
+                </button>
+              )}
             </div>
+
+            {/* Embedded Multi-Source Comparison Panel */}
+            {isComparingSources && icon.assets && icon.assets.length >= 2 && (
+              <div className="p-3.5 bg-white rounded-2xl border border-indigo-200 shadow-xs space-y-3 animate-in fade-in duration-150">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <ArrowLeftRight className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>{t.inspector.comparingSourcesFor}: {icon.title}</span>
+                    </span>
+                    <span className="text-2xs text-slate-500 block">
+                      {t.inspector.comparisonSubtitle}
+                    </span>
+                  </div>
+
+                  {/* Mode switcher: side-by-side vs overlay */}
+                  <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setComparisonViewMode('side-by-side')}
+                      className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-colors cursor-pointer ${
+                        comparisonViewMode === 'side-by-side' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {t.comparison.splitView}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComparisonViewMode('overlay')}
+                      className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-colors cursor-pointer ${
+                        comparisonViewMode === 'overlay' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {t.comparison.overlayView}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Comparison View Content */}
+                {comparisonViewMode === 'side-by-side' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {icon.assets.map(ast => {
+                      const isCanonical = ast.isCanonical || ast.assetId === icon.canonicalAssetId;
+                      const isCurrent = ast.assetId === selectedAssetId;
+                      const provName = getLocalizedSourceLabel(ast.sourceProvider, t) || ast.sourceProvider;
+                      return (
+                        <div
+                          key={ast.assetId}
+                          className={`p-3 rounded-2xl border flex flex-col justify-between transition-all ${
+                            isCurrent
+                              ? 'bg-indigo-50/50 border-indigo-300 ring-2 ring-indigo-500/20 shadow-xs'
+                              : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-2">
+                              <span className="text-2xs font-bold px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-2xs">
+                                {provName}
+                              </span>
+                              {isCanonical && (
+                                <span className="text-3xs font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                                  {t.comparison.canonicalBadge}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="w-20 h-20 mx-auto my-2 p-2 bg-white rounded-xl border border-slate-100 flex items-center justify-center shadow-2xs">
+                              <img
+                                src={`/icons/${ast.file}`}
+                                alt={ast.file}
+                                className="max-w-full max-h-full object-contain"
+                                loading="lazy"
+                              />
+                            </div>
+
+                            <div className="space-y-1 text-2xs text-slate-600 pt-1">
+                              <div className="flex justify-between">
+                                <span className="text-slate-400">{t.inspector.role}:</span>
+                                <span className="font-semibold text-slate-800 capitalize">{getLocalizedRoleLabel(ast.role, t)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-400">{t.inspector.colorStructure}:</span>
+                                <span className="font-mono text-slate-800">{ast.graphicVariant || 'default'}</span>
+                              </div>
+                              {ast.structuralMetrics && (
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400">{t.inspector.pathsAndNodes}:</span>
+                                  <span className="font-mono text-slate-800">{ast.structuralMetrics.pathCount} paths · {ast.structuralMetrics.elementCount} nodes</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-200/80 flex items-center gap-1.5 mt-2">
+                            {onUseAsset && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAssetId(ast.assetId);
+                                  onUseAsset(icon.id, ast.assetId);
+                                }}
+                                className={`flex-1 py-1 px-2 rounded-lg text-2xs font-semibold transition-colors cursor-pointer ${
+                                  isCurrent
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                                }`}
+                              >
+                                {t.card.useThisAsset}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => downloadSingleSvg(icon, ast)}
+                              className="p-1 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-white transition-colors cursor-pointer"
+                              title={t.card.downloadSvg}
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Overlay Mode */
+                  (() => {
+                    const assetA = icon.assets.find(a => a.assetId === compareAssetAId) || icon.assets[0];
+                    const assetB = icon.assets.find(a => a.assetId === compareAssetBId) || icon.assets[1] || icon.assets[0];
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-2xs font-bold text-indigo-700">1:</span>
+                            <select
+                              value={compareAssetAId}
+                              onChange={e => setCompareAssetAId(e.target.value)}
+                              className="text-xs bg-white border border-slate-200 rounded-lg p-1 text-slate-800 focus:outline-none cursor-pointer"
+                            >
+                              {icon.assets?.map(a => (
+                                <option key={a.assetId} value={a.assetId}>
+                                  {getLocalizedSourceLabel(a.sourceProvider, t) || a.sourceProvider} ({getLocalizedRoleLabel(a.role, t)} - {a.graphicVariant})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-2xs font-bold text-pink-700">2:</span>
+                            <select
+                              value={compareAssetBId}
+                              onChange={e => setCompareAssetBId(e.target.value)}
+                              className="text-xs bg-white border border-slate-200 rounded-lg p-1 text-slate-800 focus:outline-none cursor-pointer"
+                            >
+                              {icon.assets?.map(a => (
+                                <option key={a.assetId} value={a.assetId}>
+                                  {getLocalizedSourceLabel(a.sourceProvider, t) || a.sourceProvider} ({getLocalizedRoleLabel(a.role, t)} - {a.graphicVariant})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-2xs font-bold text-slate-600">{t.comparison.opacity}:</span>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              value={overlayOpacity}
+                              onChange={e => setOverlayOpacity(Number(e.target.value))}
+                              className="w-24 accent-indigo-600 cursor-pointer"
+                            />
+                            <span className="font-mono text-2xs text-slate-500 w-8">{overlayOpacity}%</span>
+                          </div>
+                        </div>
+
+                        {/* Overlay Stage */}
+                        <div className="h-56 rounded-2xl bg-white border border-slate-200 flex items-center justify-center relative overflow-hidden [background-size:12px_12px] bg-[radial-gradient(#cbd5e1_1px,transparent_1px)]">
+                          {assetA && (
+                            <img
+                              src={`/icons/${assetA.file}`}
+                              alt={assetA.file}
+                              className="w-32 h-32 object-contain absolute select-none drop-shadow-xs"
+                              style={{ filter: 'drop-shadow(0 0 1px rgba(79, 70, 229, 0.4))' }}
+                            />
+                          )}
+                          {assetB && (
+                            <img
+                              src={`/icons/${assetB.file}`}
+                              alt={assetB.file}
+                              className="w-32 h-32 object-contain absolute select-none transition-opacity"
+                              style={{
+                                opacity: overlayOpacity / 100,
+                                filter: 'hue-rotate(180deg) drop-shadow(0 0 1px rgba(236, 72, 153, 0.6))'
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
               {ENABLED_SOURCES.map(provider => {
                 const providerName = getLocalizedSourceLabel(provider.id, t) || provider.name;

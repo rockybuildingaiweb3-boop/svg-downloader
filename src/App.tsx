@@ -18,7 +18,20 @@ import {
   Tag,
   Heart,
   Clock,
-  Command
+  Command,
+  LayoutGrid,
+  List,
+  Table as TableIcon,
+  ArrowUpDown,
+  Plus,
+  Trash2,
+  FolderPlus,
+  Download,
+  Copy,
+  ExternalLink,
+  HelpCircle,
+  Eye,
+  Sliders
 } from 'lucide-react';
 import {
   IconCategory,
@@ -30,11 +43,15 @@ import {
   DownloadReceipt,
   BrowseLevel,
   ConcreteAssetItem,
+  SortOption,
+  CoverageFilterOption,
+  ViewMode,
+  UserCollection,
   getSemanticSourceLabel
 } from './types';
 import { REGISTRY_IDENTITIES, REGISTRY_ASSETS, REGISTRY_SOURCES, REGISTRY_STATS, BUILD_METADATA, ASSET_MAP, ICON_MAP } from './data/catalog';
 import { ENABLED_SOURCES, getEnabledProvidersCount } from './data/sourceRegistry';
-import { CATEGORY_DEFINITIONS } from './taxonomy/taxonomy';
+import { CATEGORY_DEFINITIONS, TAXONOMY_DOMAINS, StandardCategoryId } from './taxonomy/taxonomy';
 import { computeCategoryStats } from './taxonomy/categoryResolver';
 import { Header, ActiveTabType } from './components/Header';
 import { IconCard } from './components/IconCard';
@@ -47,7 +64,7 @@ import { ConflictsSection } from './components/ConflictsSection';
 import { SourcesSection } from './components/SourcesSection';
 import { CoverageSection } from './components/CoverageSection';
 import { CommandPalette } from './components/CommandPalette';
-import { downloadZip, downloadEngineeringZip, downloadConcreteAssetsZip } from './utils/svgHelpers';
+import { downloadZip, downloadEngineeringZip, downloadConcreteAssetsZip, downloadSingleSvg, copyRawSvg } from './utils/svgHelpers';
 import { searchCatalogAssetAware, parseSearchIntent } from './utils/assetResolver';
 import { useTranslation } from './i18n/context';
 import {
@@ -93,7 +110,7 @@ export default function App() {
     }
   }, [isMoreCategoriesOpen]);
   
-  // Local Collections: Explicit separated identity and asset models (Phase 37)
+  // Local Collections: Explicit separated identity and asset models
   const [favoriteIdentityIds, setFavoriteIdentityIds] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('svg_registry_favorite_identities') || localStorage.getItem('svg_registry_favorites') || '[]');
@@ -126,7 +143,21 @@ export default function App() {
     }
   });
 
-  const [selectedCollection, setSelectedCollection] = useState<'all' | 'favorites' | 'recents' | 'selected'>('all');
+  const [userCollections, setUserCollections] = useState<UserCollection[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('svg_registry_user_collections') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const [selectedCollection, setSelectedCollection] = useState<'all' | 'favorites' | 'recents' | 'selected' | 'custom'>('all');
+  const [activeCustomCollectionId, setActiveCustomCollectionId] = useState<string | null>(null);
+  const [showNewCollectionModal, setShowNewCollectionModal] = useState<boolean>(false);
+  const [newCollectionName, setNewCollectionName] = useState<string>('');
+
+  // Domain hierarchy tabs ('all' | 'technology' | 'consumer' | 'business')
+  const [selectedDomain, setSelectedDomain] = useState<'all' | 'technology' | 'consumer' | 'business'>('all');
 
   // Standard & Advanced Filters
   const [selectedCategory, setSelectedCategory] = useState<IconCategory>('all');
@@ -138,11 +169,18 @@ export default function App() {
   const [selectedTrustState, setSelectedTrustState] = useState<'all' | TrustState>('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  // Sorting & Coverage filtering (Tier 1 & Tier 2)
+  const [selectedSort, setSelectedSort] = useState<SortOption>('relevance');
+  const [selectedCoverageFilter, setSelectedCoverageFilter] = useState<CoverageFilterOption>('all');
+
+  // View Mode: Grid, Compact, Table (Tier 2)
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(36);
 
-  // Dual Browsing Level: 'identities' vs 'assets' (dynamic counts from registry)
+  // Dual Browsing Level: 'identities' vs 'assets'
   const [browseLevel, setBrowseLevel] = useState<BrowseLevel>('identities');
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
 
@@ -151,7 +189,6 @@ export default function App() {
 
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [inspectedIcon, setInspectedIcon] = useState<IconItem | null>(null);
-  const [allIcons] = useState<IconItem[]>(REGISTRY_IDENTITIES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Dynamic Category Stats computed from the active registry
@@ -220,12 +257,67 @@ export default function App() {
     showToast(format(t.toasts.downloadedFile, { name: `${receipt.fileName} (SHA: ${receipt.rawSha256.substring(0, 8)}...)` }));
   };
 
-  // Reset page when filters or collection change
+  // Custom Collections CRUD
+  const handleCreateCollection = () => {
+    if (!newCollectionName.trim()) return;
+    const newCol: UserCollection = {
+      id: `col-${Date.now()}`,
+      name: newCollectionName.trim(),
+      identityIds: browseLevel === 'identities' ? [...selectedSlugs] : [],
+      assetIds: browseLevel === 'assets' ? [...selectedAssetIds] : [],
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...userCollections, newCol];
+    setUserCollections(updated);
+    try {
+      localStorage.setItem('svg_registry_user_collections', JSON.stringify(updated));
+    } catch {}
+    setNewCollectionName('');
+    setShowNewCollectionModal(false);
+    setActiveCustomCollectionId(newCol.id);
+    setSelectedCollection('custom');
+    showToast(`${newCol.name} (${t.workspace.collections})`);
+  };
+
+  const handleDeleteCollection = (id: string) => {
+    const col = userCollections.find(c => c.id === id);
+    const updated = userCollections.filter(c => c.id !== id);
+    setUserCollections(updated);
+    try {
+      localStorage.setItem('svg_registry_user_collections', JSON.stringify(updated));
+    } catch {}
+    if (activeCustomCollectionId === id) {
+      setActiveCustomCollectionId(null);
+      setSelectedCollection('all');
+    }
+    if (col) {
+      showToast(`${col.name}`);
+    }
+  };
+
+  // Helper: Authoritative identity source provider count (no guessing, no || 1)
+  const getIdentitySourceCount = (icon: IconItem): number => {
+    if (icon.sourceCoverage) {
+      return Object.values(icon.sourceCoverage).filter(s => s === 'available').length;
+    }
+    if (icon.assets && icon.assets.length > 0) {
+      const provs = new Set(icon.assets.map(a => a.sourceProvider));
+      return provs.size;
+    }
+    if (icon.alternativeSources && icon.alternativeSources.length > 0) {
+      return icon.alternativeSources.length + 1;
+    }
+    return 1;
+  };
+
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [
     searchTerm,
     selectedCollection,
+    activeCustomCollectionId,
+    selectedDomain,
     selectedCategory,
     selectedSource,
     selectedStatus,
@@ -233,6 +325,8 @@ export default function App() {
     selectedContext,
     selectedVariant,
     selectedTrustState,
+    selectedSort,
+    selectedCoverageFilter,
     pageSize
   ]);
 
@@ -249,11 +343,13 @@ export default function App() {
     if (selectedContext !== 'all') count++;
     if (selectedVariant !== 'all') count++;
     if (selectedTrustState !== 'all') count++;
+    if (selectedCoverageFilter !== 'all') count++;
     return count;
-  }, [selectedRole, selectedContext, selectedVariant, selectedTrustState]);
+  }, [selectedRole, selectedContext, selectedVariant, selectedTrustState, selectedCoverageFilter]);
 
   const hasActiveFilters = useMemo(() => {
     return (
+      selectedDomain !== 'all' ||
       selectedCategory !== 'all' ||
       selectedSource !== 'all' ||
       selectedStatus !== 'all' ||
@@ -261,9 +357,12 @@ export default function App() {
       selectedContext !== 'all' ||
       selectedVariant !== 'all' ||
       selectedTrustState !== 'all' ||
+      selectedCoverageFilter !== 'all' ||
+      selectedSort !== 'relevance' ||
       searchTerm.trim() !== ''
     );
   }, [
+    selectedDomain,
     selectedCategory,
     selectedSource,
     selectedStatus,
@@ -271,8 +370,20 @@ export default function App() {
     selectedContext,
     selectedVariant,
     selectedTrustState,
+    selectedCoverageFilter,
+    selectedSort,
     searchTerm,
   ]);
+
+  // Get categories available in currently selected domain
+  const currentDomainCategories = useMemo(() => {
+    if (selectedDomain === 'all') {
+      return CATEGORY_DEFINITIONS.filter(cat => PRIMARY_CATEGORY_IDS.includes(cat.id as any));
+    }
+    const domainDef = TAXONOMY_DOMAINS.find(d => d.id === selectedDomain);
+    if (!domainDef) return [];
+    return CATEGORY_DEFINITIONS.filter(cat => domainDef.categories.includes(cat.id));
+  }, [selectedDomain]);
 
   // Filtered icons
   const filteredIcons = useMemo(() => {
@@ -284,9 +395,25 @@ export default function App() {
         if (!recentIdentityIds.includes(icon.id)) return false;
       } else if (selectedCollection === 'selected') {
         if (!selectedSlugs.includes(icon.slug)) return false;
+      } else if (selectedCollection === 'custom' && activeCustomCollectionId) {
+        const col = userCollections.find(c => c.id === activeCustomCollectionId);
+        if (!col || (!col.identityIds.includes(icon.id) && !col.identityIds.includes(icon.slug))) return false;
       }
 
-      // 1. Category filter (multi-category aware)
+      // 1. Domain filter
+      if (selectedDomain !== 'all') {
+        const domainDef = TAXONOMY_DOMAINS.find(d => d.id === selectedDomain);
+        if (domainDef) {
+          const cats: string[] = Array.isArray(icon.categories) && icon.categories.length > 0
+            ? icon.categories
+            : (icon.category ? [icon.category] : ['uncategorized']);
+          const matchesDomain = cats.some(c => domainDef.categories.includes(c as any)) ||
+            (icon.primaryCategory && domainDef.categories.includes(icon.primaryCategory as any));
+          if (!matchesDomain) return false;
+        }
+      }
+
+      // 2. Category filter (multi-category aware)
       if (selectedCategory !== 'all') {
         const cats: string[] = Array.isArray(icon.categories) && icon.categories.length > 0
           ? icon.categories
@@ -296,7 +423,7 @@ export default function App() {
         }
       }
 
-      // 2. Source filter
+      // 3. Source filter
       if (selectedSource !== 'all') {
         const matchesProvider = icon.sourceProvider === selectedSource ||
           (icon.sourceCoverage && icon.sourceCoverage[selectedSource] === 'available') ||
@@ -304,7 +431,16 @@ export default function App() {
         if (!matchesProvider) return false;
       }
 
-      // 3. Status filter
+      // 4. Coverage filter (Authoritative count)
+      if (selectedCoverageFilter !== 'all') {
+        const count = getIdentitySourceCount(icon);
+        if (selectedCoverageFilter === 'single' && count !== 1) return false;
+        if (selectedCoverageFilter === 'three-plus' && count < 3) return false;
+        if (selectedCoverageFilter === 'four-plus' && count < 4) return false;
+        if (selectedCoverageFilter === 'five' && count < 5) return false;
+      }
+
+      // 5. Status filter
       if (selectedStatus === 'verified') {
         if (icon.verificationStatus !== 'verified') return false;
       } else if (selectedStatus === 'multi-source') {
@@ -313,7 +449,7 @@ export default function App() {
         if (icon.verificationStatus !== 'unresolved') return false;
       }
 
-      // 4. Asset Role filter
+      // 6. Asset Role filter
       if (selectedRole !== 'all') {
         const hasMatchingRole =
           icon.role === selectedRole ||
@@ -321,7 +457,7 @@ export default function App() {
         if (!hasMatchingRole) return false;
       }
 
-      // 5. Context filter
+      // 7. Context filter
       if (selectedContext !== 'all') {
         const hasMatchingContext =
           (icon.context && icon.context.includes(selectedContext)) ||
@@ -329,7 +465,7 @@ export default function App() {
         if (!hasMatchingContext) return false;
       }
 
-      // 6. Variant filter
+      // 8. Variant filter
       if (selectedVariant !== 'all') {
         const hasMatchingVariant =
           icon.graphicVariant?.toLowerCase() === selectedVariant.toLowerCase() ||
@@ -338,7 +474,7 @@ export default function App() {
         if (!hasMatchingVariant) return false;
       }
 
-      // 7. Trust State filter
+      // 9. Trust State filter
       if (selectedTrustState !== 'all') {
         if (icon.trustState !== selectedTrustState) return false;
       }
@@ -373,50 +509,87 @@ export default function App() {
         })
       : rawFiltered;
 
-    // 8. Asset-Aware Search
-    if (!searchTerm.trim()) {
-      return baseFiltered;
+    // Search query
+    let resultItems = baseFiltered;
+    if (searchTerm.trim()) {
+      const searchResults = searchCatalogAssetAware(searchTerm, baseFiltered);
+      resultItems = searchResults.map(res => {
+        let iconToReturn = res.icon;
+        if (res.matchedAsset && res.matchedAsset.assetId !== res.icon.canonicalAssetId) {
+          iconToReturn = {
+            ...res.icon,
+            fileName: res.matchedAsset.file,
+            sha256: res.matchedAsset.rawSha256,
+            role: res.matchedAsset.role,
+            graphicVariant: res.matchedAsset.graphicVariant,
+            context: res.matchedAsset.context,
+            sourceProvider: res.matchedAsset.sourceProvider,
+            sourceCollection: res.matchedAsset.sourceCollection,
+            canonicalAssetId: res.matchedAsset.assetId,
+            canonicalAsset: res.matchedAsset,
+            trustState: res.matchedAsset.trustState || res.icon.trustState,
+            sourcePlatform: getSemanticSourceLabel(res.matchedAsset.sourceProvider, res.matchedAsset.sourceCollection)
+          };
+        }
+        return {
+          ...iconToReturn,
+          matchScore: res.matchScore,
+          matchChecklist: res.matchChecklist,
+          matchReason: res.matchReason
+        };
+      });
     }
 
-    const searchResults = searchCatalogAssetAware(searchTerm, baseFiltered);
-    return searchResults.map(res => {
-      let iconToReturn = res.icon;
-      if (res.matchedAsset && res.matchedAsset.assetId !== res.icon.canonicalAssetId) {
-        iconToReturn = {
-          ...res.icon,
-          fileName: res.matchedAsset.file,
-          sha256: res.matchedAsset.rawSha256,
-          role: res.matchedAsset.role,
-          graphicVariant: res.matchedAsset.graphicVariant,
-          context: res.matchedAsset.context,
-          sourceProvider: res.matchedAsset.sourceProvider,
-          sourceCollection: res.matchedAsset.sourceCollection,
-          canonicalAssetId: res.matchedAsset.assetId,
-          canonicalAsset: res.matchedAsset,
-          trustState: res.matchedAsset.trustState || res.icon.trustState,
-          sourcePlatform: getSemanticSourceLabel(res.matchedAsset.sourceProvider, res.matchedAsset.sourceCollection)
-        };
-      }
-      return {
-        ...iconToReturn,
-        matchScore: res.matchScore,
-        matchChecklist: res.matchChecklist,
-        matchReason: res.matchReason
-      };
-    });
+    // Apply Sorting
+    if (selectedSort !== 'relevance') {
+      const cloned = [...resultItems];
+      cloned.sort((a, b) => {
+        if (selectedSort === 'name-asc') {
+          return (a.title || '').localeCompare(b.title || '');
+        }
+        if (selectedSort === 'name-desc') {
+          return (b.title || '').localeCompare(a.title || '');
+        }
+        if (selectedSort === 'most-assets') {
+          return (b.assets?.length || 1) - (a.assets?.length || 1);
+        }
+        if (selectedSort === 'most-providers') {
+          return getIdentitySourceCount(b) - getIdentitySourceCount(a);
+        }
+        if (selectedSort === 'confidence') {
+          const cA = a.categoryConfidence ?? 0.8;
+          const cB = b.categoryConfidence ?? 0.8;
+          return cB - cA;
+        }
+        if (selectedSort === 'recently-updated') {
+          const dA = (a as any).updatedAt || (a as any).createdAt || '';
+          const dB = (b as any).updatedAt || (b as any).createdAt || '';
+          return dB.localeCompare(dA);
+        }
+        return 0;
+      });
+      return cloned;
+    }
+
+    return resultItems;
   }, [
     searchTerm,
     selectedCollection,
+    activeCustomCollectionId,
+    userCollections,
     favoriteIdentityIds,
     recentIdentityIds,
     selectedSlugs,
+    selectedDomain,
     selectedCategory,
     selectedSource,
+    selectedCoverageFilter,
     selectedStatus,
     selectedRole,
     selectedContext,
     selectedVariant,
     selectedTrustState,
+    selectedSort,
     activeAssetOverrides
   ]);
 
@@ -429,7 +602,7 @@ export default function App() {
 
   // Filtered concrete assets for "Browse by Assets" mode
   const filteredAssets = useMemo(() => {
-    return REGISTRY_ASSETS.filter(asset => {
+    const rawFiltered = REGISTRY_ASSETS.filter(asset => {
       // 0. Selected collection filter
       if (selectedCollection === 'favorites') {
         if (!favoriteAssetIds.includes(asset.assetId)) return false;
@@ -437,9 +610,25 @@ export default function App() {
         if (!recentAssetIds.includes(asset.file) && !recentAssetIds.includes(asset.assetId)) return false;
       } else if (selectedCollection === 'selected') {
         if (!selectedAssetIds.includes(asset.assetId)) return false;
+      } else if (selectedCollection === 'custom' && activeCustomCollectionId) {
+        const col = userCollections.find(c => c.id === activeCustomCollectionId);
+        if (!col || (!col.assetIds.includes(asset.assetId) && !col.identityIds.includes(asset.identityId || ''))) return false;
       }
 
-      // 1. Category filter (multi-category aware)
+      // 1. Domain filter
+      if (selectedDomain !== 'all') {
+        const domainDef = TAXONOMY_DOMAINS.find(d => d.id === selectedDomain);
+        if (domainDef) {
+          const cats: string[] = Array.isArray(asset.categories) && asset.categories.length > 0
+            ? asset.categories
+            : (asset.category ? [asset.category] : ['uncategorized']);
+          const matchesDomain = cats.some(c => domainDef.categories.includes(c as any)) ||
+            (asset.primaryCategory && domainDef.categories.includes(asset.primaryCategory as any));
+          if (!matchesDomain) return false;
+        }
+      }
+
+      // 2. Category filter (multi-category aware)
       if (selectedCategory !== 'all') {
         const cats: string[] = Array.isArray(asset.categories) && asset.categories.length > 0
           ? asset.categories
@@ -449,27 +638,39 @@ export default function App() {
         }
       }
 
-      // 2. Source filter
+      // 3. Source filter
       if (selectedSource !== 'all') {
         if (asset.sourceProvider !== selectedSource) return false;
       }
 
-      // 3. Status filter
+      // 4. Coverage filter
+      if (selectedCoverageFilter !== 'all') {
+        const parent = ICON_MAP[asset.identitySlug || asset.identityId];
+        if (parent) {
+          const count = getIdentitySourceCount(parent);
+          if (selectedCoverageFilter === 'single' && count !== 1) return false;
+          if (selectedCoverageFilter === 'three-plus' && count < 3) return false;
+          if (selectedCoverageFilter === 'four-plus' && count < 4) return false;
+          if (selectedCoverageFilter === 'five' && count < 5) return false;
+        }
+      }
+
+      // 5. Status filter
       if (selectedStatus === 'verified' && asset.verificationStatus !== 'verified') return false;
 
-      // 4. Role filter
+      // 6. Role filter
       if (selectedRole !== 'all' && asset.role !== selectedRole) return false;
 
-      // 5. Context filter
+      // 7. Context filter
       if (selectedContext !== 'all' && (!asset.context || !asset.context.includes(selectedContext))) return false;
 
-      // 6. Variant filter
+      // 8. Variant filter
       if (selectedVariant !== 'all' && asset.graphicVariant?.toLowerCase() !== selectedVariant.toLowerCase()) return false;
 
-      // 7. Trust state filter
+      // 9. Trust state filter
       if (selectedTrustState !== 'all' && asset.trustState !== selectedTrustState) return false;
 
-      // 8. Search query
+      // 10. Search query
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase().trim();
         const matchesTitle = asset.identityTitle?.toLowerCase().includes(q);
@@ -481,20 +682,44 @@ export default function App() {
 
       return true;
     });
+
+    if (selectedSort !== 'relevance') {
+      const cloned = [...rawFiltered];
+      cloned.sort((a, b) => {
+        if (selectedSort === 'name-asc') {
+          return (a.identityTitle || a.file).localeCompare(b.identityTitle || b.file);
+        }
+        if (selectedSort === 'name-desc') {
+          return (b.identityTitle || b.file).localeCompare(a.identityTitle || a.file);
+        }
+        if (selectedSort === 'recently-updated') {
+          const dA = (a as any).updatedAt || '';
+          const dB = (b as any).updatedAt || '';
+          return dB.localeCompare(dA);
+        }
+        return 0;
+      });
+      return cloned;
+    }
+
+    return rawFiltered;
   }, [
     selectedCollection,
-    favoriteIdentityIds,
+    activeCustomCollectionId,
+    userCollections,
     favoriteAssetIds,
-    recentIdentityIds,
     recentAssetIds,
     selectedAssetIds,
+    selectedDomain,
     selectedCategory,
     selectedSource,
+    selectedCoverageFilter,
     selectedStatus,
     selectedRole,
     selectedContext,
     selectedVariant,
     selectedTrustState,
+    selectedSort,
     searchTerm
   ]);
 
@@ -564,6 +789,7 @@ export default function App() {
 
   const handleResetFilters = () => {
     setSearchTerm('');
+    setSelectedDomain('all');
     setSelectedCategory('all');
     setSelectedSource('all');
     setSelectedStatus('all');
@@ -571,6 +797,8 @@ export default function App() {
     setSelectedContext('all');
     setSelectedVariant('all');
     setSelectedTrustState('all');
+    setSelectedSort('relevance');
+    setSelectedCoverageFilter('all');
     setCurrentPage(1);
     showToast(t.toasts.filtersReset);
   };
@@ -616,7 +844,19 @@ export default function App() {
     showToast(format(t.toasts.exportedEngineeringBundle, { count: validItems.length }));
   };
 
-  // Helper category label mapping
+  const handleDownloadRegistryJson = () => {
+    const blob = new Blob([JSON.stringify(REGISTRY_IDENTITIES, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `svg-registry-${REGISTRY_IDENTITIES.length}-identities.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(t.header.downloadRegistryJson);
+  };
+
   const getCategoryLabel = (catId: string) => {
     return t.filters.categories[catId] || catId;
   };
@@ -642,33 +882,39 @@ export default function App() {
         selectedCount={browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length}
         onDownloadMainstreamZip={handleDownloadMainstreamZip}
         onDownloadMainstreamBundle={handleDownloadMainstreamBundle}
+        onDownloadSelectedZip={handleDownloadSelectedZip}
+        onDownloadRegistryJson={handleDownloadRegistryJson}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
-      {/* System Verification & Live Registry Statistics Banner */}
-      <div className="bg-slate-900 text-white border-b border-slate-800 py-2 px-4 sm:px-6 lg:px-8 text-xs">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>{t.header.multiSourceBadge}</span>
+      {/* Compact Dark Status Bar (Tier 1 Requirement) */}
+      <div className="bg-slate-950 text-slate-400 border-b border-slate-800 py-1.5 px-4 sm:px-6 lg:px-8 text-2xs">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Registry v{BUILD_METADATA.registryVersion || '2.0.0'}</span>
             </span>
-            <span className="hidden sm:inline text-slate-600">•</span>
-            <span className="text-slate-300 font-medium">
-              v{BUILD_METADATA.registryVersion || '2.0.0'}
+            <span className="text-slate-700">·</span>
+            <span className="text-slate-300">
+              {BUILD_METADATA.registryGeneratedAt ? `Updated ${BUILD_METADATA.registryGeneratedAt.substring(0, 10)}` : 'Production Release'}
             </span>
-            <span className="hidden sm:inline text-slate-600">•</span>
-            <span className="text-slate-300 font-medium">
-              {ENABLED_SOURCES.length} {t.sourcesView.title}
+            <span className="text-slate-700">·</span>
+            <span className="text-indigo-300 font-medium">
+              {REGISTRY_STATS.verifiedIdentities.toLocaleString()} Verified Identities
+            </span>
+            <span className="text-slate-700">·</span>
+            <span className="text-slate-400">
+              Canonical Arbitration Engine
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-2xs text-slate-400">
-            <span className="text-emerald-300 flex items-center gap-1 font-semibold">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> {t.header.zeroFakeSvgs}
+          <div className="flex items-center gap-2.5 text-slate-400">
+            <span className="text-emerald-300 flex items-center gap-1 font-medium">
+              <Check className="w-3 h-3 text-emerald-400" /> {t.header.zeroFakeSvgs}
             </span>
-            <span>•</span>
-            <span className="text-indigo-300 font-mono">
+            <span className="text-slate-700">·</span>
+            <span className="text-slate-400 font-mono">
               {REGISTRY_STATS.conflictsCount} {t.header.collisionsResolved}
             </span>
           </div>
@@ -679,327 +925,481 @@ export default function App() {
       <main className="flex-1 pb-24">
         {/* Tab 1: Icons & Brands */}
         {activeTab === 'icons' && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
             
-            {/* Compact Segmented Browse Level Control (Requirement 16) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>{t.header.browseModeLabel}:</span>
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  {browseLevel === 'identities'
-                    ? `${t.header.browseIdentitiesTitle} (${REGISTRY_IDENTITIES.length.toLocaleString()})`
-                    : `${t.header.browseAssetsTitle} (${REGISTRY_ASSETS.length.toLocaleString()})`}
-                </span>
+            {/* Search-First Hero Section (IA Tier 1) */}
+            <div className="bg-gradient-to-b from-white via-slate-50/70 to-slate-100/50 rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-4">
+              <div className="max-w-3xl space-y-1.5">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950">
+                  {t.header.registryTitle}
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {t.header.registrySubtitle}
+                </p>
+                <div className="pt-1 flex items-center gap-2 text-2xs font-mono text-slate-500 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 shadow-2xs font-semibold text-slate-700">
+                    <Layers className="w-3 h-3 text-indigo-600" />
+                    <span>{REGISTRY_IDENTITIES.length.toLocaleString()} {t.header.tabIdentities.toLowerCase()}</span>
+                  </span>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 shadow-2xs font-semibold text-slate-700">
+                    <Sparkles className="w-3 h-3 text-pink-600" />
+                    <span>{REGISTRY_ASSETS.length.toLocaleString()} {t.header.browseAssetsTitle.toLowerCase()}</span>
+                  </span>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 shadow-2xs font-semibold text-slate-700">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>{ENABLED_SOURCES.length} {t.sourcesView.title.toLowerCase()}</span>
+                  </span>
+                </div>
               </div>
 
-              {/* Compact Segmented Control */}
-              <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0">
-                <button
-                  id="btn-browse-identities"
-                  onClick={() => { setBrowseLevel('identities'); setCurrentPage(1); }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    browseLevel === 'identities'
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>{t.header.tabIdentities} <span className="font-mono text-2xs text-slate-500">({REGISTRY_IDENTITIES.length.toLocaleString()})</span></span>
-                </button>
-                <button
-                  id="btn-browse-assets"
-                  onClick={() => { setBrowseLevel('assets'); setCurrentPage(1); }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    browseLevel === 'assets'
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-                  <span>{t.header.assetsWord} <span className="font-mono text-2xs text-slate-500">({REGISTRY_ASSETS.length.toLocaleString()})</span></span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter & Control Bar */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3.5">
-              
-              {/* Row 1: Search & Source Filter & Advanced Filter Toggle */}
-              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-                
-                {/* Search Bar */}
-                <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    id="search-icons-input"
-                    type="text"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    placeholder={t.filters.searchPlaceholder}
-                    className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 placeholder-slate-400"
-                  />
-                  {searchTerm && (
+              {/* Main Prominent Search Bar */}
+              <div className="relative max-w-2xl pt-1">
+                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="search-icons-input"
+                  type="text"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder={t.filters.searchPlaceholder}
+                  className="w-full pl-11 pr-24 py-3 text-sm bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-xs transition-all text-slate-800 placeholder-slate-400"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                  {searchTerm ? (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+                      title={t.filters.clearSearchTerm}
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-2xs font-mono font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded-lg">
+                      <Command className="w-3 h-3" />K
+                    </kbd>
+                  )}
+                </div>
+              </div>
+
+              {/* Clean Intent Chips (No raw debug score clutter) */}
+              {parsedIntent && (parsedIntent.roleConstraint || parsedIntent.contextConstraint || parsedIntent.variantPreference || (parsedIntent.sourcePreference && parsedIntent.sourcePreference !== 'all')) && (
+                <div className="flex items-center gap-2 text-xs text-indigo-950 font-medium flex-wrap pt-1">
+                  <span className="text-2xs font-semibold text-indigo-700 flex items-center gap-1 uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3" />
+                    {t.filters.intentAnalysis}:
+                  </span>
+                  {parsedIntent.targetIdentity && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {parsedIntent.targetIdentity}
+                    </span>
+                  )}
+                  {parsedIntent.roleConstraint && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {t.filters.roleConstraint}: {parsedIntent.roleConstraint}
+                    </span>
+                  )}
+                  {parsedIntent.contextConstraint && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {t.filters.contextConstraint}: {parsedIntent.contextConstraint}
+                    </span>
+                  )}
+                  {parsedIntent.variantPreference && (
+                    <span className="bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-lg text-indigo-900 text-xs">
+                      {t.filters.variantPreference}: {parsedIntent.variantPreference}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Browse Level Segmented Control & Domain Navigation */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3.5">
+              
+              {/* Row 1: Browse Mode + Workspace Collections Tabs */}
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                
+                {/* Segmented Browse Mode Switcher */}
+                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0">
+                  <button
+                    id="btn-browse-identities"
+                    onClick={() => { setBrowseLevel('identities'); setCurrentPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      browseLevel === 'identities'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{t.header.tabIdentities}</span>
+                    <span className="font-mono text-2xs text-slate-500">({REGISTRY_IDENTITIES.length.toLocaleString()})</span>
+                  </button>
+                  <button
+                    id="btn-browse-assets"
+                    onClick={() => { setBrowseLevel('assets'); setCurrentPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      browseLevel === 'assets'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-pink-600" />
+                    <span>{t.header.assetsWord}</span>
+                    <span className="font-mono text-2xs text-slate-500">({REGISTRY_ASSETS.length.toLocaleString()})</span>
+                  </button>
+                </div>
+
+                {/* Workspace Tabs: All, Favorites, Recents, Custom Collections */}
+                <div className="flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar flex-wrap">
+                  <button
+                    id="tab-collection-all"
+                    onClick={() => { setSelectedCollection('all'); setActiveCustomCollectionId(null); }}
+                    className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      selectedCollection === 'all'
+                        ? 'bg-slate-900 text-white shadow-xs font-semibold'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>{t.filters.collections.all}</span>
+                  </button>
+
+                  <button
+                    id="tab-collection-favorites"
+                    onClick={() => { setSelectedCollection('favorites'); setActiveCustomCollectionId(null); }}
+                    className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      selectedCollection === 'favorites'
+                        ? 'bg-rose-600 text-white shadow-xs font-semibold'
+                        : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${selectedCollection === 'favorites' ? 'fill-current' : ''}`} />
+                    <span>{t.filters.collections.favorites}</span>
+                    <span className="font-mono text-2xs">({browseLevel === 'identities' ? favoriteIdentityIds.length : favoriteAssetIds.length})</span>
+                  </button>
+
+                  <button
+                    id="tab-collection-recents"
+                    onClick={() => { setSelectedCollection('recents'); setActiveCustomCollectionId(null); }}
+                    className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      selectedCollection === 'recents'
+                        ? 'bg-indigo-600 text-white shadow-xs font-semibold'
+                        : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{t.filters.collections.recents}</span>
+                    <span className="font-mono text-2xs">({browseLevel === 'identities' ? recentIdentityIds.length : recentAssetIds.length})</span>
+                  </button>
+
+                  {userCollections.map(col => (
+                    <div key={col.id} className="relative inline-flex items-center">
+                      <button
+                        onClick={() => { setSelectedCollection('custom'); setActiveCustomCollectionId(col.id); }}
+                        className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                          selectedCollection === 'custom' && activeCustomCollectionId === col.id
+                            ? 'bg-purple-700 text-white shadow-xs font-semibold'
+                            : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
+                        }`}
+                      >
+                        <FolderPlus className="w-3.5 h-3.5" />
+                        <span>{col.name}</span>
+                        <span className="font-mono text-2xs">({browseLevel === 'identities' ? col.identityIds.length : col.assetIds.length})</span>
+                      </button>
+                      {activeCustomCollectionId === col.id && (
+                        <button
+                          onClick={() => handleDeleteCollection(col.id)}
+                          className="ml-1 p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
+                          title={t.workspace.deleteCollection}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={() => setShowNewCollectionModal(true)}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+                    title={t.workspace.createCollection}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t.workspace.createCollection}</span>
+                  </button>
+
+                  {(browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length) > 0 && (
+                    <button
+                      id="tab-collection-selected"
+                      onClick={() => { setSelectedCollection('selected'); setActiveCustomCollectionId(null); }}
+                      className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        selectedCollection === 'selected'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      <span>{t.filters.collections.selected} ({browseLevel === 'identities' ? selectedSlugs.length : selectedAssetIds.length})</span>
                     </button>
                   )}
                 </div>
+              </div>
 
-                {/* Center: Source Filter */}
+              {/* Row 2: Hierarchical Domain Tabs (Technology, Consumer, Business) */}
+              <div className="space-y-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar">
-                  <span className="text-slate-400 text-2xs flex items-center gap-1 shrink-0 font-medium">
-                    <Filter className="w-3 h-3" />
-                    <span>{t.filters.sourcePlatform}:</span>
+                  <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider mr-1">
+                    {t.filters.categories.all}:
                   </span>
-                  {[
-                    { id: 'all', label: t.filters.allSources },
-                    ...ENABLED_SOURCES.map(src => ({
-                      id: src.id,
-                      label: getLocalizedSourceLabel(src.id, t) || src.name
-                    }))
-                  ].map(src => (
+                  {(['all', 'technology', 'consumer', 'business'] as const).map(domainKey => (
                     <button
-                      key={src.id}
-                      onClick={() => setSelectedSource(src.id as any)}
-                      className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-colors cursor-pointer ${
-                        selectedSource === src.id
-                          ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                      key={domainKey}
+                      onClick={() => {
+                        setSelectedDomain(domainKey);
+                        setSelectedCategory('all');
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        selectedDomain === domainKey
+                          ? 'bg-slate-900 text-white shadow-xs'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      {src.label}
+                      {t.filters.domainOptions[domainKey] || domainKey}
                     </button>
                   ))}
                 </div>
 
-                {/* Right: Advanced Filters Toggle Button */}
-                <button
-                  id="btn-toggle-advanced-filters"
-                  onClick={() => setShowAdvancedFilters(prev => !prev)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
-                    showAdvancedFilters || activeFiltersCount > 0
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                  }`}
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>{t.filters.advancedFilters}</span>
-                  {activeFiltersCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-2xs flex items-center justify-center font-bold">
-                      {activeFiltersCount}
-                    </span>
-                  )}
-                </button>
-
-              </div>
-
-              {/* Explainable Search Intent Bar (Only when structured constraints exist) */}
-              {parsedIntent && (parsedIntent.roleConstraint || parsedIntent.contextConstraint || parsedIntent.variantPreference || (parsedIntent.sourcePreference && parsedIntent.sourcePreference !== 'all')) && (
-                <div className="flex items-center justify-between gap-2 p-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl text-xs text-indigo-950 font-mono flex-wrap animate-in fade-in duration-150">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-indigo-700 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      {t.filters.intentAnalysis}:
-                    </span>
-                    <span>{t.filters.targetBrand}: <strong>{parsedIntent.targetIdentity || 'General Search'}</strong></span>
-                    {parsedIntent.roleConstraint && (
-                      <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
-                        {t.filters.roleConstraint}: {parsedIntent.roleConstraint}
-                      </span>
-                    )}
-                    {parsedIntent.contextConstraint && (
-                      <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
-                        {t.filters.contextConstraint}: {parsedIntent.contextConstraint}
-                      </span>
-                    )}
-                    {parsedIntent.variantPreference && (
-                      <span className="bg-indigo-100/90 px-1.5 py-0.5 rounded text-indigo-800">
-                        {t.filters.variantPreference}: {parsedIntent.variantPreference}
-                      </span>
-                    )}
-                    <span className="text-2xs text-slate-500 font-sans">
-                      ({parsedIntent.mode === 'strict' ? t.filters.strictMatch : t.filters.preferredMatch})
-                    </span>
-                  </div>
-                  <span className="text-2xs font-sans text-indigo-700 font-semibold">
-                    {filteredIcons.length} {t.filters.matchedCount}
-                  </span>
-                </div>
-              )}
-
-              {/* Local Collections Tabs: All, Favorites, Recents, Selected */}
-              <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1 no-scrollbar pt-1 border-t border-slate-100">
-                <button
-                  id="tab-collection-all"
-                  onClick={() => setSelectedCollection('all')}
-                  className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                    selectedCollection === 'all'
-                      ? 'bg-slate-900 text-white shadow-xs font-semibold'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>{t.filters.collections.all} ({browseLevel === 'identities' ? REGISTRY_IDENTITIES.length : REGISTRY_ASSETS.length})</span>
-                </button>
-
-                <button
-                  id="tab-collection-favorites"
-                  onClick={() => setSelectedCollection('favorites')}
-                  className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                    selectedCollection === 'favorites'
-                      ? 'bg-rose-600 text-white shadow-xs font-semibold'
-                      : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                  }`}
-                >
-                  <Heart className={`w-3.5 h-3.5 ${selectedCollection === 'favorites' ? 'fill-current' : ''}`} />
-                  <span>{t.filters.collections.favorites} ({browseLevel === 'identities' ? favoriteIdentityIds.length : (favoriteAssetIds.length || favoriteIdentityIds.length)})</span>
-                </button>
-
-                <button
-                  id="tab-collection-recents"
-                  onClick={() => setSelectedCollection('recents')}
-                  className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                    selectedCollection === 'recents'
-                      ? 'bg-indigo-600 text-white shadow-xs font-semibold'
-                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{t.filters.collections.recents} ({browseLevel === 'identities' ? recentIdentityIds.length : (recentAssetIds.length || recentIdentityIds.length)})</span>
-                </button>
-
-                {selectedSlugs.length > 0 && (
+                {/* Subcategory Pills corresponding to selected domain */}
+                <div className="flex items-center gap-1.5 flex-wrap text-xs pt-1">
                   <button
-                    id="tab-collection-selected"
-                    onClick={() => setSelectedCollection('selected')}
-                    className={`px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                      selectedCollection === 'selected'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                      selectedCategory === 'all'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    <CheckSquare className="w-3.5 h-3.5" />
-                    <span>{t.filters.collections.selected} ({selectedSlugs.length})</span>
+                    <span>{selectedDomain === 'all' ? t.filters.categories.all : `${t.filters.domainOptions[selectedDomain] || selectedDomain} (All)`}</span>
                   </button>
-                )}
-              </div>
 
-              {/* Row 2: Category Chips (Primary 9 + More Dropdown) */}
-              <div className="flex items-center gap-1.5 flex-wrap pb-1 text-xs">
-                {CATEGORY_DEFINITIONS.filter(cat => PRIMARY_CATEGORY_IDS.includes(cat.id as any)).map(cat => {
-                  const stat = categoryStatsData.categoryStats[cat.id];
-                  const count =
-                    cat.id === 'all'
-                      ? REGISTRY_IDENTITIES.length
-                      : (stat ? stat.identitiesCount : 0);
+                  {currentDomainCategories.map(cat => {
+                    const stat = categoryStatsData.categoryStats[cat.id];
+                    const count = stat ? stat.identitiesCount : 0;
+                    if (count === 0 && cat.id !== 'all') return null;
 
-                  if (count === 0 && cat.id !== 'all') return null;
-
-                  return (
-                    <button
-                      key={cat.id}
-                      id={`filter-cat-${cat.id}`}
-                      onClick={() => setSelectedCategory(cat.id as any)}
-                      className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                        selectedCategory === cat.id
-                          ? 'bg-slate-900 text-white shadow-xs font-semibold'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>{getCategoryLabel(cat.id)}</span>
-                      <span
-                        className={`text-2xs px-1.5 py-0.2 rounded-full font-mono ${
-                          selectedCategory === cat.id
-                            ? 'bg-slate-800 text-slate-200'
-                            : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        {count.toLocaleString()}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                {/* More Categories Dropdown (Requirement 17) */}
-                {(() => {
-                  const secondaryCats = CATEGORY_DEFINITIONS.filter(cat => !PRIMARY_CATEGORY_IDS.includes(cat.id as any));
-                  const isSecondaryActive = secondaryCats.some(cat => cat.id === selectedCategory);
-                  const activeSecondaryCat = secondaryCats.find(cat => cat.id === selectedCategory);
-                  const activeStat = activeSecondaryCat ? categoryStatsData.categoryStats[activeSecondaryCat.id] : undefined;
-                  const activeCount = activeStat ? activeStat.identitiesCount : 0;
-
-                  return (
-                    <div className="relative inline-block" ref={moreCategoriesRef}>
+                    return (
                       <button
-                        id="btn-more-categories"
-                        type="button"
-                        onClick={() => setIsMoreCategoriesOpen(prev => !prev)}
-                        className={`px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isSecondaryActive
-                            ? 'bg-slate-900 text-white shadow-xs font-semibold'
+                        key={cat.id}
+                        id={`filter-cat-${cat.id}`}
+                        onClick={() => setSelectedCategory(cat.id as any)}
+                        className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                          selectedCategory === cat.id
+                            ? 'bg-slate-800 text-white shadow-2xs font-semibold'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
                         }`}
                       >
-                        <span>
-                          {isSecondaryActive && activeSecondaryCat
-                            ? getCategoryLabel(activeSecondaryCat.id)
-                            : t.filters.moreCategories}
+                        <span>{getCategoryLabel(cat.id)}</span>
+                        <span className={`text-2xs px-1.5 py-0.2 rounded-full font-mono ${
+                          selectedCategory === cat.id ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {count.toLocaleString()}
                         </span>
-                        {isSecondaryActive && (
-                          <span className="text-2xs px-1.5 py-0.2 rounded-full font-mono bg-slate-800 text-slate-200">
-                            {activeCount.toLocaleString()}
-                          </span>
-                        )}
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMoreCategoriesOpen ? 'rotate-180' : ''}`} />
                       </button>
+                    );
+                  })}
 
-                      {isMoreCategoriesOpen && (
-                        <div className="absolute left-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-72 overflow-y-auto">
-                          <div className="space-y-1">
-                            {secondaryCats.map(cat => {
-                              const stat = categoryStatsData.categoryStats[cat.id];
-                              const count = stat ? stat.identitiesCount : 0;
-                              if (count === 0) return null;
-                              const isSelected = selectedCategory === cat.id;
+                  {/* More Categories Dropdown when on 'all' domain */}
+                  {selectedDomain === 'all' && (() => {
+                    const secondaryCats = CATEGORY_DEFINITIONS.filter(cat => !PRIMARY_CATEGORY_IDS.includes(cat.id as any));
+                    const isSecondaryActive = secondaryCats.some(cat => cat.id === selectedCategory);
+                    const activeSecondaryCat = secondaryCats.find(cat => cat.id === selectedCategory);
 
-                              return (
-                                <button
-                                  key={cat.id}
-                                  id={`filter-cat-${cat.id}`}
-                                  onClick={() => {
-                                    setSelectedCategory(cat.id as any);
-                                    setIsMoreCategoriesOpen(false);
-                                  }}
-                                  className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-indigo-50 text-indigo-900 font-semibold'
-                                      : 'text-slate-700 hover:bg-slate-100'
-                                  }`}
-                                >
-                                  <span>{getCategoryLabel(cat.id)}</span>
-                                  <span className={`text-2xs px-1.5 py-0.5 rounded-full font-mono ${
-                                    isSelected ? 'bg-indigo-200/80 text-indigo-800' : 'bg-slate-100 text-slate-500'
-                                  }`}>
-                                    {count.toLocaleString()}
-                                  </span>
-                                </button>
-                              );
-                            })}
+                    return (
+                      <div className="relative inline-block" ref={moreCategoriesRef}>
+                        <button
+                          id="btn-more-categories"
+                          type="button"
+                          onClick={() => setIsMoreCategoriesOpen(prev => !prev)}
+                          className={`px-3 py-1 rounded-lg font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isSecondaryActive
+                              ? 'bg-slate-900 text-white shadow-xs font-semibold'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                          }`}
+                        >
+                          <span>
+                            {isSecondaryActive && activeSecondaryCat
+                              ? getCategoryLabel(activeSecondaryCat.id)
+                              : t.filters.moreCategories}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMoreCategoriesOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isMoreCategoriesOpen && (
+                          <div className="absolute left-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-72 overflow-y-auto">
+                            <div className="space-y-1">
+                              {secondaryCats.map(cat => {
+                                const stat = categoryStatsData.categoryStats[cat.id];
+                                const count = stat ? stat.identitiesCount : 0;
+                                if (count === 0) return null;
+                                const isSelected = selectedCategory === cat.id;
+
+                                return (
+                                  <button
+                                    key={cat.id}
+                                    id={`filter-cat-${cat.id}`}
+                                    onClick={() => {
+                                      setSelectedCategory(cat.id as any);
+                                      setIsMoreCategoriesOpen(false);
+                                    }}
+                                    className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-indigo-50 text-indigo-900 font-semibold'
+                                        : 'text-slate-700 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    <span>{getCategoryLabel(cat.id)}</span>
+                                    <span className={`text-2xs px-1.5 py-0.5 rounded-full font-mono ${
+                                      isSelected ? 'bg-indigo-200/80 text-indigo-800' : 'bg-slate-100 text-slate-500'
+                                    }`}>
+                                      {count.toLocaleString()}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
-              {/* Row 2.5: Active Filter Chips (Phase 28) */}
+              {/* Row 3: Sort, Coverage Filter, Source Platform, Advanced Filters, View Mode */}
+              <div className="pt-3 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                
+                {/* Left controls: Sorting & Coverage Dropdowns */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Sort Dropdown */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                    <label htmlFor="select-sort" className="text-2xs text-slate-500 font-medium">
+                      {t.filters.sortLabel}:
+                    </label>
+                    <select
+                      id="select-sort"
+                      value={selectedSort}
+                      onChange={e => setSelectedSort(e.target.value as SortOption)}
+                      className="text-xs bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
+                    >
+                      <option value="relevance">{t.filters.sortOptions.relevance}</option>
+                      <option value="name-asc">{t.filters.sortOptions['name-asc']}</option>
+                      <option value="name-desc">{t.filters.sortOptions['name-desc']}</option>
+                      <option value="most-assets">{t.filters.sortOptions['most-assets']}</option>
+                      <option value="most-providers">{t.filters.sortOptions['most-providers']}</option>
+                      <option value="confidence">{t.filters.sortOptions.confidence}</option>
+                      <option value="recently-updated">{t.filters.sortOptions['recently-updated']}</option>
+                    </select>
+                  </div>
+
+                  {/* Coverage Filter Dropdown */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <label htmlFor="select-coverage" className="text-2xs text-slate-500 font-medium">
+                      {t.filters.coverageFilterLabel}:
+                    </label>
+                    <select
+                      id="select-coverage"
+                      value={selectedCoverageFilter}
+                      onChange={e => setSelectedCoverageFilter(e.target.value as CoverageFilterOption)}
+                      className="text-xs bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">{t.filters.coverageFilterOptions.all}</option>
+                      <option value="single">{t.filters.coverageFilterOptions.single}</option>
+                      <option value="three-plus">{t.filters.coverageFilterOptions['three-plus']}</option>
+                      <option value="four-plus">{t.filters.coverageFilterOptions['four-plus']}</option>
+                      <option value="five">{t.filters.coverageFilterOptions.five}</option>
+                    </select>
+                  </div>
+
+                  {/* Source Platform Filter */}
+                  <div className="flex items-center gap-1 overflow-x-auto text-xs no-scrollbar">
+                    {[
+                      { id: 'all', label: t.filters.allSources },
+                      ...ENABLED_SOURCES.map(src => ({
+                        id: src.id,
+                        label: getLocalizedSourceLabel(src.id, t) || src.name
+                      }))
+                    ].map(src => (
+                      <button
+                        key={src.id}
+                        onClick={() => setSelectedSource(src.id as any)}
+                        className={`px-2 py-1 rounded-lg text-2xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                          selectedSource === src.id
+                            ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {src.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right controls: Advanced Filter Toggle & View Mode Switcher */}
+                <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+                  <button
+                    id="btn-toggle-advanced-filters"
+                    onClick={() => setShowAdvancedFilters(prev => !prev)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      showAdvancedFilters || activeFiltersCount > 0
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{t.filters.advancedFilters}</span>
+                    {activeFiltersCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-2xs flex items-center justify-center font-bold">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* View Mode Switcher (Grid / Compact / Table) */}
+                  <div className="inline-flex items-center p-0.5 bg-slate-100 border border-slate-200 rounded-xl">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        viewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                      title={t.filters.viewModeOptions.grid}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        viewMode === 'compact' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                      title={t.filters.viewModeOptions.compact}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                      title={t.filters.viewModeOptions.table}
+                    >
+                      <TableIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Active Filter Chips */}
               {hasActiveFilters && (
                 <div className="flex items-center gap-1.5 flex-wrap pt-2.5 pb-1 border-t border-slate-100 animate-in fade-in duration-150">
                   <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1">
@@ -1007,13 +1407,36 @@ export default function App() {
                     <span>{t.filters.activeFilters}:</span>
                   </span>
 
+                  {selectedDomain !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                      <span>Domain: {t.filters.domainOptions[selectedDomain]}</span>
+                      <button
+                        onClick={() => setSelectedDomain('all')}
+                        className="hover:text-slate-950 cursor-pointer ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
                   {selectedCategory !== 'all' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
                       <span>{format(t.filters.chipCategory, { value: getLocalizedCategoryLabel(selectedCategory, t) })}</span>
                       <button
                         onClick={() => setSelectedCategory('all')}
                         className="hover:text-indigo-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getLocalizedCategoryLabel(selectedCategory, t) })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+
+                  {selectedCoverageFilter !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span>Coverage: {t.filters.coverageFilterOptions[selectedCoverageFilter]}</span>
+                      <button
+                        onClick={() => setSelectedCoverageFilter('all')}
+                        className="hover:text-emerald-950 cursor-pointer ml-0.5"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1026,7 +1449,6 @@ export default function App() {
                       <button
                         onClick={() => setSelectedSource('all')}
                         className="hover:text-sky-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getSemanticSourceLabel(selectedSource) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1039,7 +1461,6 @@ export default function App() {
                       <button
                         onClick={() => setSelectedStatus('all')}
                         className="hover:text-emerald-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getLocalizedStatusLabel(selectedStatus, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1052,7 +1473,6 @@ export default function App() {
                       <button
                         onClick={() => setSelectedRole('all')}
                         className="hover:text-purple-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getLocalizedRoleLabel(selectedRole, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1065,7 +1485,6 @@ export default function App() {
                       <button
                         onClick={() => setSelectedContext('all')}
                         className="hover:text-blue-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getLocalizedContextLabel(selectedContext, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1078,7 +1497,6 @@ export default function App() {
                       <button
                         onClick={() => setSelectedVariant('all')}
                         className="hover:text-pink-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getLocalizedVariantLabel(selectedVariant, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1091,7 +1509,6 @@ export default function App() {
                       <button
                         onClick={() => setSelectedTrustState('all')}
                         className="hover:text-teal-950 cursor-pointer ml-0.5"
-                        aria-label={format(t.filters.removeFilter, { name: getLocalizedTrustLabel(selectedTrustState, t) })}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1104,7 +1521,6 @@ export default function App() {
                       <button
                         onClick={() => setSearchTerm('')}
                         className="hover:text-amber-950 cursor-pointer ml-0.5"
-                        aria-label={t.filters.clearSearchTerm}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1121,7 +1537,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* Row 3: Advanced Filtering Drawer */}
+              {/* Advanced Filtering Drawer */}
               {showAdvancedFilters && (
                 <div className="pt-3 pb-1 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-150">
                   
@@ -1213,7 +1629,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* Row 4: Selection Stats & Quick Action */}
+              {/* Selection Bar & Select All */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 flex-wrap gap-2">
                 <div className="flex items-center gap-3">
                   <span>
@@ -1267,41 +1683,447 @@ export default function App() {
 
             </div>
 
-            {/* Icons Grid with Full Catalog Pagination */}
-            {(browseLevel === 'identities' ? paginatedIcons.length : paginatedAssets.length) > 0 ? (
+            {/* Results Rendering (Grid, Compact, Table, or Rich Empty State) */}
+            {(browseLevel === 'identities' ? filteredIcons.length : filteredAssets.length) > 0 ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {browseLevel === 'identities'
-                    ? paginatedIcons.map(icon => (
-                        <IconCard
-                          key={icon.slug}
-                          icon={icon}
-                          isSelected={selectedSlugs.includes(icon.slug)}
-                          onToggleSelect={handleToggleSelect}
-                          onInspect={setInspectedIcon}
-                          isFavorite={favoriteIdentityIds.includes(icon.id)}
-                          onToggleFavorite={toggleFavoriteIdentity}
-                          onDownloadReceipt={handleDownloadReceipt}
-                        />
-                      ))
-                    : paginatedAssets.map(asset => {
-                        const parent = ICON_MAP[asset.identitySlug || asset.identityId];
-                        return (
-                          <ConcreteAssetCard
-                            key={asset.assetId}
-                            asset={asset}
-                            parentIcon={parent}
-                            isSelected={selectedAssetIds.includes(asset.assetId)}
-                            onToggleSelect={handleToggleSelectAsset}
-                            onInspect={(icon) => setInspectedIcon(icon)}
-                            isFavorite={favoriteAssetIds.includes(asset.assetId)}
-                            onToggleFavorite={toggleFavoriteAsset}
+                
+                {/* 1. Grid View Mode */}
+                {viewMode === 'grid' && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                    {browseLevel === 'identities'
+                      ? paginatedIcons.map(icon => (
+                          <IconCard
+                            key={icon.slug}
+                            icon={icon}
+                            isSelected={selectedSlugs.includes(icon.slug)}
+                            onToggleSelect={handleToggleSelect}
+                            onInspect={setInspectedIcon}
+                            isFavorite={favoriteIdentityIds.includes(icon.id)}
+                            onToggleFavorite={toggleFavoriteIdentity}
                             onDownloadReceipt={handleDownloadReceipt}
                           />
-                        );
-                      })
-                  }
-                </div>
+                        ))
+                      : paginatedAssets.map(asset => {
+                          const parent = ICON_MAP[asset.identitySlug || asset.identityId];
+                          return (
+                            <ConcreteAssetCard
+                              key={asset.assetId}
+                              asset={asset}
+                              parentIcon={parent}
+                              isSelected={selectedAssetIds.includes(asset.assetId)}
+                              onToggleSelect={handleToggleSelectAsset}
+                              onInspect={(icon) => setInspectedIcon(icon)}
+                              isFavorite={favoriteAssetIds.includes(asset.assetId)}
+                              onToggleFavorite={toggleFavoriteAsset}
+                              onDownloadReceipt={handleDownloadReceipt}
+                            />
+                          );
+                        })
+                    }
+                  </div>
+                )}
+
+                {/* 2. Compact View Mode */}
+                {viewMode === 'compact' && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2.5">
+                    {browseLevel === 'identities'
+                      ? paginatedIcons.map(icon => {
+                          const isSel = selectedSlugs.includes(icon.slug);
+                          const isFav = favoriteIdentityIds.includes(icon.id);
+                          return (
+                            <article
+                              key={icon.slug}
+                              className={`bg-white rounded-xl border p-2.5 flex flex-col justify-between transition-all group relative ${
+                                isSel ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-xs'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSelect(icon.slug)}
+                                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer ${
+                                    isSel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 hover:border-slate-400 bg-white'
+                                  }`}
+                                  aria-label={isSel ? t.filters.clearSelection : t.filters.selectAll}
+                                >
+                                  {isSel && <Check className="w-3 h-3 stroke-[3]" />}
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleFavoriteIdentity(icon.id)}
+                                    className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer ${
+                                      isFav ? 'text-rose-600' : 'text-slate-300 hover:text-slate-600'
+                                    }`}
+                                    aria-label={isFav ? t.card.removeFromFavorites : t.card.addToFavorites}
+                                  >
+                                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setInspectedIcon(icon)}
+                                className="flex flex-col items-center justify-center py-2 text-center group cursor-pointer focus:outline-none"
+                              >
+                                <div className="w-10 h-10 flex items-center justify-center mb-1.5">
+                                  <img
+                                    src={`/icons/${icon.fileName}`}
+                                    alt={icon.title}
+                                    className="w-8 h-8 object-contain group-hover:scale-110 transition-transform"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold text-slate-900 truncate w-full group-hover:text-indigo-600">
+                                  {icon.title}
+                                </span>
+                              </button>
+
+                              <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 text-2xs text-slate-500">
+                                <span className="truncate">
+                                  {icon.primaryCategory || icon.category || 'brand'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await downloadSingleSvg(icon.fileName, icon.title);
+                                    handleDownloadReceipt({
+                                      identityId: icon.id,
+                                      title: icon.title,
+                                      fileName: icon.fileName,
+                                      fileSize: 1024,
+                                      sourceProvider: icon.sourceProvider,
+                                      sourcePlatform: icon.sourcePlatform || icon.sourceProvider,
+                                      role: icon.role || 'logo',
+                                      graphicVariant: icon.graphicVariant || 'default',
+                                      rawSha256: icon.sha256,
+                                      license: icon.license,
+                                      verificationStatus: icon.verificationStatus,
+                                      timestamp: new Date().toISOString()
+                                    });
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors cursor-pointer"
+                                  title={t.card.downloadCanonical}
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </article>
+                          );
+                        })
+                      : paginatedAssets.map(asset => {
+                          const isSel = selectedAssetIds.includes(asset.assetId);
+                          const isFav = favoriteAssetIds.includes(asset.assetId);
+                          const parent = ICON_MAP[asset.identitySlug || asset.identityId];
+                          return (
+                            <article
+                              key={asset.assetId}
+                              className={`bg-white rounded-xl border p-2.5 flex flex-col justify-between transition-all group relative ${
+                                isSel ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-xs'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSelectAsset(asset.assetId)}
+                                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer ${
+                                    isSel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 hover:border-slate-400 bg-white'
+                                  }`}
+                                  aria-label={isSel ? t.filters.clearSelection : t.filters.selectAll}
+                                >
+                                  {isSel && <Check className="w-3 h-3 stroke-[3]" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleFavoriteAsset(asset.assetId)}
+                                  className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer ${
+                                    isFav ? 'text-rose-600' : 'text-slate-300 hover:text-slate-600'
+                                  }`}
+                                  aria-label={isFav ? t.card.removeFromFavorites : t.card.addToFavorites}
+                                >
+                                  <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => parent && setInspectedIcon(parent)}
+                                className="flex flex-col items-center justify-center py-2 text-center group cursor-pointer focus:outline-none"
+                              >
+                                <div className="w-10 h-10 flex items-center justify-center mb-1.5">
+                                  <img
+                                    src={`/icons/${asset.file}`}
+                                    alt={asset.identityTitle}
+                                    className="w-8 h-8 object-contain group-hover:scale-110 transition-transform"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold text-slate-900 truncate w-full group-hover:text-indigo-600">
+                                  {asset.identityTitle}
+                                </span>
+                              </button>
+
+                              <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 text-2xs text-slate-500">
+                                <span className="font-mono text-3xs truncate">
+                                  {asset.sourceProvider}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await downloadSingleSvg(asset.file, asset.identityTitle);
+                                    handleDownloadReceipt({
+                                      identityId: asset.identityId || asset.assetId,
+                                      title: asset.identityTitle || asset.identityId,
+                                      fileName: asset.file,
+                                      fileSize: 1024,
+                                      sourceProvider: asset.sourceProvider,
+                                      sourcePlatform: asset.sourcePlatform || asset.sourceProvider,
+                                      role: asset.role,
+                                      graphicVariant: asset.graphicVariant,
+                                      rawSha256: asset.rawSha256,
+                                      license: asset.license,
+                                      verificationStatus: asset.verificationStatus,
+                                      timestamp: new Date().toISOString()
+                                    });
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors cursor-pointer"
+                                  title={t.card.downloadThisSvg}
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </article>
+                          );
+                        })
+                    }
+                  </div>
+                )}
+
+                {/* 3. Table View Mode */}
+                {viewMode === 'table' && (
+                  <div className="overflow-x-auto bg-white rounded-2xl border border-slate-200/90 shadow-xs">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-50/80 border-b border-slate-200 text-2xs font-bold text-slate-600 uppercase tracking-wider">
+                          <th scope="col" className="p-3 w-10 text-center">
+                            <CheckSquare className="w-3.5 h-3.5 text-slate-400 mx-auto" />
+                          </th>
+                          <th scope="col" className="p-3 w-14 text-center">{t.tableView.previewCol}</th>
+                          <th scope="col" className="p-3 font-semibold">{t.tableView.identityCol}</th>
+                          <th scope="col" className="p-3 font-semibold">{t.tableView.categoryCol}</th>
+                          <th scope="col" className="p-3 font-semibold">{t.tableView.coverageCol}</th>
+                          <th scope="col" className="p-3 font-semibold">{t.tableView.fileCol}</th>
+                          <th scope="col" className="p-3 font-semibold">{t.tableView.statusCol}</th>
+                          <th scope="col" className="p-3 text-right font-semibold">{t.tableView.actionsCol}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {browseLevel === 'identities'
+                          ? paginatedIcons.map(icon => {
+                              const isSel = selectedSlugs.includes(icon.slug);
+                              const isFav = favoriteIdentityIds.includes(icon.id);
+                              const srcCount = getIdentitySourceCount(icon);
+                              return (
+                                <tr key={icon.slug} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="p-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleSelect(icon.slug)}
+                                      className={`w-4 h-4 rounded border mx-auto flex items-center justify-center transition-colors cursor-pointer ${
+                                        isSel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 hover:border-slate-400 bg-white'
+                                      }`}
+                                    >
+                                      {isSel && <Check className="w-3 h-3 stroke-[3]" />}
+                                    </button>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setInspectedIcon(icon)}
+                                      className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto hover:border-indigo-300 transition-colors cursor-pointer"
+                                    >
+                                      <img src={`/icons/${icon.fileName}`} alt={icon.title} className="w-6 h-6 object-contain" loading="lazy" />
+                                    </button>
+                                  </td>
+                                  <td className="p-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => setInspectedIcon(icon)}
+                                      className="font-bold text-slate-900 hover:text-indigo-600 transition-colors text-left block"
+                                    >
+                                      {icon.title}
+                                    </button>
+                                    <span className="font-mono text-2xs text-slate-400 block">{icon.slug}</span>
+                                  </td>
+                                  <td className="p-3 text-slate-600">
+                                    <span className="font-medium text-slate-800">{getLocalizedCategoryLabel(icon.primaryCategory || icon.category || 'uncategorized', t)}</span>
+                                    <span className="text-slate-400 block text-2xs capitalize">{icon.entityType || 'brand'}</span>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="flex items-center gap-1 text-2xs font-mono">
+                                      {ENABLED_SOURCES.map(src => {
+                                        const isAvail = (icon.sourceCoverage && icon.sourceCoverage[src.id] === 'available') || icon.sourceProvider === src.id;
+                                        return (
+                                          <span
+                                            key={src.id}
+                                            className={`inline-block w-2 h-2 rounded-full ${isAvail ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                                            title={`${src.name}: ${isAvail ? 'Available' : 'Unavailable'}`}
+                                          />
+                                        );
+                                      })}
+                                      <span className="ml-1 text-slate-500 font-sans">
+                                        ({srcCount}/{ENABLED_SOURCES.length})
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-mono text-2xs text-slate-700 block truncate max-w-[140px]">{icon.fileName}</span>
+                                    <span className="font-mono text-3xs text-slate-400 block truncate max-w-[140px]">{icon.sha256?.substring(0, 16)}...</span>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="inline-flex items-center gap-1 text-2xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                      {t.card.verifiedSvg}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleFavoriteIdentity(icon.id)}
+                                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                          isFav ? 'bg-rose-50 border-rose-200 text-rose-600' : 'border-slate-200 text-slate-400 hover:text-slate-700'
+                                        }`}
+                                        title={isFav ? t.card.removeFromFavorites : t.card.addToFavorites}
+                                      >
+                                        <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          await downloadSingleSvg(icon.fileName, icon.title);
+                                          handleDownloadReceipt({
+                                            identityId: icon.id,
+                                            title: icon.title,
+                                            fileName: icon.fileName,
+                                            fileSize: 1024,
+                                            sourceProvider: icon.sourceProvider,
+                                            sourcePlatform: icon.sourcePlatform || icon.sourceProvider,
+                                            role: icon.role || 'logo',
+                                            graphicVariant: icon.graphicVariant || 'default',
+                                            rawSha256: icon.sha256,
+                                            license: icon.license,
+                                            verificationStatus: icon.verificationStatus,
+                                            timestamp: new Date().toISOString()
+                                          });
+                                        }}
+                                        className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                                        title={t.card.downloadCanonical}
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          : paginatedAssets.map(asset => {
+                              const isSel = selectedAssetIds.includes(asset.assetId);
+                              const isFav = favoriteAssetIds.includes(asset.assetId);
+                              const parent = ICON_MAP[asset.identitySlug || asset.identityId];
+                              return (
+                                <tr key={asset.assetId} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="p-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleSelectAsset(asset.assetId)}
+                                      className={`w-4 h-4 rounded border mx-auto flex items-center justify-center transition-colors cursor-pointer ${
+                                        isSel ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 hover:border-slate-400 bg-white'
+                                      }`}
+                                    >
+                                      {isSel && <Check className="w-3 h-3 stroke-[3]" />}
+                                    </button>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => parent && setInspectedIcon(parent)}
+                                      className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto hover:border-indigo-300 transition-colors cursor-pointer"
+                                    >
+                                      <img src={`/icons/${asset.file}`} alt={asset.identityTitle} className="w-6 h-6 object-contain" loading="lazy" />
+                                    </button>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-bold text-slate-900 block">{asset.identityTitle}</span>
+                                    <span className="font-mono text-2xs text-slate-400 block">{asset.assetId}</span>
+                                  </td>
+                                  <td className="p-3 text-slate-600">
+                                    <span className="font-medium text-slate-800 capitalize">{asset.role}</span>
+                                    <span className="text-slate-400 block text-2xs capitalize">{asset.graphicVariant || 'default'}</span>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-mono text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                                      {asset.sourceProvider}
+                                    </span>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-mono text-2xs text-slate-700 block truncate max-w-[140px]">{asset.file}</span>
+                                    <span className="font-mono text-3xs text-slate-400 block truncate max-w-[140px]">{asset.rawSha256?.substring(0, 16)}...</span>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="inline-flex items-center gap-1 text-2xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                      {t.card.verifiedSvg}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleFavoriteAsset(asset.assetId)}
+                                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                          isFav ? 'bg-rose-50 border-rose-200 text-rose-600' : 'border-slate-200 text-slate-400 hover:text-slate-700'
+                                        }`}
+                                        title={isFav ? t.card.removeFromFavorites : t.card.addToFavorites}
+                                      >
+                                        <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          await downloadSingleSvg(asset.file, asset.identityTitle);
+                                          handleDownloadReceipt({
+                                            identityId: asset.identityId || asset.assetId,
+                                            title: asset.identityTitle || asset.identityId,
+                                            fileName: asset.file,
+                                            fileSize: 1024,
+                                            sourceProvider: asset.sourceProvider,
+                                            sourcePlatform: asset.sourcePlatform || asset.sourceProvider,
+                                            role: asset.role,
+                                            graphicVariant: asset.graphicVariant,
+                                            rawSha256: asset.rawSha256,
+                                            license: asset.license,
+                                            verificationStatus: asset.verificationStatus,
+                                            timestamp: new Date().toISOString()
+                                          });
+                                        }}
+                                        className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                                        title={t.card.downloadThisSvg}
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* Pagination Controls Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl px-4 py-3 border border-slate-200 gap-3 text-xs">
@@ -1315,7 +2137,7 @@ export default function App() {
                       <select
                         value={pageSize}
                         onChange={e => setPageSize(Number(e.target.value))}
-                        className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none"
+                        className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none cursor-pointer"
                       >
                         <option value={24}>24</option>
                         <option value={36}>36</option>
@@ -1375,24 +2197,62 @@ export default function App() {
                     })()}
                   </div>
                 </div>
+
               </div>
             ) : (
-              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                  <Search className="w-6 h-6" />
+              /* Rich Context-Aware Empty State (Tier 2 UX) */
+              <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/90 p-8 space-y-4 max-w-xl mx-auto shadow-xs">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+                  <Search className="w-7 h-7" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-800">
-                  {t.pagination.emptyTitle}
-                </h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  {t.pagination.emptyDesc}
-                </p>
-                <button
-                  onClick={handleResetFilters}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  {t.filters.resetFilters}
-                </button>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {t.emptyStates.noResultsTitle}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                    {t.emptyStates.noResultsDesc}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-2 text-xs">
+                  <span className="font-bold text-slate-700 block text-2xs uppercase tracking-wider">
+                    {t.emptyStates.viewAlternatives}:
+                  </span>
+                  <ul className="space-y-1 text-slate-600 text-xs">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                      <span>{t.emptyStates.clearFilters}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                      <span>{t.emptyStates.noExactMatch}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    onClick={handleResetFilters}
+                    className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer shadow-xs"
+                  >
+                    {t.emptyStates.clearFilters}
+                  </button>
+                  {browseLevel === 'identities' ? (
+                    <button
+                      onClick={() => setBrowseLevel('assets')}
+                      className="px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors cursor-pointer border border-indigo-200"
+                    >
+                      {t.header.browseAssetsTitle}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setBrowseLevel('identities')}
+                      className="px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors cursor-pointer border border-indigo-200"
+                    >
+                      {t.header.browseIdentitiesTitle}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1442,6 +2302,60 @@ export default function App() {
           onClose={() => setInspectedIcon(null)}
           onUseAsset={handleUseAsset}
         />
+      )}
+
+      {/* Create New Workspace Collection Modal */}
+      {showNewCollectionModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-indigo-600" />
+                <span>{t.workspace.createCollection}</span>
+              </h3>
+              <button
+                onClick={() => setShowNewCollectionModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="input-collection-name" className="text-2xs font-bold text-slate-600">
+                {t.workspace.collectionNamePlaceholder}:
+              </label>
+              <input
+                id="input-collection-name"
+                type="text"
+                value={newCollectionName}
+                onChange={e => setNewCollectionName(e.target.value)}
+                placeholder={t.workspace.collectionNamePlaceholder}
+                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleCreateCollection();
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowNewCollectionModal(false)}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+              >
+                {t.inspector.closeBtn}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateCollection}
+                disabled={!newCollectionName.trim()}
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl cursor-pointer shadow-xs"
+              >
+                {t.workspace.createCollection}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Global Command Palette (Ctrl+K / Cmd+K) */}

@@ -249,7 +249,7 @@ export interface ConcreteAssetItem extends BrandAsset {
   entityType?: EntityType;
   matchScore?: number;
 
-  matchChecklist?: string[];
+  matchChecklist?: any;
   matchReason?: string;
 }
 
@@ -437,7 +437,7 @@ export interface IconItem {
   totalAssets?: number;
   // Search explainability
   matchScore?: number;
-  matchChecklist?: string[];
+  matchChecklist?: any;
   matchReason?: string;
   aliases?: string[];
   canonicalDecision?: CanonicalDecision;
@@ -491,3 +491,41 @@ export function getTrustStateBadge(trustState: TrustState): { label: string; bgC
       return { label: 'Unverified', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200' };
   }
 }
+
+/**
+ * User-local collections (Personal Workspace - Tier 2)
+ */
+export interface UserCollection {
+  id: string;
+  name: string;
+  createdAt: string;
+  identityIds: string[];
+  assetIds: string[];
+}
+
+/**
+ * User-facing sorting options (Tier 1)
+ */
+export type SortOption =
+  | 'relevance'
+  | 'name-asc'
+  | 'name-desc'
+  | 'most-assets'
+  | 'most-providers'
+  | 'confidence'
+  | 'recently-updated';
+
+/**
+ * Coverage filter options (Tier 1)
+ */
+export type CoverageFilterOption =
+  | 'all'
+  | 'single'
+  | 'three-plus'
+  | 'four-plus'
+  | 'five';
+
+/**
+ * Data presentation view modes (Tier 2)
+ */
+export type ViewMode = 'grid' | 'compact' | 'table';

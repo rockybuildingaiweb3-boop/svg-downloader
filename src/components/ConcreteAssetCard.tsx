@@ -45,7 +45,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
   onToggleFavorite,
   onDownloadReceipt,
 }) => {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
   const [copiedType, setCopiedType] = useState<'svg' | 'jsx' | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<boolean>(false);
@@ -116,27 +116,22 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
     }
   };
 
+  const localizedAlt = format(t.card.logoAlt, {
+    name: `${asset.identityTitle || asset.identityId} (${asset.role})`
+  });
+
   return (
-    <div
+    <article
       id={`asset-card-${asset.assetId}`}
-      role="button"
-      tabIndex={0}
       aria-label={`${asset.identityTitle || asset.identityId} - ${asset.file}`}
-      onClick={handleCardClick}
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleCardClick();
-        }
-      }}
-      className={`group relative rounded-2xl p-4 border transition-all duration-200 cursor-pointer flex flex-col justify-between focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
+      className={`group relative rounded-2xl p-4 border transition-all duration-200 flex flex-col justify-between ${
         isSelected
           ? 'bg-indigo-50/40 border-indigo-400 ring-1 ring-indigo-400/30 shadow-xs'
           : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5'
       }`}
     >
-      {/* Top Header: Select Checkbox & Badges */}
-      <div className="flex items-center justify-between w-full mb-2" onClick={e => e.stopPropagation()}>
+      {/* Top Header: Select Checkbox & Badges (Isolated Interactive Controls) */}
+      <div className="flex items-center justify-between w-full mb-2">
         <label className="flex items-center cursor-pointer select-none">
           <input
             type="checkbox"
@@ -153,10 +148,10 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
           </span>
           {onToggleFavorite && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(asset.assetId);
-              }}
+              type="button"
+              onClick={() => onToggleFavorite(asset.assetId)}
+              title={isFavorite ? t.card.removeFromFavorites : t.card.addToFavorites}
+              aria-label={isFavorite ? t.card.removeFromFavorites : t.card.addToFavorites}
               className={`p-1 rounded-lg text-xs transition-colors cursor-pointer ${
                 isFavorite
                   ? 'text-rose-500 hover:text-rose-600 bg-rose-50'
@@ -169,93 +164,107 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         </div>
       </div>
 
-      {/* Center: Vector SVG Preview */}
-      <div className="flex items-center justify-center py-4 my-1 min-h-[56px]">
-        <div className={`transition-transform duration-200 group-hover:scale-105 flex items-center justify-center ${
-          asset.role === 'wordmark'
-            ? 'max-w-[120px] max-h-[40px] w-full h-10'
-            : asset.role === 'logo'
-            ? 'max-w-[140px] max-h-[40px] w-full h-10'
-            : 'max-w-[48px] max-h-[48px] w-11 h-11'
-        }`}>
-          {imageError ? (
-            <span className="err-badge text-2xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-medium">
-              {t.card.imageLoadError}
-            </span>
-          ) : (
-            <img
-              src={`/icons/${asset.file}`}
-              alt={`${asset.identityTitle || asset.identityId} - ${asset.file}`}
-              width={asset.role === 'wordmark' || asset.role === 'logo' ? 120 : 40}
-              height={40}
-              className={`object-contain ${
-                asset.role === 'wordmark'
-                  ? 'max-w-[120px] max-h-[40px] w-auto h-auto'
-                  : asset.role === 'logo'
-                  ? 'max-w-[140px] max-h-[40px] w-auto h-auto'
-                  : 'w-10 h-10'
-              }`}
-              loading="lazy"
-              decoding="async"
-              onError={() => setImageError(true)}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Bottom Info: Title, Filename & Provider */}
-      <div className="text-center space-y-1">
-        <div className="flex items-center justify-center gap-1">
-          <h3 className="text-xs font-bold text-slate-800 truncate" title={asset.identityTitle || asset.identityId}>
-            {asset.identityTitle || asset.identityId}
-          </h3>
-          {asset.isCanonical && (
-            <span className="text-3xs font-bold px-1 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200">
-              {t.comparison.canonicalBadge}
-            </span>
-          )}
-          {asset.verificationStatus === 'verified' && (
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t.card.verifiedVector} />
-          )}
+      {/* Center: Focusable Interactive Area for Inspect */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleCardClick}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
+        aria-label={`${t.card.inspectAsset}: ${asset.identityTitle || asset.identityId}`}
+        className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl p-1 -m-1 transition-colors hover:bg-slate-50/60"
+      >
+        <div className="flex items-center justify-center py-4 my-1 min-h-[56px]">
+          <div className={`transition-transform duration-200 group-hover:scale-105 flex items-center justify-center ${
+            asset.role === 'wordmark'
+              ? 'max-w-[120px] max-h-[40px] w-full h-10'
+              : asset.role === 'logo'
+              ? 'max-w-[140px] max-h-[40px] w-full h-10'
+              : 'max-w-[48px] max-h-[48px] w-11 h-11'
+          }`}>
+            {imageError ? (
+              <span className="err-badge text-2xs text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-medium">
+                {t.card.imageLoadError}
+              </span>
+            ) : (
+              <img
+                src={`/icons/${asset.file}`}
+                alt={localizedAlt}
+                width={asset.role === 'wordmark' || asset.role === 'logo' ? 120 : 40}
+                height={40}
+                className={`object-contain ${
+                  asset.role === 'wordmark'
+                    ? 'max-w-[120px] max-h-[40px] w-auto h-auto'
+                    : asset.role === 'logo'
+                    ? 'max-w-[140px] max-h-[40px] w-auto h-auto'
+                    : 'w-10 h-10'
+                }`}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImageError(true)}
+              />
+            )}
+          </div>
         </div>
 
-        <p className="text-2xs font-mono text-slate-500 truncate" title={asset.file}>
-          {asset.file}
-        </p>
+        {/* Bottom Info: Title, Filename & Provider */}
+        <div className="text-center space-y-1">
+          <div className="flex items-center justify-center gap-1">
+            <h3 className="text-xs font-bold text-slate-800 truncate" title={asset.identityTitle || asset.identityId}>
+              {asset.identityTitle || asset.identityId}
+            </h3>
+            {asset.isCanonical && (
+              <span className="text-3xs font-bold px-1 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                {t.comparison.canonicalBadge}
+              </span>
+            )}
+            {asset.verificationStatus === 'verified' && (
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title={t.card.verifiedSvg} />
+            )}
+          </div>
 
-        {/* Source & Variant Badges */}
-        <div className="flex items-center justify-center gap-1 flex-wrap pt-0.5">
-          {asset.entityType && (
-            <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200/60">
-              {getLocalizedEntityTypeLabel(asset.entityType, t)}
-            </span>
-          )}
-          <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-            {getLocalizedSourceLabel(asset.sourceProvider === 'iconify' ? 'svg-logos' : (asset.sourcePlatform || asset.sourceProvider), t)}
-          </span>
-          <span className="text-3xs px-1 py-0.5 rounded bg-slate-100 text-slate-600">
-            {getLocalizedVariantLabel(asset.graphicVariant, t)}
-          </span>
-          {asset.rawSha256 && (
-            <span className="text-3xs font-mono px-1 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-100">
-              {asset.rawSha256.substring(0, 6)}
-            </span>
-          )}
-        </div>
-
-        {downloadError && (
-          <p className="text-2xs text-rose-600 font-medium animate-pulse">
-            {downloadError}
+          <p className="text-2xs font-mono text-slate-500 truncate" title={asset.file}>
+            {asset.file}
           </p>
-        )}
+
+          {/* Source & Variant Badges */}
+          <div className="flex items-center justify-center gap-1 flex-wrap pt-0.5">
+            {asset.entityType && (
+              <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200/60">
+                {getLocalizedEntityTypeLabel(asset.entityType, t)}
+              </span>
+            )}
+            <span className="text-3xs font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+              {getLocalizedSourceLabel(asset.sourceProvider === 'iconify' ? 'svg-logos' : (asset.sourcePlatform || asset.sourceProvider), t)}
+            </span>
+            <span className="text-3xs px-1 py-0.5 rounded bg-slate-100 text-slate-600">
+              {getLocalizedVariantLabel(asset.graphicVariant, t)}
+            </span>
+            {asset.rawSha256 && (
+              <span className="text-3xs font-mono px-1 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-100">
+                {asset.rawSha256.substring(0, 6)}
+              </span>
+            )}
+          </div>
+
+          {downloadError && (
+            <p className="text-2xs text-rose-600 font-medium animate-pulse">
+              {downloadError}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Hover Action Bar */}
+      {/* Action Bar */}
       <div
         className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-around gap-1 opacity-90 group-hover:opacity-100 transition-opacity"
-        onClick={e => e.stopPropagation()}
       >
         <button
+          type="button"
           id={`btn-copy-svg-${asset.assetId}`}
           onClick={handleCopySvg}
           aria-label={t.card.copySvgCode}
@@ -270,6 +279,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         </button>
 
         <button
+          type="button"
           id={`btn-copy-jsx-${asset.assetId}`}
           onClick={handleCopyJsx}
           aria-label={t.card.copyReactJsx}
@@ -284,17 +294,19 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
         </button>
 
         <button
+          type="button"
           id={`btn-download-svg-${asset.assetId}`}
           onClick={handleDownload}
-          aria-label={t.card.downloadSvg}
+          aria-label={t.card.downloadThisSvg}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 text-xs transition-colors cursor-pointer"
-          title={t.card.downloadSvg}
+          title={t.card.downloadThisSvg}
         >
           <Download className="w-3.5 h-3.5" />
         </button>
 
         {parentIcon && (
           <button
+            type="button"
             id={`btn-inspect-svg-${asset.assetId}`}
             onClick={() => onInspect(parentIcon)}
             aria-label={t.card.inspectAssetFamily}
@@ -305,7 +317,7 @@ export const ConcreteAssetCard: React.FC<ConcreteAssetCardProps> = ({
           </button>
         )}
       </div>
-    </div>
+    </article>
   );
 };
 
